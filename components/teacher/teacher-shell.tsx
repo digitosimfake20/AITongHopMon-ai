@@ -1,26 +1,25 @@
 import { TeacherHeader } from '@/components/teacher/teacher-header'
 import { MobileTeacherNav } from '@/components/teacher/mobile-teacher-nav'
 import { TeacherSidebar } from '@/components/teacher/teacher-sidebar'
-import { MOCK_TEACHER_DASHBOARD } from '@/lib/teacher-mock'
+import type { TeacherShellContext } from '@/lib/dashboard/context'
 
 interface TeacherShellProps {
+  shell: TeacherShellContext
   children: React.ReactNode
 }
 
-export function TeacherShell({ children }: TeacherShellProps) {
-  const data = MOCK_TEACHER_DASHBOARD
-
+export function TeacherShell({ shell, children }: TeacherShellProps) {
   return (
     <div className="flex min-h-dvh bg-background">
-      <TeacherSidebar className={data.className} />
+      <TeacherSidebar className={shell.className} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileTeacherNav className={data.className} />
+        <MobileTeacherNav className={shell.className} />
         <TeacherHeader
-          className={data.className}
-          subject={data.subject}
-          studentCount={data.studentCount}
-          teacherInitials={data.initials}
+          className={shell.className}
+          subject={shell.subject}
+          studentCount={shell.studentCount}
+          teacherInitials={shell.initials}
         />
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           {children}

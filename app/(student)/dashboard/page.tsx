@@ -1,6 +1,15 @@
 import { DashboardGrid } from '@/components/dashboard/dashboard-grid'
-import { MOCK_STUDENT_DASHBOARD } from '@/lib/dashboard-mock'
+import { resolveStudentContext } from '@/lib/dashboard/context'
+import { getStudentDashboardData } from '@/lib/dashboard/student-data'
 
-export default function DashboardPage() {
-  return <DashboardGrid data={MOCK_STUDENT_DASHBOARD} />
+export default async function DashboardPage() {
+  const { user, classroom, shell } = await resolveStudentContext()
+  const data = await getStudentDashboardData(
+    user.id,
+    classroom.id,
+    user.fullName,
+    shell.classLabel,
+  )
+
+  return <DashboardGrid data={data} />
 }

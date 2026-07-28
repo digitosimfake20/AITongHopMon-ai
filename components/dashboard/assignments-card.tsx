@@ -19,38 +19,44 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
       </div>
 
       <ul className="mt-5 space-y-3">
-        {assignments.map((item) => (
-          <li
-            key={item.id}
-            className="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <p className="font-medium text-foreground">{item.title}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                {item.deadline ? <span>Hạn: {item.deadline}</span> : null}
-                {item.status === 'completed' && item.score ? (
-                  <span>Điểm: {item.score}</span>
+        {assignments.length === 0 ? (
+          <li className="rounded-xl border border-dashed border-border bg-background p-6 text-center text-sm text-muted-foreground">
+            Chưa có bài kiểm tra nào được giao trong lớp này.
+          </li>
+        ) : (
+          assignments.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">{item.title}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  {item.deadline ? <span>Hạn: {item.deadline}</span> : null}
+                  {item.status === 'completed' && item.score ? (
+                    <span>Điểm: {item.score}</span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant={item.status === 'pending' ? 'destructive' : 'secondary'}
+                >
+                  {item.status === 'pending' ? 'Chưa làm' : 'Đã hoàn thành'}
+                </Badge>
+                {item.status === 'pending' ? (
+                  <Button
+                    className="min-h-11"
+                    nativeButton={false}
+                    render={<Link href="/quizzes" />}
+                  >
+                    Làm bài ngay
+                  </Button>
                 ) : null}
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge
-                variant={item.status === 'pending' ? 'destructive' : 'secondary'}
-              >
-                {item.status === 'pending' ? 'Chưa làm' : 'Đã hoàn thành'}
-              </Badge>
-              {item.status === 'pending' ? (
-                <Button
-                  className="min-h-11"
-                  nativeButton={false}
-                  render={<Link href="/quizzes" />}
-                >
-                  Làm bài ngay
-                </Button>
-              ) : null}
-            </div>
-          </li>
-        ))}
+            </li>
+          ))
+        )}
       </ul>
     </article>
   )

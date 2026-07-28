@@ -53,6 +53,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  const classId = request.nextUrl.searchParams.get('class')
+  if (classId) {
+    response.cookies.set('mathz_class_id', classId, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    })
+  }
+
   return response
 }
 

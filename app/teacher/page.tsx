@@ -1,6 +1,16 @@
 import { TeacherDashboardGrid } from '@/components/teacher/teacher-dashboard-grid'
-import { MOCK_TEACHER_DASHBOARD } from '@/lib/teacher-mock'
+import { resolveTeacherContext } from '@/lib/dashboard/context'
+import { getTeacherDashboardData } from '@/lib/dashboard/teacher-data'
 
-export default function TeacherOverviewPage() {
-  return <TeacherDashboardGrid data={MOCK_TEACHER_DASHBOARD} />
+export default async function TeacherOverviewPage() {
+  const { user, classroom, shell } = await resolveTeacherContext()
+  const data = await getTeacherDashboardData(
+    user.id,
+    classroom.id,
+    user.fullName,
+    shell.className,
+    shell.studentCount,
+  )
+
+  return <TeacherDashboardGrid data={data} />
 }

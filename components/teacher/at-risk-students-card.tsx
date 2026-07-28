@@ -19,26 +19,32 @@ export function AtRiskStudentsCard({ students }: AtRiskStudentsCardProps) {
       </div>
 
       <ul className="mt-5 space-y-3">
-        {students.map((student) => (
-          <li
-            key={student.id}
-            className="rounded-xl border border-border bg-background p-3"
-          >
-            <div className="flex items-start gap-3">
-              <Avatar size="sm">
-                <AvatarFallback className="bg-secondary text-xs font-semibold">
-                  {student.initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{student.name}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                  {student.reason}
-                </p>
-              </div>
-            </div>
+        {students.length === 0 ? (
+          <li className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            Chưa có học sinh cần chú ý. Dữ liệu cập nhật khi có bài nộp.
           </li>
-        ))}
+        ) : (
+          students.map((student) => (
+            <li
+              key={student.id}
+              className="rounded-xl border border-border bg-background p-3"
+            >
+              <div className="flex items-start gap-3">
+                <Avatar size="sm">
+                  <AvatarFallback className="bg-secondary text-xs font-semibold">
+                    {student.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{student.name}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    {student.reason}
+                  </p>
+                </div>
+              </div>
+            </li>
+          ))
+        )}
       </ul>
 
       <Button

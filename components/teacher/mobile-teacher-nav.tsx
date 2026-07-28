@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GraduationCap, Menu, X } from 'lucide-react'
+import { GraduationCap, LayoutGrid, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
@@ -66,6 +66,14 @@ export function MobileTeacherNav({ className }: MobileTeacherNavProps) {
               </Link>
             )
           })}
+          <Link
+            href="/onboarding"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
+          >
+            <LayoutGrid className="size-4" />
+            Danh sách lớp
+          </Link>
         </nav>
       ) : null}
     </div>

@@ -60,10 +60,19 @@ export async function syncUserProfile(input: {
 
 export async function getPostAuthPath(userId: string, role: UserRole): Promise<string> {
   if (role === 'teacher') {
-    const count = await prisma.classroom.count({ where: { teacherId: userId } })
-    return count > 0 ? '/teacher' : '/onboarding'
+    const classroom = await prisma.classroom.findFirst({
+      where: { teacherId: userId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+    return classroom ? `/teacher?class=${classroom.id}` : '/onboarding'
   }
 
-  const count = await prisma.classMember.count({ where: { studentId: userId } })
-  return count > 0 ? '/onboarding' : '/onboarding'
+  const membership = await prisma.classMember.findFirst({
+    where: { studentId: userId },
+    orderBy: { joinedAt: 'desc' },
+    select: { classId: true },
+  })
+
+  return membership ? `/dashboard?class=${membership.classId}` : '/onboarding'
 }

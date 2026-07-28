@@ -24,34 +24,40 @@ export function WeaknessRadarCard({ topics }: WeaknessRadarCardProps) {
       </div>
 
       <ul className="mt-5 space-y-5">
-        {topics.map((topic) => (
-          <li key={topic.id} className="space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-medium text-card-foreground">{topic.label}</span>
-                  <span className="font-mono tabular-nums text-muted-foreground">
-                    {topic.accuracy}%
-                  </span>
-                </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className={cn('h-full rounded-full transition-all', BAR_COLORS[topic.severity])}
-                    style={{ width: `${topic.accuracy}%` }}
-                  />
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="min-h-11 shrink-0"
-                nativeButton={false}
-                render={<Link href={`/adaptive?topic=${topic.id}`} />}
-              >
-                Vá lỗi này
-              </Button>
-            </div>
+        {topics.length === 0 ? (
+          <li className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            Chưa có dữ liệu luyện tập. Làm bài kiểm tra hoặc chat với Zeno để nhận phân tích.
           </li>
-        ))}
+        ) : (
+          topics.map((topic) => (
+            <li key={topic.id} className="space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium text-card-foreground">{topic.label}</span>
+                    <span className="font-mono tabular-nums text-muted-foreground">
+                      {topic.accuracy}%
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className={cn('h-full rounded-full transition-all', BAR_COLORS[topic.severity])}
+                      style={{ width: `${topic.accuracy}%` }}
+                    />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="min-h-11 shrink-0"
+                  nativeButton={false}
+                  render={<Link href={`/adaptive?topic=${topic.id}`} />}
+                >
+                  Vá lỗi này
+                </Button>
+              </div>
+            </li>
+          ))
+        )}
       </ul>
     </article>
   )

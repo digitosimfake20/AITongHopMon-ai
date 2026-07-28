@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GraduationCap } from 'lucide-react'
+import { GraduationCap, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
 import { cn } from '@/lib/utils'
@@ -55,6 +55,16 @@ export function TeacherSidebar({ className }: TeacherSidebarProps) {
           )
         })}
       </nav>
+
+      <div className="border-t border-border p-4">
+        <Link
+          href="/onboarding"
+          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <LayoutGrid className="size-4 shrink-0" aria-hidden="true" />
+          Danh sách lớp
+        </Link>
+      </div>
     </aside>
   )
 }

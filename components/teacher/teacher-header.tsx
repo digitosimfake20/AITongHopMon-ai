@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Plus, Users } from 'lucide-react'
+import { LayoutGrid, Plus, Users } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
@@ -32,6 +32,15 @@ export function TeacherHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          className="min-h-11"
+          nativeButton={false}
+          render={<Link href="/onboarding" />}
+        >
+          <LayoutGrid className="size-4" aria-hidden="true" />
+          Danh sách lớp
+        </Button>
         <Button
           className="min-h-11 px-5"
           nativeButton={false}

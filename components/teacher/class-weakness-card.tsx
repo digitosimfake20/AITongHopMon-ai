@@ -18,40 +18,46 @@ export function ClassWeaknessCard({ weaknesses }: ClassWeaknessCardProps) {
       </div>
 
       <ul className="mt-5 space-y-4">
-        {weaknesses.map((item) => (
-          <li
-            key={item.id}
-            className="rounded-xl border border-border bg-background p-4"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-medium text-foreground">{item.label}</p>
-                  <span className="font-mono text-sm tabular-nums text-destructive">
-                    {item.wrongPercent}% lớp sai
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{item.sampleNote}</p>
-                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-destructive"
-                    style={{ width: `${item.wrongPercent}%` }}
-                  />
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="min-h-11 shrink-0"
-                nativeButton={false}
-                render={
-                  <Link href={`/teacher/assignments?patch=${item.id}`} />
-                }
-              >
-                Giao bài vá lỗi
-              </Button>
-            </div>
+        {weaknesses.length === 0 ? (
+          <li className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            Chưa có dữ liệu bài làm. Giao bài kiểm tra để xem lỗ hổng cả lớp.
           </li>
-        ))}
+        ) : (
+          weaknesses.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-xl border border-border bg-background p-4"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium text-foreground">{item.label}</p>
+                    <span className="font-mono text-sm tabular-nums text-destructive">
+                      {item.wrongPercent}% lớp sai
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.sampleNote}</p>
+                  <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full rounded-full bg-destructive"
+                      style={{ width: `${item.wrongPercent}%` }}
+                    />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="min-h-11 shrink-0"
+                  nativeButton={false}
+                  render={
+                    <Link href={`/teacher/assignments?patch=${item.id}`} />
+                  }
+                >
+                  Giao bài vá lỗi
+                </Button>
+              </div>
+            </li>
+          ))
+        )}
       </ul>
     </article>
   )
