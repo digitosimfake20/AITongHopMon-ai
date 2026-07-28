@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { LogOut, Star } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { signOutAction } from '@/lib/auth/actions'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -31,7 +31,7 @@ export function DashboardHeader({
           {getGreeting()}, {studentName}!
         </h1>
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-          Sẵn sàng nâng điểm Toán 8A2 hôm nay chưa?
+          Sẵn sàng nâng điểm Toán hôm nay chưa?
         </p>
       </div>
 
@@ -46,15 +46,12 @@ export function DashboardHeader({
           </AvatarFallback>
         </Avatar>
         <ThemeToggle />
-        <Button
-          variant="outline"
-          className="min-h-11"
-          nativeButton={false}
-          render={<Link href="/auth" />}
-        >
-          <LogOut className="size-4" aria-hidden="true" />
-          Đăng xuất
-        </Button>
+        <form action={signOutAction}>
+          <Button type="submit" variant="outline" className="min-h-11">
+            <LogOut className="size-4" aria-hidden="true" />
+            Đăng xuất
+          </Button>
+        </form>
       </div>
     </header>
   )

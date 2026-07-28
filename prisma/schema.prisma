@@ -1,0 +1,274 @@
+// 8A2 Learning Platform — Web Core + AI Engine
+// Schemas: `core` (web) | `ai` (engine & memory)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["core", "ai"]
+}
+
+// =============================================================================
+// WEB CORE
+// =============================================================================
+
+enum UserRole {
+  student
+  teacher
+  admin
+
+  @@schema("core")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  fullName  String   @map("full_name")
+  role      UserRole
+  createdAt DateTime @default(now()) @map("created_at")
+
+  taughtClasses         Classroom[]            @relation("ClassTeacher")
+  classMemberships      ClassMember[]
+  createdTests          Test[]                 @relation("TestCreator")
+  submissions           Submission[]
+  knowledgeStates       StudentKnowledgeState[]
+  cognitiveProfile      StudentCognitiveProfile?
+  chatSessions          ChatSession[]
+  globalAgentMemories   GlobalAgentMemory[]
+
+  @@map("users")
+  @@schema("core")
+}
+
+model Classroom {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  code        String   @unique @db.VarChar(8)
+  teacherId   String   @map("teacher_id") @db.Uuid
+  maxCapacity Int      @default(40) @map("max_capacity")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  teacher User          @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  members ClassMember[]
+  tests   Test[]
+
+  @@index([teacherId])
+  @@map("classes")
+  @@schema("core")
+}
+
+model ClassMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  class   Classroom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, studentId])
+  @@index([studentId])
+  @@map("class_members")
+  @@schema("core")
+}
+
+model Question {
+  id            String   @id @default(uuid()) @db.Uuid
+  subject       String
+  topic         String
+  difficulty    String
+  content       String   @db.Text
+  options       Json
+  correctOption String   @map("correct_option")
+  explanation   String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  submissionDetails SubmissionDetail[]
+
+  @@index([subject, topic])
+  @@map("questions")
+  @@schema("core")
+}
+
+model Test {
+  id               String   @id @default(uuid()) @db.Uuid
+  title            String
+  classId          String   @map("class_id") @db.Uuid
+  questionIds      Json     @map("question_ids")
+  timeLimitMinutes Int      @map("time_limit_minutes")
+  createdBy        String   @map("created_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  class       Classroom    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator     User         @relation("TestCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  submissions Submission[]
+
+  @@index([classId])
+  @@index([createdBy])
+  @@map("tests")
+  @@schema("core")
+}
+
+model Submission {
+  id                      String   @id @default(uuid()) @db.Uuid
+  testId                  String   @map("test_id") @db.Uuid
+  studentId               String   @map("student_id") @db.Uuid
+  attemptNumber           Int      @map("attempt_number")
+  score                   Decimal  @db.Decimal(5, 2)
+  totalQuestions          Int      @map("total_questions")
+  correctCount            Int      @map("correct_count")
+  timeSpentSeconds        Int      @map("time_spent_seconds")
+  aiFeedbackSummary       String?  @map("ai_feedback_summary") @db.Text
+  teacherFeedback         String?  @map("teacher_feedback") @db.Text
+  isTeacherFeedbackRead   Boolean  @default(false) @map("is_teacher_feedback_read")
+  submittedAt             DateTime @default(now()) @map("submitted_at")
+
+  test    Test               @relation(fields: [testId], references: [id], onDelete: Cascade)
+  student User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  details SubmissionDetail[]
+
+  @@unique([testId, studentId, attemptNumber])
+  @@index([studentId])
+  @@map("submissions")
+  @@schema("core")
+}
+
+model SubmissionDetail {
+  id                  String   @id @default(uuid()) @db.Uuid
+  submissionId        String   @map("submission_id") @db.Uuid
+  questionId          String   @map("question_id") @db.Uuid
+  selectedOption      String   @map("selected_option")
+  isCorrect           Boolean  @map("is_correct")
+  timeSpentSeconds    Int      @map("time_spent_seconds")
+  aiPersonalizedHint  String?  @map("ai_personalized_hint") @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@index([submissionId])
+  @@index([questionId])
+  @@map("submission_details")
+  @@schema("core")
+}
+
+// =============================================================================
+// AI ENGINE
+// =============================================================================
+
+model KnowledgeNode {
+  id              String  @id
+  subject         String
+  title           String
+  parentNodeId    String? @map("parent_node_id")
+  difficultyLevel Int     @map("difficulty_level")
+
+  parent   KnowledgeNode?          @relation("KnowledgeNodeTree", fields: [parentNodeId], references: [id], onDelete: SetNull)
+  children KnowledgeNode[]           @relation("KnowledgeNodeTree")
+  states   StudentKnowledgeState[]
+
+  @@index([subject])
+  @@index([parentNodeId])
+  @@map("knowledge_nodes")
+  @@schema("ai")
+}
+
+model StudentKnowledgeState {
+  id              String    @id @default(uuid()) @db.Uuid
+  studentId       String    @map("student_id") @db.Uuid
+  nodeId          String    @map("node_id")
+  pMastery        Decimal   @map("p_mastery") @db.Decimal(5, 4)
+  lastPracticedAt DateTime? @map("last_practiced_at")
+
+  student User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  node    KnowledgeNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, nodeId])
+  @@index([nodeId])
+  @@map("student_knowledge_states")
+  @@schema("ai")
+}
+
+model StudentCognitiveProfile {
+  studentId            String   @id @map("student_id") @db.Uuid
+  personaType          String   @map("persona_type")
+  avgSpeedPerQuestion  Decimal  @map("avg_speed_per_question") @db.Decimal(8, 2)
+  carelessErrorRate    Decimal  @map("careless_error_rate") @db.Decimal(5, 4)
+  strengthsSummary     String[] @map("strengths_summary")
+  weaknessesSummary    String[] @map("weaknesses_summary")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("student_cognitive_profiles")
+  @@schema("ai")
+}
+
+model ChatSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  studentId    String   @map("student_id") @db.Uuid
+  subject      String
+  title        String
+  messageCount Int      @default(0) @map("message_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  student        User                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+  chunkSummaries ChatChunkSummary[]
+
+  @@index([studentId])
+  @@map("chat_sessions")
+  @@schema("ai")
+}
+
+model ChatMessage {
+  id               String   @id @default(uuid()) @db.Uuid
+  sessionId        String   @map("session_id") @db.Uuid
+  sender           String
+  encryptedContent String   @map("encrypted_content") @db.Text
+  iv               String
+  authTag          String   @map("auth_tag")
+  sequenceNumber   Int      @map("sequence_number")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, sequenceNumber])
+  @@index([sessionId])
+  @@map("chat_messages")
+  @@schema("ai")
+}
+
+model ChatChunkSummary {
+  id          String   @id @default(uuid()) @db.Uuid
+  sessionId   String   @map("session_id") @db.Uuid
+  startSeq    Int      @map("start_seq")
+  endSeq      Int      @map("end_seq")
+  summaryJson Json     @map("summary_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_chunk_summaries")
+  @@schema("ai")
+}
+
+model GlobalAgentMemory {
+  id                     String   @id @default(uuid()) @db.Uuid
+  studentId              String   @map("student_id") @db.Uuid
+  longTermSummary        String   @map("long_term_summary") @db.Text
+  keyInsights            Json     @map("key_insights")
+  totalProcessedMessages Int      @default(0) @map("total_processed_messages")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId])
+  @@map("global_agent_memories")
+  @@schema("ai")
+}

@@ -24,7 +24,6 @@ export const NAV_LINKS: NavLink[] = [
   { label: 'Tính năng', href: '#features' },
   { label: 'Cách hoạt động', href: '#how-it-works' },
   { label: 'Dành cho Giáo viên', href: '#insights' },
-  { label: 'Bảng giá', href: '#pricing' },
   { label: 'FAQ', href: '#faq' },
 ]
 

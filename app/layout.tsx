@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Inter } from 'next/font/google'
 import type { ReactNode } from 'react'
+import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import './globals.css'
 
@@ -64,7 +65,10 @@ export default function RootLayout({
       className={`${inter.variable} ${geistMono.variable} bg-background`}
     >
       <body className="bg-background font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster richColors closeButton position="top-center" />
+        </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

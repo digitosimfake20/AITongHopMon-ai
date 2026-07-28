@@ -31,7 +31,7 @@ export function ScoreView() {
         style={{ animationDelay: '600ms' }}
       >
         <p className="text-base font-semibold text-foreground">
-          Làm hay lắm!, Hải — 8 trên 10 điểm
+          Làm hay lắm!, Văn A — 8 trên 10 điểm
         </p>
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <TrendingUp className="size-3.5 text-success" aria-hidden="true" />

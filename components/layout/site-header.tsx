@@ -54,14 +54,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <LinkButton
-            href="/auth"
+            href="/login"
             variant="ghost"
             className="hidden h-9 px-3 sm:inline-flex"
           >
             Đăng nhập
           </LinkButton>
           <LinkButton
-            href="/auth"
+            href="/signup"
             className="hidden h-9 px-3.5 sm:inline-flex"
           >
             Đăng ký
@@ -101,14 +101,14 @@ export function SiteHeader() {
           </nav>
           <div className="mt-3 flex flex-col gap-2">
             <LinkButton
-              href="/auth"
+              href="/signup"
               onClick={() => setOpen(false)}
               className="h-10 w-full"
             >
               Đăng ký
             </LinkButton>
             <LinkButton
-              href="/auth"
+              href="/login"
               onClick={() => setOpen(false)}
               variant="outline"
               className="h-10 w-full"
