@@ -21,8 +21,10 @@ Add these in **Vercel → Project → Settings → Environment Variables**:
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | Production, Preview (server only) |
-| `DATABASE_URL` | Production, Preview (port 6543 + pgbouncer) |
-| `DIRECT_URL` | Production, Preview (port 5432) |
+| `DATABASE_URL` | Production, Preview — Supavisor **transaction** mode (`pooler.supabase.com:6543?pgbouncer=true`) |
+| `DIRECT_URL` | Production, Preview — Supavisor **session** mode (`pooler.supabase.com:5432`) |
+
+Copy both from **Supabase → Connect**. Use username `postgres.[PROJECT-REF]`, not `postgres@db.*`.
 | `OPENAI_API_KEY` | Production, Preview |
 | `CHAT_ENCRYPTION_KEY` | Production, Preview |
 | `NEXT_PUBLIC_APP_URL` | Production = your Vercel URL |

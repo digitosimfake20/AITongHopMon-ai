@@ -65,7 +65,9 @@ export async function getTeacherClasses(): Promise<ClassSummary[]> {
   }))
 }
 
-export async function joinClassAction(codeInput: string): Promise<ActionResult> {
+export async function joinClassAction(
+  codeInput: string,
+): Promise<ActionResult<{ classId: string; className: string }>> {
   const user = await requireUser()
   if (user.role !== 'student') {
     return { success: false, error: 'Chỉ học sinh mới có thể tham gia lớp' }
@@ -99,6 +101,28 @@ export async function joinClassAction(codeInput: string): Promise<ActionResult> 
   })
 
   revalidatePath('/onboarding')
+  revalidatePath('/dashboard')
+  return { success: true, data: { classId: classroom.id, className: classroom.name } }
+}
+
+export async function leaveClassAction(classId: string): Promise<ActionResult> {
+  const user = await requireUser()
+  if (user.role !== 'student') {
+    return { success: false, error: 'Chỉ học sinh mới có thể rời lớp' }
+  }
+
+  const membership = await prisma.classMember.findFirst({
+    where: { classId, studentId: user.id },
+  })
+
+  if (!membership) {
+    return { success: false, error: 'Bạn không thuộc lớp này' }
+  }
+
+  await prisma.classMember.delete({ where: { id: membership.id } })
+
+  revalidatePath('/onboarding')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 

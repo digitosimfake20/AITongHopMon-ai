@@ -1,6 +1,7 @@
 'use client'
 
-import { LogOut, Star } from 'lucide-react'
+import Link from 'next/link'
+import { LayoutGrid, LogOut, Star } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
@@ -36,6 +37,15 @@ export function DashboardHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          className="min-h-11"
+          nativeButton={false}
+          render={<Link href="/onboarding" />}
+        >
+          <LayoutGrid className="size-4" aria-hidden="true" />
+          Danh sách lớp
+        </Button>
         <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-foreground">
           <Star className="size-4 text-primary" aria-hidden="true" />
           Thành thạo: {masteryScore}/10

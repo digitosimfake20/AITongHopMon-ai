@@ -29,12 +29,16 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     (user.user_metadata?.full_name as string | undefined) ??
     user.email.split('@')[0]
 
-  return {
+  const profile = {
     id: user.id,
     email: user.email,
     fullName,
     role,
   }
+
+  await syncUserProfile(profile)
+
+  return profile
 }
 
 export async function syncUserProfile(input: {

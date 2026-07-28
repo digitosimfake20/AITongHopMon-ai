@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BrainCircuit } from 'lucide-react'
+import { BrainCircuit, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
 import { DASHBOARD_NAV } from '@/lib/dashboard-nav'
@@ -61,7 +61,14 @@ export function DashboardSidebar({
         })}
       </nav>
 
-      <div className="p-4">
+      <div className="space-y-3 border-t border-border p-4">
+        <Link
+          href="/onboarding"
+          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <LayoutGrid className="size-4 shrink-0" aria-hidden="true" />
+          Danh sách lớp
+        </Link>
         <StreakWidget days={streakDays} />
       </div>
     </aside>

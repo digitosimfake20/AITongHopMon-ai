@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BrainCircuit, Menu, X } from 'lucide-react'
+import { BrainCircuit, LayoutGrid, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
@@ -70,6 +70,14 @@ export function MobileDashboardNav({
               )
             })}
           </nav>
+          <Link
+            href="/onboarding"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <LayoutGrid className="size-4" />
+            Danh sách lớp
+          </Link>
           <StreakWidget days={streakDays} />
         </div>
       ) : null}

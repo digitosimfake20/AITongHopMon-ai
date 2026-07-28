@@ -29,7 +29,12 @@ export async function StudentOnboarding({ fullName }: StudentOnboardingProps) {
       {classes.length > 0 ? (
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {classes.map((c) => (
-            <ClassCard key={c.id} classroom={c} href={`/dashboard?class=${c.id}`} />
+            <ClassCard
+              key={c.id}
+              classroom={c}
+              href={`/dashboard?class=${c.id}`}
+              canLeave
+            />
           ))}
         </div>
       ) : (

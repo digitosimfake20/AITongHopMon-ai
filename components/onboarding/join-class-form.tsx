@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { joinClassAction } from '@/lib/class/actions'
 import { normalizeClassCode } from '@/lib/class/code'
 
 export function JoinClassForm() {
+  const router = useRouter()
   const [code, setCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -14,10 +16,11 @@ export function JoinClassForm() {
     e.preventDefault()
     setIsLoading(true)
     const result = await joinClassAction(normalizeClassCode(code))
-    if (result.success) {
-      toast.success('Đã tham gia lớp thành công')
+    if (result.success && result.data) {
+      toast.success(`Đã tham gia lớp ${result.data.className}`)
       setCode('')
-      window.location.reload()
+      router.push(`/dashboard?class=${result.data.classId}`)
+      router.refresh()
     } else {
       toast.error(result.error ?? 'Không thể tham gia lớp')
     }
