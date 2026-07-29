@@ -7,6 +7,7 @@ import prisma from '@/lib/prisma'
 export interface QuestionResultRow {
   questionId: string
   type: string
+  topic: string
   content: string
   options: unknown          // raw DB JSON (string[] or subQuestion[])
   correctOption: string | null
@@ -44,7 +45,7 @@ export interface SubmissionResult {
 
 export async function getSubmissionResult(
   submissionId: string,
-  callerId: string,
+  caller: { id: string; role: string },
 ): Promise<SubmissionResult | null> {
   const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
@@ -57,6 +58,7 @@ export async function getSubmissionResult(
             select: {
               id: true,
               type: true,
+              topic: true,
               content: true,
               options: true,
               correctOption: true,
@@ -70,12 +72,14 @@ export async function getSubmissionResult(
   })
 
   if (!submission) return null
-  // Only the student themselves (or admins) may view
-  if (submission.studentId !== callerId) return null
+  // Students can only view their own results; teachers can view any result
+  const isTeacher = caller.role === 'teacher' || caller.role === 'admin'
+  if (!isTeacher && submission.studentId !== caller.id) return null
 
   const questionResults: QuestionResultRow[] = submission.details.map((d) => ({
     questionId: d.questionId,
     type: d.question.type,
+    topic: d.question.topic,
     content: d.question.content,
     options: d.question.options,
     correctOption: d.question.correctOption,

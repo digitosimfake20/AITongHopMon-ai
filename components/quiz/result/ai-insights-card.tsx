@@ -3,20 +3,14 @@
 import { useState } from 'react'
 import { Brain, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { analyzeSubmissionAction } from '@/app/actions/analyze-submission'
-
-interface KnowledgeGap {
-  issue: string
-  advice: string
-}
-
-interface AIAnalysis {
-  praise: string
-  knowledgeGaps: KnowledgeGap[]
-}
+import type { AIAnalysis } from '@/app/actions/analyze-submission'
+import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'
 
 interface AIInsightsCardProps {
   submissionId: string
   initialAnalysis: string | null
+  /** When true (teacher view), hides the re-analyze button */
+  readOnly?: boolean
 }
 
 function parseAnalysis(raw: string | null): AIAnalysis | null {
@@ -28,7 +22,7 @@ function parseAnalysis(raw: string | null): AIAnalysis | null {
   }
 }
 
-export function AIInsightsCard({ submissionId, initialAnalysis }: AIInsightsCardProps) {
+export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIInsightsCardProps) {
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(parseAnalysis(initialAnalysis))
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +46,7 @@ export function AIInsightsCard({ submissionId, initialAnalysis }: AIInsightsCard
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Brain className="size-5 text-purple-600" aria-hidden />
-          <h2 className="font-semibold text-foreground">Phân tích AI</h2>
+          <h2 className="font-semibold text-foreground">Phân tích AI cá nhân hóa</h2>
         </div>
 
         <div className="flex items-center gap-2">
@@ -66,19 +60,21 @@ export function AIInsightsCard({ submissionId, initialAnalysis }: AIInsightsCard
               {isExpanded ? 'Thu gọn' : 'Mở rộng'}
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleAnalyze}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
-          >
-            {isLoading ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Brain className="size-4" />
-            )}
-            {isLoading ? 'Đang phân tích...' : analysis ? 'Phân tích lại' : 'Xem AI Phân Tích'}
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleAnalyze}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+            >
+              {isLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Brain className="size-4" />
+              )}
+              {isLoading ? 'Đang phân tích...' : analysis ? 'Phân tích lại' : 'Xem AI Phân Tích'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -92,6 +88,11 @@ export function AIInsightsCard({ submissionId, initialAnalysis }: AIInsightsCard
           <div className="rounded-xl border border-purple-200 bg-background/70 px-4 py-3 dark:border-purple-800">
             <p className="text-sm leading-relaxed text-foreground">{analysis.praise}</p>
           </div>
+
+          {/* Topic mastery with AI advice */}
+          {analysis.topicMastery && analysis.topicMastery.length > 0 && (
+            <TopicAnalyticsCard topicMastery={analysis.topicMastery} withAdvice />
+          )}
 
           {/* Knowledge Gaps */}
           {analysis.knowledgeGaps.length > 0 && (
@@ -113,7 +114,7 @@ export function AIInsightsCard({ submissionId, initialAnalysis }: AIInsightsCard
             </div>
           )}
 
-          {analysis.knowledgeGaps.length === 0 && (
+          {analysis.knowledgeGaps.length === 0 && !analysis.topicMastery?.some((t) => t.status !== 'MASTERED') && (
             <p className="text-sm text-green-700 dark:text-green-400">
               Không phát hiện lỗ hổng kiến thức nghiêm trọng. Tiếp tục duy trì nhé!
             </p>
@@ -121,9 +122,14 @@ export function AIInsightsCard({ submissionId, initialAnalysis }: AIInsightsCard
         </div>
       )}
 
-      {!analysis && !isLoading && (
+      {!analysis && !isLoading && !readOnly && (
         <p className="mt-3 text-sm text-muted-foreground">
           Nhấn "Xem AI Phân Tích" để nhận phân tích cá nhân hóa về kết quả bài làm.
+        </p>
+      )}
+      {!analysis && readOnly && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Học sinh chưa chạy phân tích AI cho bài này.
         </p>
       )}
     </div>

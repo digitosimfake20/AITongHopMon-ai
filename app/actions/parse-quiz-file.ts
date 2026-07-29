@@ -65,11 +65,17 @@ QUESTION TYPE CLASSIFICATION:
 4. ESSAY (Section D / Phần D): Full-working / proof problems.
    - If solution steps are visible, put them in "explanation".
 
+TOPIC TAGGING (REQUIRED for every question):
+- Assign a concise 2-4 word Vietnamese math sub-topic to "topic" that describes the specific skill being tested.
+- Examples: "Phép nhân phân thức", "Điều kiện xác định", "Rút gọn biểu thức", "Phân thức nghịch đảo", "Quy đồng mẫu thức", "Phép cộng đa thức".
+- NEVER use the overall quiz title as the topic. Each question must have its own specific sub-topic.
+
 OUTPUT: valid JSON only, no markdown fences, matching:
 {
   "questions": [
     {
       "type": "MULTIPLE_CHOICE" | "TRUE_FALSE_GROUP" | "SHORT_ANSWER" | "ESSAY",
+      "topic": "Phép nhân phân thức",
       "content": "string (LaTeX for math)",
       "options": ["A text", "B text", "C text", "D text"],
       "correctAnswer": 0,
@@ -103,11 +109,17 @@ CLASSIFY EACH QUESTION INTO ONE OF THESE 4 TYPES:
 3. SHORT_ANSWER — fill-in/numeric. "correctAnswer" is the exact answer string.
 4. ESSAY — full working. Solution in "explanation".
 
+TOPIC TAGGING (REQUIRED for every question):
+- Assign a concise 2-4 word Vietnamese math sub-topic to "topic" that describes the specific skill being tested.
+- Examples: "Phép nhân phân thức", "Điều kiện xác định", "Rút gọn biểu thức", "Phân thức nghịch đảo", "Quy đồng mẫu thức", "Phép chia phân thức".
+- NEVER use the overall quiz/document title as the topic. Each question must have its own specific sub-topic.
+
 Apply LaTeX in every field. Only output valid JSON, no markdown fences, matching:
 {
   "questions": [
     {
       "type": "MULTIPLE_CHOICE" | "TRUE_FALSE_GROUP" | "SHORT_ANSWER" | "ESSAY",
+      "topic": "Phép nhân phân thức",
       "content": "string",
       "options": ["...", "...", "...", "..."],
       "correctAnswer": 0,
@@ -545,25 +557,26 @@ function normalizeQuestion(item: unknown): ExtractedQuestion | null {
   const type: QuestionType = VALID_TYPES.includes(rawType as QuestionType) ? (rawType as QuestionType) : inferType(r)
   const explanation = cleanText(r.explanation) || undefined
   const points = 1
+  const topic = typeof r.topic === 'string' ? r.topic.trim() : undefined
 
   if (type === 'MULTIPLE_CHOICE') {
     const options = normalizeOptions(r.options)
     if (options.every((o) => !o)) return null
-    return { type, content, options, correctAnswer: toLetterCorrectAnswer(r.correctAnswer), explanation, points }
+    return { type, topic, content, options, correctAnswer: toLetterCorrectAnswer(r.correctAnswer), explanation, points }
   }
   if (type === 'TRUE_FALSE_GROUP') {
     const subQuestions = normalizeSubQuestions(r.subQuestions)
     if (subQuestions.length === 0) return null
-    return { type, content, subQuestions, explanation, points }
+    return { type, topic, content, subQuestions, explanation, points }
   }
   if (type === 'SHORT_ANSWER') {
     const ca = typeof r.correctAnswer === 'string'
       ? resolveLeftoverPlaceholders(r.correctAnswer.trim())
       : typeof r.correctAnswer === 'number' ? String(r.correctAnswer) : ''
     if (!ca) return null
-    return { type, content, correctAnswer: ca, explanation, points }
+    return { type, topic, content, correctAnswer: ca, explanation, points }
   }
-  return { type: 'ESSAY', content, explanation, points }
+  return { type: 'ESSAY', topic, content, explanation, points }
 }
 
 function normalizeQuestions(raw: unknown): ExtractedQuestion[] {

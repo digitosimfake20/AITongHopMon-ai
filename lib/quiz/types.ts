@@ -28,6 +28,8 @@ export interface TrueFalseSubQuestion {
 export interface ParsedQuestion {
   id: string
   type: QuestionType
+  /** Granular 2-4 word sub-topic (e.g. "Phép nhân phân thức") set by AI during import */
+  topic?: string
   content: string
   options?: string[]
   subQuestions?: TrueFalseSubQuestion[]

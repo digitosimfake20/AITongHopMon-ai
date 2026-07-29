@@ -20,11 +20,11 @@ export function HeroSection() {
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
             <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
-            Chấm bài tự động &amp; Phân tích lỗ hổng kiến thức Toán cho nhà trường
+            Chấm bài tự động &amp; Phân tích lỗ hỏng kiến thức của Học sinh
           </span>
 
           <h1 className="mt-6 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            Bài kiểm tra tự chấm điểm và chỉ rõ thầy cô cần dạy lại phần nào
+            Bài kiểm tra tự chấm điểm và và chỉ ra khả năng học bài của từng học sinh
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">

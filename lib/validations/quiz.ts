@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 const basePointsAndExplanation = {
+  /** Per-question granular sub-topic (set by AI parser; falls back to quiz-level topic if absent) */
+  topic: z.string().trim().optional(),
   explanation: z.string().trim().optional(),
   points: z.number().min(0).max(100).optional(),
 }

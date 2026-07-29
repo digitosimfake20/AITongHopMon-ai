@@ -4,6 +4,8 @@ import { getSessionUser } from '@/lib/auth/session'
 import { getSubmissionResult } from '@/lib/quiz/submission-queries'
 import { QuestionReview } from '@/components/quiz/result/question-review'
 import { AIInsightsCard } from '@/components/quiz/result/ai-insights-card'
+import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'
+import { computeTopicMastery } from '@/lib/quiz/topic-mastery'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -37,13 +39,15 @@ export default async function QuizResultPage({ params }: PageProps) {
   const user = await getSessionUser()
   if (!user) redirect('/login')
 
-  const result = await getSubmissionResult(id, user.id)
+  const result = await getSubmissionResult(id, { id: user.id, role: user.role })
   if (!result) notFound()
 
   const grade = scoreGrade(result.score)
   const accuracy = result.totalQuestions > 0
     ? Math.round((result.correctCount / result.totalQuestions) * 100)
     : 0
+  // Compute topic mastery immediately from DB data (no AI call needed)
+  const topicMastery = computeTopicMastery(result.questionResults)
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -79,10 +83,14 @@ export default async function QuizResultPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* ── AI Insights ──────────────────────────────────── */}
+      {/* ── Topic Analytics (immediate, no AI) ───────────── */}
+      <TopicAnalyticsCard topicMastery={topicMastery} />
+
+      {/* ── AI Insights (students only — teachers see read-only) ─── */}
       <AIInsightsCard
         submissionId={id}
         initialAnalysis={result.aiFeedbackSummary}
+        readOnly={user.role === 'teacher' || user.role === 'admin'}
       />
 
       {/* ── Detailed Review ───────────────────────────────── */}

@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle, Tag as TagIcon } from 'lucide-react'
 import { MathText } from '@/components/quiz/math-text'
 import type { QuestionResultRow } from '@/lib/quiz/submission-queries'
 import { cn } from '@/lib/utils'
@@ -206,6 +206,12 @@ export function QuestionReview({ index, result }: QuestionReviewProps) {
             <XCircle className="size-4 shrink-0 text-red-600" />
           )}
           <span className="text-sm font-semibold text-foreground">Câu {index + 1}</span>
+          {result.topic && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <TagIcon className="size-2.5" aria-hidden />
+              {result.topic}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

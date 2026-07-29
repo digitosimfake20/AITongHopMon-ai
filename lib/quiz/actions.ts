@@ -67,10 +67,14 @@ async function createTestWithQuestions({
   const createdQuestions = await Promise.all(
     questions.map((question) => {
       const { options, correctOption } = toDbQuestionData(question)
+      // Use per-question topic from AI parser when available; fall back to quiz-level topic
+      const questionTopic = ('topic' in question && typeof question.topic === 'string' && question.topic.trim())
+        ? question.topic.trim()
+        : topic
       return tx.question.create({
         data: {
           subject,
-          topic,
+          topic: questionTopic,
           difficulty: difficultyLevel.toLowerCase(),
           type: question.type,
           content: question.content,
