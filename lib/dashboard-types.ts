@@ -20,6 +20,8 @@ export interface Assignment {
   deadline?: string
   status: 'pending' | 'completed'
   score?: string
+  /** Submission ID used to link to the result/AI-analysis page */
+  submissionId?: string
 }
 
 export interface StudentDashboardData {

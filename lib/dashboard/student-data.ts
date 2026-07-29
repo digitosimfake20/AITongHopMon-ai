@@ -29,6 +29,7 @@ export async function getStudentDashboardData(
             where: { studentId: userId },
             orderBy: { submittedAt: 'desc' },
             take: 1,
+            select: { id: true, score: true, submittedAt: true },
           },
         },
       }),
@@ -88,6 +89,7 @@ export async function getStudentDashboardData(
         title: test.title,
         status: 'completed' as const,
         score: `${Number(latest.score).toFixed(1)}/10`,
+        submissionId: latest.id,
       }
     }
     return {

@@ -8,6 +8,9 @@ export interface TeacherNavItem {
 export interface ClassWeakness {
   id: string
   label: string
+  wrongCount: number
+  /** Percentage of students who got ≥1 question wrong in this topic */
+  studentPercent: number
   wrongPercent: number
   sampleNote: string
 }

@@ -24,6 +24,37 @@ enum UserRole {
   @@schema("core")
 }
 
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE_GROUP
+  SHORT_ANSWER
+  ESSAY
+
+  @@schema("core")
+}
+
+enum QuizMode {
+  STANDARD
+  ADAPTIVE_PACKAGE
+
+  @@schema("core")
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+
+  @@schema("core")
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  COMPLETED
+
+  @@schema("core")
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
@@ -34,6 +65,7 @@ model User {
   taughtClasses         Classroom[]            @relation("ClassTeacher")
   classMemberships      ClassMember[]
   createdTests          Test[]                 @relation("TestCreator")
+  createdQuizPackages   QuizPackage[]          @relation("PackageCreator")
   submissions           Submission[]
   knowledgeStates       StudentKnowledgeState[]
   cognitiveProfile      StudentCognitiveProfile?
@@ -53,8 +85,9 @@ model Classroom {
   createdAt   DateTime @default(now()) @map("created_at")
 
   teacher User          @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
-  members ClassMember[]
-  tests   Test[]
+  members      ClassMember[]
+  tests        Test[]
+  quizPackages QuizPackage[]
 
   @@index([teacherId])
   @@map("classes")
@@ -77,15 +110,17 @@ model ClassMember {
 }
 
 model Question {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String       @id @default(uuid()) @db.Uuid
   subject       String
   topic         String
   difficulty    String
-  content       String   @db.Text
+  type          QuestionType @default(MULTIPLE_CHOICE)
+  content       String       @db.Text
   options       Json
-  correctOption String   @map("correct_option")
-  explanation   String?  @db.Text
-  createdAt     DateTime @default(now()) @map("created_at")
+  correctOption String?      @map("correct_option")
+  explanation   String?      @db.Text
+  points        Float        @default(1.0)
+  createdAt     DateTime     @default(now()) @map("created_at")
 
   submissionDetails SubmissionDetail[]
 
@@ -95,17 +130,24 @@ model Question {
 }
 
 model Test {
-  id               String   @id @default(uuid()) @db.Uuid
+  id               String          @id @default(uuid()) @db.Uuid
   title            String
-  classId          String   @map("class_id") @db.Uuid
-  questionIds      Json     @map("question_ids")
-  timeLimitMinutes Int      @map("time_limit_minutes")
-  createdBy        String   @map("created_by") @db.Uuid
-  createdAt        DateTime @default(now()) @map("created_at")
+  classId          String          @map("class_id") @db.Uuid
+  questionIds      Json            @map("question_ids")
+  timeLimitMinutes Int             @map("time_limit_minutes")
+  difficultyLevel  DifficultyLevel @default(MEDIUM) @map("difficulty_level")
+  createdBy        String          @map("created_by") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at")
 
   class       Classroom    @relation(fields: [classId], references: [id], onDelete: Cascade)
   creator     User         @relation("TestCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   submissions Submission[]
+
+  // Reverse relations for the optional parent QuizPackage (Standard vs Adaptive)
+  standardPackage QuizPackage? @relation("StandardTest")
+  easyPackage     QuizPackage? @relation("EasyTest")
+  mediumPackage   QuizPackage? @relation("MediumTest")
+  hardPackage     QuizPackage? @relation("HardTest")
 
   @@index([classId])
   @@index([createdBy])
@@ -113,19 +155,51 @@ model Test {
   @@schema("core")
 }
 
+model QuizPackage {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  description String?  @db.Text
+  mode        QuizMode @default(STANDARD)
+  classId     String   @map("class_id") @db.Uuid
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Used when mode == STANDARD (1 single test)
+  standardTestId String? @unique @map("standard_test_id") @db.Uuid
+  standardTest   Test?   @relation("StandardTest", fields: [standardTestId], references: [id], onDelete: SetNull)
+
+  // Used when mode == ADAPTIVE_PACKAGE (links 3 sub-quizzes)
+  easyTestId   String? @unique @map("easy_test_id") @db.Uuid
+  easyTest     Test?   @relation("EasyTest", fields: [easyTestId], references: [id], onDelete: SetNull)
+  mediumTestId String? @unique @map("medium_test_id") @db.Uuid
+  mediumTest   Test?   @relation("MediumTest", fields: [mediumTestId], references: [id], onDelete: SetNull)
+  hardTestId   String? @unique @map("hard_test_id") @db.Uuid
+  hardTest     Test?   @relation("HardTest", fields: [hardTestId], references: [id], onDelete: SetNull)
+
+  class   Classroom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator User      @relation("PackageCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([classId])
+  @@index([createdBy])
+  @@map("quiz_packages")
+  @@schema("core")
+}
+
 model Submission {
-  id                      String   @id @default(uuid()) @db.Uuid
-  testId                  String   @map("test_id") @db.Uuid
-  studentId               String   @map("student_id") @db.Uuid
-  attemptNumber           Int      @map("attempt_number")
-  score                   Decimal  @db.Decimal(5, 2)
-  totalQuestions          Int      @map("total_questions")
-  correctCount            Int      @map("correct_count")
-  timeSpentSeconds        Int      @map("time_spent_seconds")
-  aiFeedbackSummary       String?  @map("ai_feedback_summary") @db.Text
-  teacherFeedback         String?  @map("teacher_feedback") @db.Text
-  isTeacherFeedbackRead   Boolean  @default(false) @map("is_teacher_feedback_read")
-  submittedAt             DateTime @default(now()) @map("submitted_at")
+  id                      String           @id @default(uuid()) @db.Uuid
+  testId                  String           @map("test_id") @db.Uuid
+  studentId               String           @map("student_id") @db.Uuid
+  attemptNumber           Int              @map("attempt_number")
+  score                   Decimal          @db.Decimal(5, 2)
+  totalQuestions          Int              @map("total_questions")
+  correctCount            Int              @map("correct_count")
+  timeSpentSeconds        Int              @map("time_spent_seconds")
+  status                  SubmissionStatus @default(IN_PROGRESS)
+  aiFeedbackSummary       String?          @map("ai_feedback_summary") @db.Text
+  teacherFeedback         String?          @map("teacher_feedback") @db.Text
+  isTeacherFeedbackRead   Boolean          @default(false) @map("is_teacher_feedback_read")
+  submittedAt             DateTime         @default(now()) @map("submitted_at")
 
   test    Test               @relation(fields: [testId], references: [id], onDelete: Cascade)
   student User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -142,7 +216,9 @@ model SubmissionDetail {
   submissionId        String   @map("submission_id") @db.Uuid
   questionId          String   @map("question_id") @db.Uuid
   selectedOption      String   @map("selected_option")
+  studentAnswer       Json?    @map("student_answer")
   isCorrect           Boolean  @map("is_correct")
+  pointsEarned        Float    @default(0.0) @map("points_earned")
   timeSpentSeconds    Int      @map("time_spent_seconds")
   aiPersonalizedHint  String?  @map("ai_personalized_hint") @db.Text
   createdAt           DateTime @default(now()) @map("created_at")

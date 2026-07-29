@@ -1,5 +1,6 @@
 import type { TeacherDashboardData } from '@/lib/teacher-types'
 import prisma from '@/lib/prisma'
+import { getQuizPackagesForClass } from '@/lib/quiz/queries'
 import { getInitials } from '@/lib/utils/initials'
 
 export async function getTeacherDashboardData(
@@ -37,38 +38,54 @@ export async function getTeacherDashboardData(
     weeklyTarget > 0
       ? Math.min(100, Math.round((recentSubmissions.length / weeklyTarget) * 100))
       : 0
+  // Fetch all wrong answers for this class (capped to avoid OOM on large datasets)
+  const wrongDetails = await prisma.submissionDetail.findMany({
+    where: {
+      isCorrect: false,
+      submission: { test: { classId } },
+    },
+    select: {
+      questionId: true,
+      submission: { select: { studentId: true } },
+    },
+    take: 2000,
+  })
 
-  const topicErrors = (
-    await prisma.submissionDetail.groupBy({
-      by: ['questionId'],
-      where: {
-        isCorrect: false,
-        submission: { test: { classId } },
-      },
-      _count: { questionId: true },
-      orderBy: { _count: { questionId: 'desc' } },
-    })
-  ).slice(0, 3)
-
-  const questionIds = topicErrors.map((item) => item.questionId)
-  const questions =
-    questionIds.length > 0
+  // Build topic map from unique questionIds
+  const uniqueQIds = [...new Set(wrongDetails.map((d) => d.questionId))]
+  const topicQuestions =
+    uniqueQIds.length > 0
       ? await prisma.question.findMany({
-          where: { id: { in: questionIds } },
+          where: { id: { in: uniqueQIds } },
           select: { id: true, topic: true },
         })
       : []
+  const topicByQId = new Map(topicQuestions.map((q) => [q.id, q.topic]))
 
-  const questionMap = new Map(questions.map((question) => [question.id, question.topic]))
-  const totalWrong = topicErrors.reduce((sum, item) => sum + item._count.questionId, 0)
+  // Aggregate by topic: count wrong answers + unique students affected
+  const byTopic = new Map<string, { wrongCount: number; studentIds: Set<string> }>()
+  for (const d of wrongDetails) {
+    const topic = topicByQId.get(d.questionId) ?? 'Chủ đề khác'
+    if (!byTopic.has(topic)) byTopic.set(topic, { wrongCount: 0, studentIds: new Set() })
+    const entry = byTopic.get(topic)!
+    entry.wrongCount++
+    entry.studentIds.add(d.submission.studentId)
+  }
 
-  const classWeaknesses = topicErrors.map((item) => ({
-    id: item.questionId,
-    label: questionMap.get(item.questionId) ?? 'Chủ đề chưa xác định',
-    wrongPercent:
-      totalWrong > 0 ? Math.round((item._count.questionId / totalWrong) * 100) : 0,
-    sampleNote: `${item._count.questionId} lượt trả lời sai trong lớp`,
-  }))
+  const classWeaknesses = [...byTopic.entries()]
+    .sort((a, b) => b[1].wrongCount - a[1].wrongCount)
+    .slice(0, 5)
+    .map(([topic, stats]) => {
+      const pct = studentCount > 0 ? Math.round((stats.studentIds.size / studentCount) * 100) : 0
+      return {
+        id: topic,
+        label: topic,
+        wrongCount: stats.wrongCount,
+        studentPercent: pct,
+        wrongPercent: pct,
+        sampleNote: `${stats.wrongCount} lượt sai — ${stats.studentIds.size}/${studentCount} học sinh gặp khó`,
+      }
+    })
 
   const lowScorers = (
     await prisma.submission.groupBy({
@@ -102,19 +119,21 @@ export async function getTeacherDashboardData(
     }
   })
 
-  const assignedQuizzes = tests.map((test) => {
-    const scores = test.submissions.map((submission) => Number(submission.score))
+  const quizPackages = await getQuizPackagesForClass(classId)
+  const assignedQuizzes = quizPackages.map((pkg) => {
+    const totalSubmitted = pkg.tests.reduce((sum, test) => sum + test.submittedCount, 0)
+    const gradedScores = pkg.tests.filter((test) => test.submittedCount > 0).map((test) => test.averageScore)
     const averageScore =
-      scores.length > 0
-        ? Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10
+      gradedScores.length > 0
+        ? Math.round((gradedScores.reduce((sum, score) => sum + score, 0) / gradedScores.length) * 10) / 10
         : 0
 
     return {
-      id: test.id,
-      title: test.title,
-      deadline: `${test.timeLimitMinutes} phút`,
-      submitted: test.submissions.length,
-      total: studentCount,
+      id: pkg.id,
+      title: pkg.mode === 'ADAPTIVE_PACKAGE' ? `${pkg.title} (Dễ/TB/Khó)` : pkg.title,
+      deadline: pkg.mode === 'ADAPTIVE_PACKAGE' ? '3 mức độ' : `${pkg.tests[0]?.timeLimitMinutes ?? 0} phút`,
+      submitted: totalSubmitted,
+      total: studentCount * Math.max(pkg.tests.length, 1),
       averageScore,
     }
   })

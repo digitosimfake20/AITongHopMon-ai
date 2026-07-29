@@ -32,27 +32,47 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
               <div className="min-w-0">
                 <p className="font-medium text-foreground">{item.title}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  {item.deadline ? <span>Hạn: {item.deadline}</span> : null}
-                  {item.status === 'completed' && item.score ? (
-                    <span>Điểm: {item.score}</span>
-                  ) : null}
+                  {item.deadline ? <span>⏱ {item.deadline}</span> : null}
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Badge
-                  variant={item.status === 'pending' ? 'destructive' : 'secondary'}
-                >
-                  {item.status === 'pending' ? 'Chưa làm' : 'Đã hoàn thành'}
-                </Badge>
                 {item.status === 'pending' ? (
-                  <Button
-                    className="min-h-11"
-                    nativeButton={false}
-                    render={<Link href="/quizzes" />}
-                  >
-                    Làm bài ngay
-                  </Button>
-                ) : null}
+                  <>
+                    <Badge variant="destructive">Chưa làm</Badge>
+                    <Button
+                      className="min-h-11"
+                      nativeButton={false}
+                      render={<Link href={`/quiz/take/${item.id}`} />}
+                    >
+                      Bắt đầu làm bài
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                      Đã nộp — {item.score}
+                    </Badge>
+                    {item.submissionId ? (
+                      <Button
+                        className="min-h-11"
+                        variant="outline"
+                        nativeButton={false}
+                        render={<Link href={`/quiz/result/${item.submissionId}`} />}
+                      >
+                        Xem kết quả & AI Phân tích
+                      </Button>
+                    ) : (
+                      <Button
+                        className="min-h-11"
+                        variant="outline"
+                        nativeButton={false}
+                        render={<Link href="/quizzes" />}
+                      >
+                        Xem tất cả
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
             </li>
           ))
