@@ -24,6 +24,14 @@ export interface Assignment {
   submissionId?: string
 }
 
+export interface CognitiveProfileSummary {
+  personaType: string
+  avgSpeed: number
+  carelessRate: number
+  strengths: string[]
+  weaknesses: string[]
+}
+
 export interface StudentDashboardData {
   studentName: string
   initials: string
@@ -40,4 +48,5 @@ export interface StudentDashboardData {
   zenoInsight: string
   zenoUpdatedAt: string
   assignments: Assignment[]
+  cognitiveProfile: CognitiveProfileSummary | null
 }

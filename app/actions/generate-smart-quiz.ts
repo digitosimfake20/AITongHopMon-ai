@@ -4,7 +4,6 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import type { ActionResult } from '@/lib/auth/types'
-import type { ParsedQuestion } from '@/lib/quiz/types'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -115,22 +114,21 @@ Trả về JSON hợp lệ theo schema:
   }
 
   // ── 4. Find student's class ────────────────────────────────────────────────
-  const enrollment = await prisma.classEnrollment.findFirst({
+  const membership = await prisma.classMember.findFirst({
     where: { studentId: user.id },
-    select: { classId: true, class: { select: { subject: true } } },
+    select: { classId: true },
   })
 
-  if (!enrollment) {
+  if (!membership) {
     return { success: false, error: 'Học sinh chưa tham gia lớp học nào' }
   }
-  const classId = enrollment.classId
-  const subject = enrollment.class.subject ?? 'Toán'
+  const classId = membership.classId
+  const subject = 'Toán'
 
   // ── 5. Persist generated questions to DB ───────────────────────────────────
   const newQuestionIds: string[] = []
 
   for (const gq of generatedQuestions) {
-    const options = gq.options ?? null
     const created = await prisma.question.create({
       data: {
         subject,
@@ -138,7 +136,7 @@ Trả về JSON hợp lệ theo schema:
         difficulty: 'easy',
         type: gq.type,
         content: gq.content,
-        options: options as any,
+        options: gq.options ?? [],
         correctOption: gq.correctOption,
         explanation: gq.explanation,
         points: 1.0,
@@ -159,13 +157,11 @@ Trả về JSON hợp lệ theo schema:
   const test = await prisma.test.create({
     data: {
       title: testTitle,
-      subject,
       classId,
       questionIds: allQuestionIds,
-      durationMinutes: 15,
-      status: 'PUBLISHED',
+      timeLimitMinutes: 15,
       difficultyLevel: 'EASY',
-      mode: 'STANDARD',
+      createdBy: user.id,
     },
   })
 

@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Bot, Send, X, ChevronDown, Loader2, MessageSquare } from 'lucide-react'
+import { Bot, Send, X, Loader2, MessageSquare } from 'lucide-react'
 import { sendZenoMessageAction, getChatHistoryAction } from '@/app/actions/chat-zeno'
 import type { ChatMessageDisplay } from '@/app/actions/chat-zeno'
-import ReactMarkdown from 'react-markdown'
 import 'katex/dist/katex.min.css'
 import katex from 'katex'
 
@@ -23,12 +22,12 @@ function renderLatex(text: string): string {
 function MathText({ text }: { text: string }) {
   const normalized = renderLatex(text)
   // Split on $$...$$ first, then $...$
-  const parts = normalized.split(/(\\$\\$[\s\S]+?\\$\\$|\$[^$\n]+?\$)/g)
+  const parts = normalized.split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g)
 
   return (
     <>
       {parts.map((part, i) => {
-        if (part.startsWith('$$') && part.endsWith('$$')) {
+        if (part.startsWith('$$') && part.endsWith('$$') && part.length > 4) {
           const math = part.slice(2, -2)
           try {
             const html = katex.renderToString(math, { displayMode: true, throwOnError: false })
@@ -103,7 +102,7 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
     setIsLoadingHistory(true)
     getChatHistoryAction(sessionId)
       .then((res) => {
-        if (res.success) setMessages(res.data)
+        if (res.success && res.data) setMessages(res.data)
       })
       .finally(() => setIsLoadingHistory(false))
   }, [open, sessionId])
@@ -137,7 +136,7 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
 
     try {
       const result = await sendZenoMessageAction({ sessionId, message: trimmed })
-      if (result.success) {
+      if (result.success && result.data) {
         setSessionId(result.data.sessionId)
         const aiMsg: ChatMessageDisplay = {
           id: crypto.randomUUID(),
@@ -271,7 +270,7 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
                 </button>
               </div>
               <p className="mt-1.5 text-center text-[10px] text-slate-400">
-                Shift+Enter xuống dòng · LaTeX: $x^2$ hoặc $$\frac{{a}}{{b}}$$
+                {'Shift+Enter xuống dòng · LaTeX: $x^2$ hoặc $$\\frac{a}{b}$$'}
               </p>
             </div>
           </div>

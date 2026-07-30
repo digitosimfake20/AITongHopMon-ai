@@ -3,6 +3,7 @@ import { AssignmentsCard } from '@/components/dashboard/assignments-card'
 import { MasteryProgressCard } from '@/components/dashboard/mastery-progress-card'
 import { WeaknessRadarCard } from '@/components/dashboard/weakness-radar-card'
 import { ZenoInsightCard } from '@/components/dashboard/zeno-insight-card'
+import { AiProfileCard } from '@/components/student/ai-profile-card'
 import type { StudentDashboardData } from '@/lib/dashboard-types'
 
 interface DashboardGridProps {
@@ -27,6 +28,7 @@ export function DashboardGrid({ data }: DashboardGridProps) {
         updatedAt={data.zenoUpdatedAt}
       />
       <AssignmentsCard assignments={data.assignments} />
+      <AiProfileCard profile={data.cognitiveProfile} />
     </div>
   )
 }

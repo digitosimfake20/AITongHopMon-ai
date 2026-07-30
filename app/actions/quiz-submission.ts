@@ -1,9 +1,11 @@
 'use server'
 
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
+import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
+import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,7 +95,7 @@ export async function submitQuizAction(
   const questionIds = test.questionIds as string[]
   const questions = await prisma.question.findMany({
     where: { id: { in: questionIds } },
-    select: { id: true, type: true, correctOption: true, points: true },
+    select: { id: true, type: true, correctOption: true, points: true, topic: true, subject: true },
   })
   const qMap = new Map(questions.map((q) => [q.id, q]))
 
@@ -120,7 +122,10 @@ export async function submitQuizAction(
     return {
       questionId: a.questionId,
       selectedOption,
-      studentAnswer: typeof a.answer === 'string' ? null : (a.answer as Prisma.InputJsonValue),
+      studentAnswer:
+        typeof a.answer === 'string'
+          ? Prisma.JsonNull
+          : (a.answer as Prisma.InputJsonValue),
       isCorrect,
       pointsEarned,
       timeSpentSeconds: a.timeSpentSeconds,
@@ -142,6 +147,21 @@ export async function submitQuizAction(
       details: { createMany: { data: details } },
     },
   })
+
+  // ── Fire-and-forget: AI pipeline (BKT + cognitive profile update) ──────────
+  const pipelineDetails: SubmissionDetailForPipeline[] = input.answers.map((a) => {
+    const q = qMap.get(a.questionId)
+    const { isCorrect } = scoreAnswer(a.questionType, a.answer, q?.correctOption ?? null, q?.points ?? 1)
+    return {
+      questionId: a.questionId,
+      topic: q?.topic ?? 'Chủ đề chung',
+      subject: q?.subject ?? 'Toán',
+      type: a.questionType,
+      isCorrect,
+      timeSpentSeconds: a.timeSpentSeconds,
+    }
+  })
+  void runPostSubmissionAIPipeline(user.id, pipelineDetails)
 
   return { success: true, data: { submissionId: submission.id } }
 }

@@ -124,5 +124,14 @@ export async function getStudentDashboardData(
       ? formatRelativeTime(globalMemory.updatedAt)
       : 'Chưa có dữ liệu AI',
     assignments,
+    cognitiveProfile: cognitiveProfile
+      ? {
+          personaType: cognitiveProfile.personaType,
+          avgSpeed: Math.round(Number(cognitiveProfile.avgSpeedPerQuestion)),
+          carelessRate: Math.round(Number(cognitiveProfile.carelessErrorRate) * 100),
+          strengths: cognitiveProfile.strengthsSummary,
+          weaknesses: cognitiveProfile.weaknessesSummary,
+        }
+      : null,
   }
 }
