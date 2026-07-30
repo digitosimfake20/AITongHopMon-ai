@@ -27,7 +27,7 @@ export function DashboardSidebar({
             <BrainCircuit className="size-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="truncate font-semibold text-foreground">8A2 Platform</p>
+            <p className="truncate font-semibold text-foreground">Lớp học đảo ngược</p>
             <Badge variant="secondary" className="mt-1">
               {classLabel}
             </Badge>

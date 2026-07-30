@@ -84,7 +84,7 @@ model Classroom {
   maxCapacity Int      @default(40) @map("max_capacity")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  teacher User          @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  teacher User          @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
   members      ClassMember[]
   tests        Test[]
   quizPackages QuizPackage[]

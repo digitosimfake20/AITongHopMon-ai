@@ -46,7 +46,7 @@ export function CreateClassForm() {
           id="class-name"
           name="name"
           required
-          placeholder="8A2 - Toán"
+          placeholder="Lớp học của bạn"
           className="min-h-11 w-full rounded-lg border border-input bg-background px-4"
         />
       </div>
