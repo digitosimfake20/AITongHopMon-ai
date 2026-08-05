@@ -1,9 +1,9 @@
-import { ClassCard } from '@/components/onboarding/class-card'
 import { CreateClassForm } from '@/components/onboarding/create-class-form'
-import { TeacherClassManage } from '@/components/onboarding/teacher-class-manage'
+import { TeacherClassSection } from '@/components/onboarding/teacher-class-section'
 import { getTeacherClasses } from '@/lib/class/actions'
 import { signOutAction } from '@/lib/auth/actions'
 import { Button } from '@/components/ui/button'
+import { GraduationCap } from 'lucide-react'
 
 interface TeacherOnboardingProps {
   fullName: string
@@ -13,11 +13,16 @@ export async function TeacherOnboarding({ fullName }: TeacherOnboardingProps) {
   const classes = await getTeacherClasses()
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div className="mx-auto w-full max-w-4xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Quản lý lớp học</h1>
-          <p className="mt-1 text-muted-foreground">Xin chào, {fullName}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950">
+            <GraduationCap className="size-5 text-violet-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Quản lý lớp học</h1>
+            <p className="text-sm text-muted-foreground">Xin chào, {fullName}</p>
+          </div>
         </div>
         <form action={signOutAction}>
           <Button type="submit" variant="outline" className="min-h-11">
@@ -26,28 +31,23 @@ export async function TeacherOnboarding({ fullName }: TeacherOnboardingProps) {
         </form>
       </div>
 
+      {/* Create class form */}
       <div className="mt-8">
         <CreateClassForm />
       </div>
 
+      {/* Class list */}
       {classes.length > 0 ? (
         <div className="mt-8 space-y-6">
           {classes.map((c) => (
-            <div key={c.id} className="space-y-3">
-              <ClassCard classroom={c} href={`/teacher?class=${c.id}`} />
-              <TeacherClassManage
-                classId={c.id}
-                name={c.name}
-                code={c.code}
-                maxCapacity={c.maxCapacity}
-              />
-            </div>
+            <TeacherClassSection key={c.id} classroom={c} />
           ))}
         </div>
       ) : (
-        <p className="mt-10 text-center text-muted-foreground">
-          Chưa có lớp nào. Tạo lớp đầu tiên ở trên.
-        </p>
+        <div className="mt-10 flex flex-col items-center rounded-2xl border border-dashed border-border py-16 text-center">
+          <GraduationCap className="size-12 text-muted-foreground" />
+          <p className="mt-4 text-muted-foreground">Chưa có lớp nào. Tạo lớp đầu tiên ở trên.</p>
+        </div>
       )}
     </div>
   )

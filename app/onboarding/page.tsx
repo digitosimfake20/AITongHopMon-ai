@@ -11,5 +11,5 @@ export default async function OnboardingPage() {
     return <TeacherOnboarding fullName={user.fullName} />
   }
 
-  return <StudentOnboarding fullName={user.fullName} />
+  return <StudentOnboarding fullName={user.fullName} userId={user.id} />
 }

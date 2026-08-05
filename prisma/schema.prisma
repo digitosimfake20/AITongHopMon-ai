@@ -55,6 +55,14 @@ enum SubmissionStatus {
   @@schema("core")
 }
 
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@schema("core")
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
@@ -71,6 +79,8 @@ model User {
   cognitiveProfile      StudentCognitiveProfile?
   chatSessions          ChatSession[]
   globalAgentMemories   GlobalAgentMemory[]
+  rosterLinks           ClassRosterEntry[]     @relation("RosterLink")
+  changeRequests        ProfileChangeRequest[] @relation("ChangeRequester")
 
   @@map("users")
   @@schema("core")
@@ -80,17 +90,65 @@ model Classroom {
   id          String   @id @default(uuid()) @db.Uuid
   name        String
   code        String   @unique @db.VarChar(8)
+  subject     String   @default("Toán")
+  term        String   @default("")          // Học kỳ / Niên khóa
   teacherId   String   @map("teacher_id") @db.Uuid
   maxCapacity Int      @default(40) @map("max_capacity")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  teacher User          @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher      User                  @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
   members      ClassMember[]
   tests        Test[]
   quizPackages QuizPackage[]
+  roster       ClassRosterEntry[]
+  changeRequests ProfileChangeRequest[]
 
   @@index([teacherId])
   @@map("classes")
+  @@schema("core")
+}
+
+model ClassRosterEntry {
+  id          String   @id @default(uuid()) @db.Uuid
+  classId     String   @map("class_id") @db.Uuid
+  stt         Int                                    // Số thứ tự
+  studentCode String   @map("student_code")          // Mã học sinh (từ Excel)
+  fullName    String   @map("full_name")
+  linkedUserId String? @map("linked_user_id") @db.Uuid
+
+  class      Classroom  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  linkedUser User?      @relation("RosterLink", fields: [linkedUserId], references: [id], onDelete: SetNull)
+  currentRequests ProfileChangeRequest[] @relation("CurrentRoster")
+  targetRequests  ProfileChangeRequest[] @relation("TargetRoster")
+
+  @@unique([classId, stt])
+  @@unique([classId, studentCode])
+  @@index([classId])
+  @@index([linkedUserId])
+  @@map("class_roster_entries")
+  @@schema("core")
+}
+
+model ProfileChangeRequest {
+  id              String        @id @default(uuid()) @db.Uuid
+  classId         String        @map("class_id") @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  currentRosterId String        @map("current_roster_id") @db.Uuid
+  targetRosterId  String        @map("target_roster_id") @db.Uuid
+  reason          String        @default("") @db.Text
+  status          RequestStatus @default(PENDING)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  resolvedAt      DateTime?     @map("resolved_at")
+
+  class         Classroom        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user          User             @relation("ChangeRequester", fields: [userId], references: [id], onDelete: Cascade)
+  currentRoster ClassRosterEntry @relation("CurrentRoster", fields: [currentRosterId], references: [id], onDelete: Cascade)
+  targetRoster  ClassRosterEntry @relation("TargetRoster", fields: [targetRosterId], references: [id], onDelete: Cascade)
+
+  @@index([classId])
+  @@index([userId])
+  @@index([status])
+  @@map("profile_change_requests")
   @@schema("core")
 }
 

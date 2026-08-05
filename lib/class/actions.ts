@@ -139,7 +139,7 @@ async function uniqueClassCode(): Promise<string> {
 
 export async function createClassAction(
   formData: FormData,
-): Promise<ActionResult<{ code: string }>> {
+): Promise<ActionResult<{ code: string; classId: string }>> {
   const user = await requireUser()
   if (user.role !== 'teacher') {
     return { success: false, error: 'Chỉ giáo viên mới có thể tạo lớp' }
@@ -154,18 +154,23 @@ export async function createClassAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ' }
   }
 
+  const subject = String(formData.get('subject') ?? 'Toán').trim() || 'Toán'
+  const term = String(formData.get('term') ?? '').trim()
+
   const code = await uniqueClassCode()
-  await prisma.classroom.create({
+  const classroom = await prisma.classroom.create({
     data: {
       name: parsed.data.name,
       maxCapacity: parsed.data.maxCapacity,
+      subject,
+      term,
       code,
       teacherId: user.id,
     },
   })
 
   revalidatePath('/onboarding')
-  return { success: true, data: { code } }
+  return { success: true, data: { code, classId: classroom.id } }
 }
 
 export async function updateClassAction(formData: FormData): Promise<ActionResult> {
