@@ -8,6 +8,7 @@ import type { ActionResult } from '@/lib/auth/types'
 import prisma from '@/lib/prisma'
 import { saveQuizPackageSchema, saveQuizSchema } from '@/lib/validations/quiz'
 import type { SaveQuizInput, SaveQuizPackageInput } from '@/lib/validations/quiz'
+import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 
 type TxClient = Prisma.TransactionClient
 
@@ -68,13 +69,16 @@ async function createTestWithQuestions({
     questions.map((question) => {
       const { options, correctOption } = toDbQuestionData(question)
       // Use per-question topic from AI parser when available; fall back to quiz-level topic
-      const questionTopic = ('topic' in question && typeof question.topic === 'string' && question.topic.trim())
-        ? question.topic.trim()
-        : topic
+      const questionTopic = normalizeTopicName(
+        'topic' in question && typeof question.topic === 'string' && question.topic.trim()
+          ? question.topic
+          : topic,
+      )
       return tx.question.create({
         data: {
           subject,
           topic: questionTopic,
+          topicKey: topicToNodeId(questionTopic),
           difficulty: difficultyLevel.toLowerCase(),
           type: question.type,
           content: question.content,
@@ -299,10 +303,12 @@ export async function updateQuizPackageAction(
     const created = await Promise.all(
       params.questions.map((q) => {
         const { options, correctOption } = toDbQuestionData(q)
+        const qTopic = normalizeTopicName(params.topic)
         return tx.question.create({
           data: {
             subject: params.subject,
-            topic: params.topic,
+            topic: qTopic,
+            topicKey: topicToNodeId(qTopic),
             difficulty: params.difficulty,
             type: q.type,
             content: q.content,

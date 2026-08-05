@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import type { ActionResult } from '@/lib/auth/types'
+import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
+import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -113,16 +115,9 @@ OUTPUT JSON (chỉ JSON thuần):
 
   const topicMap = new Map<string, string>()
   for (const item of parsed.topics ?? []) {
-    if (item.questionId && item.topic) topicMap.set(item.questionId, item.topic)
-  }
-
-  // Persist new topics to DB in background (fire and forget, don't block analysis)
-  if (topicMap.size > 0) {
-    Promise.all(
-      [...topicMap.entries()].map(([id, topic]) =>
-        prisma.question.update({ where: { id }, data: { topic } }).catch(() => null),
-      ),
-    ).catch(() => null)
+    if (item.questionId && item.topic) {
+      topicMap.set(item.questionId, normalizeTopicName(item.topic))
+    }
   }
 
   return topicMap
@@ -156,7 +151,10 @@ export async function analyzeSubmissionAction(
   // ── Auto-fix generic topics ────────────────────────────────────────────────
   // Build a mutable topic map — may be overridden by AI classification below
   const resolvedTopics = new Map(
-    submission.details.map((d) => [d.questionId, d.question.topic || '']),
+    submission.details.map((d) => [
+      d.questionId,
+      normalizeTopicName(d.question.topic),
+    ]),
   )
 
   if (isGenericTopicSet(submission.details)) {
@@ -164,10 +162,34 @@ export async function analyzeSubmissionAction(
     for (const [qid, topic] of fixed) resolvedTopics.set(qid, topic)
   }
 
-  // ── Compute topic mastery from (possibly fixed) topics ─────────────────────
+  const uniqueTopicLabels = [...new Set(resolvedTopics.values())]
+  const canonicalMap = await ensureTopicsCanonicalized(uniqueTopicLabels, 'Toán')
+
+  // Persist canonical topicKey on questions (fire-and-forget)
+  Promise.all(
+    [...resolvedTopics.entries()].map(([questionId, rawLabel]) => {
+      const canonical = canonicalMap.get(rawLabel) ?? {
+        topicName: rawLabel,
+        topicKey: topicToNodeId(rawLabel),
+      }
+      return prisma.question
+        .update({
+          where: { id: questionId },
+          data: { topic: canonical.topicName, topicKey: canonical.topicKey },
+        })
+        .catch(() => null)
+    }),
+  ).catch(() => null)
+
+  // ── Compute topic mastery from canonical topics ─────────────────────────────
   const topicMap = new Map<string, { total: number; correct: number }>()
   for (const d of submission.details) {
-    const topic = resolvedTopics.get(d.questionId) || 'Chủ đề chung'
+    const raw = normalizeTopicName(resolvedTopics.get(d.questionId))
+    const canonical = canonicalMap.get(raw) ?? {
+      topicName: raw,
+      topicKey: topicToNodeId(raw),
+    }
+    const topic = canonical.topicName
     if (!topicMap.has(topic)) topicMap.set(topic, { total: 0, correct: 0 })
     const entry = topicMap.get(topic)!
     entry.total++

@@ -2,6 +2,7 @@ import type { TeacherDashboardData } from '@/lib/teacher-types'
 import prisma from '@/lib/prisma'
 import { getQuizPackagesForClass } from '@/lib/quiz/queries'
 import { getInitials } from '@/lib/utils/initials'
+import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 
 export async function getTeacherDashboardData(
   teacherId: string,
@@ -62,24 +63,31 @@ export async function getTeacherDashboardData(
       : []
   const topicByQId = new Map(topicQuestions.map((q) => [q.id, q.topic]))
 
-  // Aggregate by topic: count wrong answers + unique students affected
-  const byTopic = new Map<string, { wrongCount: number; studentIds: Set<string> }>()
+  // Aggregate by canonical topicKey (dedupe casing / whitespace variants)
+  const byTopicKey = new Map<
+    string,
+    { label: string; wrongCount: number; studentIds: Set<string> }
+  >()
   for (const d of wrongDetails) {
-    const topic = topicByQId.get(d.questionId) ?? 'Chủ đề khác'
-    if (!byTopic.has(topic)) byTopic.set(topic, { wrongCount: 0, studentIds: new Set() })
-    const entry = byTopic.get(topic)!
+    const raw = topicByQId.get(d.questionId) ?? 'Chủ đề khác'
+    const label = normalizeTopicName(raw)
+    const key = topicToNodeId(label)
+    if (!byTopicKey.has(key)) {
+      byTopicKey.set(key, { label, wrongCount: 0, studentIds: new Set() })
+    }
+    const entry = byTopicKey.get(key)!
     entry.wrongCount++
     entry.studentIds.add(d.submission.studentId)
   }
 
-  const classWeaknesses = [...byTopic.entries()]
-    .sort((a, b) => b[1].wrongCount - a[1].wrongCount)
+  const classWeaknesses = [...byTopicKey.values()]
+    .sort((a, b) => b.wrongCount - a.wrongCount)
     .slice(0, 5)
-    .map(([topic, stats]) => {
+    .map((stats) => {
       const pct = studentCount > 0 ? Math.round((stats.studentIds.size / studentCount) * 100) : 0
       return {
-        id: topic,
-        label: topic,
+        id: topicToNodeId(stats.label),
+        label: stats.label,
         wrongCount: stats.wrongCount,
         studentPercent: pct,
         wrongPercent: pct,

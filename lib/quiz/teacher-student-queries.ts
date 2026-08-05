@@ -133,7 +133,7 @@ function behaviorAggQuery(studentId: string, classId: string) {
 function topicAggQuery(studentId: string, classId: string) {
   return prisma.$queryRaw<TopicAggRow[]>`
     SELECT
-      COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác') AS topic,
+      MIN(COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác')) AS topic,
       COUNT(*)::int AS total,
       SUM(CASE WHEN sd.is_correct THEN 1 ELSE 0 END)::int AS correct
     FROM core.submission_details sd
@@ -142,7 +142,10 @@ function topicAggQuery(studentId: string, classId: string) {
     INNER JOIN core.questions q ON q.id = sd.question_id
     WHERE s.student_id = ${studentId}::uuid
       AND t.class_id = ${classId}::uuid
-    GROUP BY COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác')
+    GROUP BY COALESCE(
+      NULLIF(TRIM(q.topic_key), ''),
+      LOWER(REGEXP_REPLACE(TRIM(COALESCE(NULLIF(q.topic, ''), 'Chủ đề khác')), '\\s+', ' ', 'g'))
+    )
   `
 }
 

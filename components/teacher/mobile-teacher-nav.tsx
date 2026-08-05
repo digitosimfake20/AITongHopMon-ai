@@ -6,8 +6,22 @@ import { GraduationCap, LayoutGrid, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
+import type { TeacherNavItem } from '@/lib/teacher-types'
 import { withClassParam } from '@/lib/class/with-class-param'
 import { cn } from '@/lib/utils'
+
+function teacherNavHref(item: TeacherNavItem, classId: string): string {
+  if (item.id === 'gaps') {
+    return withClassParam(`/teacher/classes/${classId}/gaps`, classId)
+  }
+  return withClassParam(item.href, classId)
+}
+
+function isTeacherNavActive(item: TeacherNavItem, pathname: string): boolean {
+  if (item.id === 'gaps') return pathname.includes('/gaps')
+  if (item.href === '/teacher') return pathname === '/teacher'
+  return pathname.startsWith(item.href)
+}
 
 interface MobileTeacherNavProps {
   className: string
@@ -45,16 +59,13 @@ export function MobileTeacherNav({ className, classId }: MobileTeacherNavProps) 
           className="space-y-1 border-t border-border px-3 py-3"
         >
           {TEACHER_NAV.map((item) => {
-            const active =
-              item.href === '/teacher'
-                ? pathname === '/teacher'
-                : pathname.startsWith(item.href)
+            const active = isTeacherNavActive(item, pathname)
             const Icon = item.icon
 
             return (
               <Link
                 key={item.id}
-                href={withClassParam(item.href, classId)}
+                href={teacherNavHref(item, classId)}
                 onClick={() => setOpen(false)}
                 className={cn(
                   'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',

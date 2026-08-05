@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import type { ActionResult } from '@/lib/auth/types'
+import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -129,10 +130,12 @@ Trả về JSON hợp lệ theo schema:
   const newQuestionIds: string[] = []
 
   for (const gq of generatedQuestions) {
+    const qTopic = normalizeTopicName(gq.topic || weakTopics[0] || 'Chủ đề chung')
     const created = await prisma.question.create({
       data: {
         subject,
-        topic: gq.topic || weakTopics[0] || 'Chủ đề chung',
+        topic: qTopic,
+        topicKey: topicToNodeId(qTopic),
         difficulty: 'easy',
         type: gq.type,
         content: gq.content,

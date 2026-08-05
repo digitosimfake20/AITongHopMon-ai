@@ -2,10 +2,13 @@
  * Post-submission AI Pipeline
  * Runs after every quiz submission (fire-and-forget from submitQuizAction).
  * Updates:
- *  1. student_knowledge_states  — BKT mastery per topic
+ *  1. student_knowledge_states  — BKT mastery per topic (unique studentId + nodeId)
  *  2. student_cognitive_profiles — speed, careless rate, persona, strengths/weaknesses
  */
 import prisma from '@/lib/prisma'
+import { computeTopicMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
+import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
+import { normalizeTopicName, resolveTopicKey } from '@/lib/knowledge/topic-normalize'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -13,7 +16,7 @@ import prisma from '@/lib/prisma'
 
 export interface SubmissionDetailForPipeline {
   questionId: string
-  topic: string       // question.topic (already resolved / auto-fixed)
+  topic: string
   subject: string
   type: string
   isCorrect: boolean
@@ -23,27 +26,6 @@ export interface SubmissionDetailForPipeline {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Slugify a topic string into a stable node ID */
-function topicToNodeId(topic: string): string {
-  return topic
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 64) || 'general'
-}
-
-/** Simple BKT-inspired mastery update (no external BKT lib needed) */
-function bktUpdate(currentMastery: number, isCorrect: boolean): number {
-  const LEARN_RATE = 0.22
-  const FORGET_RATE = 0.15
-  const updated = isCorrect
-    ? currentMastery + (1 - currentMastery) * LEARN_RATE
-    : currentMastery * (1 - FORGET_RATE)
-  return Math.min(0.99, Math.max(0.05, updated))
-}
 
 /** Determine persona string from cognitive signals */
 function computePersona(
@@ -67,53 +49,68 @@ export async function runPostSubmissionAIPipeline(
   details: SubmissionDetailForPipeline[],
 ): Promise<void> {
   try {
-    // ── 1. Group details by topic ─────────────────────────────────────────────
-    const byTopic = new Map<string, { subject: string; correct: number; total: number; times: number[] }>()
+    const uniqueLabels = [...new Set(details.map((d) => normalizeTopicName(d.topic)))]
+    const subject = details[0]?.subject || 'Toán'
+    const canonicalMap = await ensureTopicsCanonicalized(uniqueLabels, subject)
+
+    // ── 1. Group by AI-canonical topicKey ─────────────────────────────────────
+    type TopicBatch = {
+      topicName: string
+      nodeId: string
+      subject: string
+      answers: Array<{ isCorrect: boolean; timeSpentSeconds: number }>
+    }
+    const byNodeId = new Map<string, TopicBatch>()
+
     for (const d of details) {
-      const topic = d.topic || 'Chủ đề chung'
-      if (!byTopic.has(topic)) {
-        byTopic.set(topic, { subject: d.subject, correct: 0, total: 0, times: [] })
+      const normalized = normalizeTopicName(d.topic)
+      const canonical = canonicalMap.get(normalized) ?? (() => {
+        const { topicName, topicKey } = resolveTopicKey(normalized)
+        return { topicName, topicKey }
+      })()
+      const nodeId = canonical.topicKey
+      if (!byNodeId.has(nodeId)) {
+        byNodeId.set(nodeId, {
+          topicName: canonical.topicName,
+          nodeId,
+          subject: d.subject || 'Toán',
+          answers: [],
+        })
       }
-      const entry = byTopic.get(topic)!
-      entry.total++
-      if (d.isCorrect) entry.correct++
-      entry.times.push(d.timeSpentSeconds)
+      byNodeId.get(nodeId)!.answers.push({
+        isCorrect: d.isCorrect,
+        timeSpentSeconds: d.timeSpentSeconds,
+      })
     }
 
-    // ── 2. Upsert KnowledgeNodes + StudentKnowledgeStates ────────────────────
-    for (const [topic, stats] of byTopic) {
-      const nodeId = topicToNodeId(topic)
-
-      // Ensure KnowledgeNode exists
+    // ── 2. Upsert KnowledgeNodes + StudentKnowledgeStates (unique student+node) ─
+    for (const batch of byNodeId.values()) {
       await prisma.knowledgeNode.upsert({
-        where: { id: nodeId },
+        where: { id: batch.nodeId },
         create: {
-          id: nodeId,
-          subject: stats.subject || 'Toán',
-          title: topic,
+          id: batch.nodeId,
+          subject: batch.subject,
+          title: batch.topicName,
           difficultyLevel: 1,
         },
-        update: {}, // don't overwrite existing node metadata
+        update: {
+          // Keep first title unless empty; node id is the canonical topicKey
+          title: batch.topicName,
+        },
       })
 
-      // Get current mastery
       const existing = await prisma.studentKnowledgeState.findUnique({
-        where: { studentId_nodeId: { studentId, nodeId } },
+        where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
       })
       const currentMastery = existing ? Number(existing.pMastery) : 0.2
 
-      // Apply BKT for each answer in this topic
-      let mastery = currentMastery
-      const topicDetails = details.filter((d) => (d.topic || 'Chủ đề chung') === topic)
-      for (const d of topicDetails) {
-        mastery = bktUpdate(mastery, d.isCorrect)
-      }
+      const mastery = computeTopicMasteryUpdate(currentMastery, batch.answers)
 
       await prisma.studentKnowledgeState.upsert({
-        where: { studentId_nodeId: { studentId, nodeId } },
+        where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
         create: {
           studentId,
-          nodeId,
+          nodeId: batch.nodeId,
           pMastery: mastery,
           lastPracticedAt: new Date(),
         },
@@ -126,14 +123,12 @@ export async function runPostSubmissionAIPipeline(
 
     // ── 3. Compute overall cognitive signals ──────────────────────────────────
     const allTimes = details.map((d) => d.timeSpentSeconds)
-    const avgSpeed = allTimes.length > 0
-      ? allTimes.reduce((a, b) => a + b, 0) / allTimes.length
-      : 30
+    const avgSpeed =
+      allTimes.length > 0 ? allTimes.reduce((a, b) => a + b, 0) / allTimes.length : 30
 
     const fastWrong = details.filter((d) => !d.isCorrect && d.timeSpentSeconds < 15).length
     const carelessRate = details.length > 0 ? fastWrong / details.length : 0
 
-    // Fetch all knowledge states for this student to compute strengths/weaknesses
     const allStates = await prisma.studentKnowledgeState.findMany({
       where: { studentId },
       include: { node: { select: { title: true } } },
@@ -151,18 +146,18 @@ export async function runPostSubmissionAIPipeline(
       .slice(0, 5)
       .map((s) => s.node.title)
 
-    const avgMastery = allStates.length > 0
-      ? allStates.reduce((sum, s) => sum + Number(s.pMastery), 0) / allStates.length
-      : 0.3
+    const avgMastery =
+      allStates.length > 0
+        ? allStates.reduce((sum, s) => sum + Number(s.pMastery), 0) / allStates.length
+        : 0.3
 
     const persona = computePersona(avgSpeed, carelessRate, avgMastery)
 
     // ── 4. Upsert StudentCognitiveProfile ─────────────────────────────────────
-    // Blend new signals with existing profile using exponential moving average
     const existing = await prisma.studentCognitiveProfile.findUnique({
       where: { studentId },
     })
-    const EMA = 0.3 // weight for new data
+    const EMA = 0.3
     const blendedSpeed = existing
       ? Number(existing.avgSpeedPerQuestion) * (1 - EMA) + avgSpeed * EMA
       : avgSpeed
@@ -197,7 +192,6 @@ export async function runPostSubmissionAIPipeline(
     })
 
     if (existing_mem) {
-      // Append new entry (keep last ~500 chars of summary)
       const combined = `${existing_mem.longTermSummary}\n${memorySnippet}`.slice(-1500)
       await prisma.globalAgentMemory.update({
         where: { studentId },
@@ -217,7 +211,6 @@ export async function runPostSubmissionAIPipeline(
       })
     }
   } catch (err) {
-    // Pipeline is non-critical — log but don't crash submission
     console.error('[AI Pipeline] Error:', err)
   }
 }

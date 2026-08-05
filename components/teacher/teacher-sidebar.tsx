@@ -5,8 +5,22 @@ import { usePathname } from 'next/navigation'
 import { GraduationCap, LayoutGrid } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
+import type { TeacherNavItem } from '@/lib/teacher-types'
 import { withClassParam } from '@/lib/class/with-class-param'
 import { cn } from '@/lib/utils'
+
+function teacherNavHref(item: TeacherNavItem, classId: string): string {
+  if (item.id === 'gaps') {
+    return withClassParam(`/teacher/classes/${classId}/gaps`, classId)
+  }
+  return withClassParam(item.href, classId)
+}
+
+function isTeacherNavActive(item: TeacherNavItem, pathname: string): boolean {
+  if (item.id === 'gaps') return pathname.includes('/gaps')
+  if (item.href === '/teacher') return pathname === '/teacher'
+  return pathname.startsWith(item.href)
+}
 
 interface TeacherSidebarProps {
   className: string
@@ -34,16 +48,13 @@ export function TeacherSidebar({ className, classId }: TeacherSidebarProps) {
 
       <nav aria-label="Teacher" className="flex-1 space-y-1 px-3 py-4">
         {TEACHER_NAV.map((item) => {
-          const active =
-            item.href === '/teacher'
-              ? pathname === '/teacher'
-              : pathname.startsWith(item.href)
+          const active = isTeacherNavActive(item, pathname)
           const Icon = item.icon
 
           return (
             <Link
               key={item.id}
-              href={withClassParam(item.href, classId)}
+              href={teacherNavHref(item, classId)}
               className={cn(
                 'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active

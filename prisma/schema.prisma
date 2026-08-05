@@ -278,6 +278,7 @@ model Question {
   id            String       @id @default(uuid()) @db.Uuid
   subject       String
   topic         String
+  topicKey      String       @default("chua-de-khac") @map("topic_key")
   difficulty    String
   type          QuestionType @default(MULTIPLE_CHOICE)
   content       String       @db.Text
@@ -290,6 +291,7 @@ model Question {
   submissionDetails SubmissionDetail[]
 
   @@index([subject, topic])
+  @@index([topicKey])
   @@map("questions")
   @@schema("core")
 }
@@ -422,6 +424,7 @@ model KnowledgeNode {
   @@schema("ai")
 }
 
+/// Per-student mastery — @@unique([studentId, nodeId]) ≡ one row per (user, topicKey)
 model StudentKnowledgeState {
   id              String    @id @default(uuid()) @db.Uuid
   studentId       String    @map("student_id") @db.Uuid
@@ -435,6 +438,20 @@ model StudentKnowledgeState {
   @@unique([studentId, nodeId])
   @@index([nodeId])
   @@map("student_knowledge_states")
+  @@schema("ai")
+}
+
+/// Maps variant topic slugs → canonical topic (AI + rule-based dedup cache)
+model TopicCanonicalAlias {
+  aliasKey       String   @id @map("alias_key")
+  canonicalKey   String   @map("canonical_key")
+  canonicalLabel String   @map("canonical_label")
+  subject        String   @default("Toán")
+  source         String   @default("ai")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([canonicalKey])
+  @@map("topic_canonical_aliases")
   @@schema("ai")
 }
 

@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client'
 import type { z } from 'zod'
 import { toDbQuestion } from '@/lib/system-test/question-mapper'
 import { publishSystemTestSchema } from '@/lib/validations/system-test'
+import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 
 type ParsedQuestion = z.infer<typeof publishSystemTestSchema.shape.questions>[number]
 
@@ -21,10 +22,12 @@ export async function createQuestionsInTransaction(
 ): Promise<{ id: string }[]> {
   const prepared = questions.map((q) => {
     const { options, correctOption, type } = toDbQuestion(q)
+    const topic = normalizeTopicName(q.topic?.trim() || defaults.topicFallback)
     return {
       id: randomUUID(),
       subject: defaults.subject,
-      topic: q.topic?.trim() || defaults.topicFallback,
+      topic,
+      topicKey: topicToNodeId(topic),
       difficulty: defaults.difficulty,
       type,
       content: q.content,

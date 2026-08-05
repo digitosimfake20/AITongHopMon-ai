@@ -11,6 +11,7 @@ import {
 } from '@/app/actions/test-group'
 import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
 import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
+import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -159,7 +160,7 @@ export async function submitQuizAction(
     const { isCorrect } = scoreAnswer(a.questionType, a.answer, q?.correctOption ?? null, q?.points ?? 1)
     return {
       questionId: a.questionId,
-      topic: q?.topic ?? 'Chủ đề chung',
+      topic: normalizeTopicName(q?.topic),
       subject: q?.subject ?? 'Toán',
       type: a.questionType,
       isCorrect,

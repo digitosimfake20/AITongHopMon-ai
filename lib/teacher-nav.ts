@@ -35,7 +35,7 @@ export const TEACHER_NAV: TeacherNavItem[] = [
   },
   {
     id: 'gaps',
-    label: 'Phân tích Lỗ hổng',
+    label: 'Bản đồ Lỗ hổng',
     href: '/teacher/gaps',
     icon: BarChart3,
   },
