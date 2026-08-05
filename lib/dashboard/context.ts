@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth/session'
-import { getSelectedClassId } from '@/lib/class/selected-class'
+import { resolveStudentClassId, resolveTeacherClassId } from '@/lib/class/resolve-class-id'
 import prisma from '@/lib/prisma'
 import { getInitials } from '@/lib/utils/initials'
 
@@ -27,10 +27,10 @@ export interface TeacherShellContext {
   studentCount: number
 }
 
-async function resolveClassId(): Promise<string> {
-  const classId = await getSelectedClassId()
-  if (!classId) redirect('/onboarding')
-  return classId
+async function resolveClassId(role: 'student' | 'teacher', userId: string): Promise<string> {
+  return role === 'student'
+    ? resolveStudentClassId(userId)
+    : resolveTeacherClassId(userId)
 }
 
 export const resolveStudentContext = cache(async (): Promise<{
@@ -42,7 +42,7 @@ export const resolveStudentContext = cache(async (): Promise<{
   if (!user) redirect('/login')
   if (user.role !== 'student') redirect('/onboarding')
 
-  const classId = await resolveClassId()
+  const classId = await resolveClassId('student', user.id)
   const membership = await prisma.classMember.findFirst({
     where: { studentId: user.id, classId },
     include: { class: true },
@@ -93,7 +93,7 @@ export const resolveTeacherContext = cache(async (): Promise<{
   if (!user) redirect('/login')
   if (user.role !== 'teacher') redirect('/onboarding')
 
-  const classId = await resolveClassId()
+  const classId = await resolveClassId('teacher', user.id)
   const classroom = await prisma.classroom.findFirst({
     where: { id: classId, teacherId: user.id },
     include: { _count: { select: { members: true } } },

@@ -18,7 +18,7 @@ export function CreateClassForm() {
     if (result.success && result.data) {
       toast.success(`Đã tạo lớp. Mã lớp: ${result.data.code}`)
       setOpen(false)
-      window.location.reload()
+      window.location.href = `/teacher?class=${result.data.classId}`
     } else {
       toast.error(result.error ?? 'Không thể tạo lớp')
     }

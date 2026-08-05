@@ -119,7 +119,13 @@ export async function leaveClassAction(classId: string): Promise<ActionResult> {
     return { success: false, error: 'Bạn không thuộc lớp này' }
   }
 
-  await prisma.classMember.delete({ where: { id: membership.id } })
+  await prisma.$transaction([
+    prisma.classMember.delete({ where: { id: membership.id } }),
+    prisma.classRosterEntry.updateMany({
+      where: { classId, linkedUserId: user.id },
+      data: { linkedUserId: null },
+    }),
+  ])
 
   revalidatePath('/onboarding')
   revalidatePath('/dashboard')
@@ -233,9 +239,13 @@ export async function removeStudentAction(
     return { success: false, error: 'Không có quyền quản lý lớp này' }
   }
 
-  await prisma.classMember.deleteMany({
-    where: { classId, studentId },
-  })
+  await prisma.$transaction([
+    prisma.classMember.deleteMany({ where: { classId, studentId } }),
+    prisma.classRosterEntry.updateMany({
+      where: { classId, linkedUserId: studentId },
+      data: { linkedUserId: null },
+    }),
+  ])
 
   revalidatePath('/onboarding')
   return { success: true }

@@ -6,13 +6,15 @@ import { GraduationCap, LayoutGrid, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
+import { withClassParam } from '@/lib/class/with-class-param'
 import { cn } from '@/lib/utils'
 
 interface MobileTeacherNavProps {
   className: string
+  classId: string
 }
 
-export function MobileTeacherNav({ className }: MobileTeacherNavProps) {
+export function MobileTeacherNav({ className, classId }: MobileTeacherNavProps) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -52,7 +54,7 @@ export function MobileTeacherNav({ className }: MobileTeacherNavProps) {
             return (
               <Link
                 key={item.id}
-                href={item.href}
+                href={withClassParam(item.href, classId)}
                 onClick={() => setOpen(false)}
                 className={cn(
                   'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',

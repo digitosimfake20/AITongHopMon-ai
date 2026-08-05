@@ -11,10 +11,10 @@ interface TeacherShellProps {
 export function TeacherShell({ shell, children }: TeacherShellProps) {
   return (
     <div className="flex min-h-dvh bg-background">
-      <TeacherSidebar className={shell.className} />
+      <TeacherSidebar className={shell.className} classId={shell.classId} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileTeacherNav className={shell.className} />
+        <MobileTeacherNav className={shell.className} classId={shell.classId} />
         <TeacherHeader
           className={shell.className}
           subject={shell.subject}

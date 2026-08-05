@@ -61,7 +61,7 @@ export function PendingRequestsPanel({ requests: initial }: PendingRequestsPanel
               {req.reason && (
                 <p className="mt-1 text-xs text-slate-500">Lý do: {req.reason}</p>
               )}
-              <p className="mt-0.5 text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-slate-400" suppressHydrationWarning>
                 {new Date(req.createdAt).toLocaleString('vi-VN')}
               </p>
             </div>

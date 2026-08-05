@@ -5,18 +5,20 @@
  *  • PendingRequestsPanel
  */
 import prisma from '@/lib/prisma'
+import Link from 'next/link'
 import { RosterManager } from '@/components/teacher/roster-manager'
 import { PendingRequestsPanel } from '@/components/teacher/pending-requests-panel'
 import { TeacherClassManage } from '@/components/onboarding/teacher-class-manage'
+import { Button } from '@/components/ui/button'
 import type { ClassSummary } from '@/lib/class/actions'
-import { Bell, Users } from 'lucide-react'
+import { Bell, LayoutDashboard, Users } from 'lucide-react'
 
 interface TeacherClassSectionProps {
   classroom: ClassSummary
 }
 
 export async function TeacherClassSection({ classroom }: TeacherClassSectionProps) {
-  const [roster, pendingRequests] = await Promise.all([
+  const [roster, pendingRequests] = await prisma.$transaction([
     prisma.classRosterEntry.findMany({
       where: { classId: classroom.id },
       include: { linkedUser: { select: { fullName: true } } },
@@ -66,12 +68,22 @@ export async function TeacherClassSection({ classroom }: TeacherClassSectionProp
             · {classroom.memberCount} thành viên / {classroom.maxCapacity}
           </p>
         </div>
-        <TeacherClassManage
-          classId={classroom.id}
-          name={classroom.name}
-          code={classroom.code}
-          maxCapacity={classroom.maxCapacity}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            className="min-h-10 gap-2"
+            nativeButton={false}
+            render={<Link href={`/teacher?class=${classroom.id}`} />}
+          >
+            <LayoutDashboard className="size-4" />
+            Vào bảng điều khiển
+          </Button>
+          <TeacherClassManage
+            classId={classroom.id}
+            name={classroom.name}
+            code={classroom.code}
+            maxCapacity={classroom.maxCapacity}
+          />
+        </div>
       </div>
 
       {/* Pending requests badge */}

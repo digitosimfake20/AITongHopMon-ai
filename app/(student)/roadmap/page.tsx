@@ -5,7 +5,7 @@ import { Map, TrendingUp, Circle, CheckCircle2, AlertCircle } from 'lucide-react
 export default async function RoadmapPage() {
   const { user } = await resolveStudentContext()
 
-  const [knowledgeStates, globalMemory] = await Promise.all([
+  const [knowledgeStates, globalMemory] = await prisma.$transaction([
     prisma.studentKnowledgeState.findMany({
       where: { studentId: user.id },
       include: { node: { select: { title: true, subject: true, difficultyLevel: true } } },

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useTransition, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   Upload, Plus, Trash2, Pencil, Check, X, FileSpreadsheet,
-  ChevronDown, ChevronUp, Users, Save, AlertTriangle, Loader2,
+  Users, Save, AlertTriangle, Loader2,
 } from 'lucide-react'
 import {
   parseExcelRosterAction,
@@ -12,6 +13,7 @@ import {
   addRosterEntryAction,
   updateRosterEntryAction,
   deleteRosterEntryAction,
+  getClassRosterAction,
 } from '@/app/actions/roster'
 import type { RosterEntryPublic } from '@/app/actions/roster'
 
@@ -39,10 +41,13 @@ interface RosterManagerProps {
 // Component
 // ---------------------------------------------------------------------------
 
+function toLocalRows(entries: RosterEntryPublic[]): LocalRow[] {
+  return entries.map((e) => ({ ...e, isDirty: false, isNew: false }))
+}
+
 export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
-  const [rows, setRows] = useState<LocalRow[]>(
-    initialRoster.map((e) => ({ ...e, isDirty: false, isNew: false })),
-  )
+  const router = useRouter()
+  const [rows, setRows] = useState<LocalRow[]>(toLocalRows(initialRoster))
   const [previewRows, setPreviewRows] = useState<LocalRow[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValues, setEditValues] = useState({ fullName: '', studentCode: '' })
@@ -51,6 +56,17 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
   const [showAddRow, setShowAddRow] = useState(false)
   const [newRow, setNewRow] = useState({ stt: '', studentCode: '', fullName: '' })
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const reloadRoster = useCallback(async () => {
+    const result = await getClassRosterAction(classId)
+    if (result.success && result.data) {
+      setRows(toLocalRows(result.data))
+      router.refresh()
+      return true
+    }
+    toast.error(result.error ?? 'Không thể tải lại danh sách')
+    return false
+  }, [classId, router])
 
   // ── Excel upload ─────────────────────────────────────────────────────────
 
@@ -105,9 +121,9 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
         })),
       })
       if (result.success) {
-        setRows(previewRows.map((r) => ({ ...r, isNew: false })))
         setPreviewRows(null)
-        toast.success('Đã lưu danh sách học sinh từ Excel')
+        const reloaded = await reloadRoster()
+        if (reloaded) toast.success('Đã lưu danh sách học sinh từ Excel')
       } else {
         toast.error(result.error ?? 'Không thể lưu')
       }
@@ -197,8 +213,10 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
         fullName: newRow.fullName.trim(),
       })
       if (result.success) {
-        // Re-fetch by reloading so we get the real DB id
-        window.location.reload()
+        setNewRow({ stt: '', studentCode: '', fullName: '' })
+        setShowAddRow(false)
+        await reloadRoster()
+        toast.success('Đã thêm học sinh')
       } else {
         toast.error(result.error ?? 'Không thể thêm')
       }

@@ -14,24 +14,30 @@ interface StudentOnboardingProps {
 
 export async function StudentOnboarding({ fullName, userId }: StudentOnboardingProps) {
   const classes = await getStudentClasses()
+  const classIds = classes.map((c) => c.id)
 
-  // Fetch roster links for all classes this student is in
-  const rosterLinks = await prisma.classRosterEntry.findMany({
-    where: { linkedUserId: userId },
-    include: {
-      linkedUser: { select: { fullName: true } },
-      class: {
-        include: {
-          roster: {
-            include: { linkedUser: { select: { fullName: true } } },
-            orderBy: { stt: 'asc' },
-          },
-        },
-      },
-    },
-  })
+  // Load roster scoped to enrolled classes only
+  const [myLinks, allRosterEntries] = classIds.length > 0
+    ? await prisma.$transaction([
+        prisma.classRosterEntry.findMany({
+          where: { classId: { in: classIds }, linkedUserId: userId },
+          include: { linkedUser: { select: { fullName: true } } },
+        }),
+        prisma.classRosterEntry.findMany({
+          where: { classId: { in: classIds } },
+          include: { linkedUser: { select: { fullName: true } } },
+          orderBy: [{ classId: 'asc' }, { stt: 'asc' }],
+        }),
+      ])
+    : [[], []]
 
-  // Build a map: classId → { currentEntry, allEntries }
+  const rosterByClass = new Map<string, typeof allRosterEntries>()
+  for (const entry of allRosterEntries) {
+    const list = rosterByClass.get(entry.classId) ?? []
+    list.push(entry)
+    rosterByClass.set(entry.classId, list)
+  }
+
   const rosterMap = new Map<string, {
     currentEntry: {
       id: string; stt: number; studentCode: string; fullName: string;
@@ -43,7 +49,8 @@ export async function StudentOnboarding({ fullName, userId }: StudentOnboardingP
     }>
   }>()
 
-  for (const link of rosterLinks) {
+  for (const link of myLinks) {
+    const classRoster = rosterByClass.get(link.classId) ?? []
     rosterMap.set(link.classId, {
       currentEntry: {
         id: link.id,
@@ -53,7 +60,7 @@ export async function StudentOnboarding({ fullName, userId }: StudentOnboardingP
         linkedUserId: link.linkedUserId,
         linkedUserName: link.linkedUser?.fullName ?? null,
       },
-      allEntries: link.class.roster.map((e) => ({
+      allEntries: classRoster.map((e) => ({
         id: e.id,
         stt: e.stt,
         studentCode: e.studentCode,

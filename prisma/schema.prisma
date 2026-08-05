@@ -123,8 +123,8 @@ model ClassRosterEntry {
 
   @@unique([classId, stt])
   @@unique([classId, studentCode])
+  @@unique([classId, linkedUserId])
   @@index([classId])
-  @@index([linkedUserId])
   @@map("class_roster_entries")
   @@schema("core")
 }

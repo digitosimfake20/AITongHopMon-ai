@@ -10,7 +10,7 @@ import { decryptMessage } from './chat-crypto'
 
 export async function buildZenoSystemPrompt(studentId: string): Promise<string> {
   // ── Parallel fetch of all context sources ────────────────────────────────
-  const [user, profile, memory, recentChunks] = await Promise.all([
+  const [user, profile, memory, recentChunks] = await prisma.$transaction([
     prisma.user.findUnique({
       where: { id: studentId },
       select: { fullName: true },
@@ -24,7 +24,6 @@ export async function buildZenoSystemPrompt(studentId: string): Promise<string> 
     prisma.chatChunkSummary.findMany({
       where: {
         session: { studentId },
-        // level-1 summaries contain a "level" key in summaryJson
       },
       orderBy: { createdAt: 'desc' },
       take: 3,

@@ -20,7 +20,7 @@ export async function getStudentDashboardData(
   classLabel: string,
 ): Promise<StudentDashboardData> {
   const [tests, submissions, knowledgeStates, cognitiveProfile, globalMemory] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.test.findMany({
         where: { classId },
         orderBy: { createdAt: 'desc' },

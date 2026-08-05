@@ -41,7 +41,7 @@ export async function getQuizBankForStudent(
   )
 
   // 3. Fetch questions + submissions in parallel
-  const [questions, submissions, packages] = await Promise.all([
+  const [questions, submissions, packages] = await prisma.$transaction([
     prisma.question.findMany({
       where: { id: { in: allQuestionIds } },
       select: { id: true, subject: true, points: true },
@@ -51,7 +51,6 @@ export async function getQuizBankForStudent(
       orderBy: { submittedAt: 'desc' },
       select: { id: true, testId: true, score: true, attemptNumber: true, submittedAt: true },
     }),
-    // Get package metadata (mode) for each test
     prisma.quizPackage.findMany({
       where: { classId },
       select: {
@@ -175,7 +174,7 @@ export async function getQuizForTaking(
   if (!membership) return null
 
   const qIds = test.questionIds as string[]
-  const [questions, prevSubmissions] = await Promise.all([
+  const [questions, prevSubmissions] = await prisma.$transaction([
     prisma.question.findMany({
       where: { id: { in: qIds } },
       select: {
@@ -183,7 +182,6 @@ export async function getQuizForTaking(
         type: true,
         content: true,
         options: true,
-        // correctOption intentionally excluded for security
         points: true,
       },
     }),

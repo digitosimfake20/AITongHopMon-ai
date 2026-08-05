@@ -7,7 +7,7 @@ import Link from 'next/link'
 export default async function AdaptivePage() {
   const { user, classroom } = await resolveStudentContext()
 
-  const [profile, knowledgeStates, personalizedTests] = await Promise.all([
+  const [profile, knowledgeStates, personalizedTests] = await prisma.$transaction([
     prisma.studentCognitiveProfile.findUnique({ where: { studentId: user.id } }),
     prisma.studentKnowledgeState.findMany({
       where: { studentId: user.id },
@@ -15,7 +15,6 @@ export default async function AdaptivePage() {
       orderBy: { pMastery: 'asc' },
       take: 10,
     }),
-    // Personalized tests are identified by title prefix
     prisma.test.findMany({
       where: {
         classId: classroom.id,

@@ -6,6 +6,13 @@ import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
 import { parseRosterBuffer } from '@/lib/excel/parse-roster'
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -93,7 +100,6 @@ export async function saveRosterAction(input: {
   }
 
   await prisma.$transaction(async (tx) => {
-    // Delete existing roster (preserve linkedUserId where possible)
     const existing = await tx.classRosterEntry.findMany({
       where: { classId: input.classId },
       select: { stt: true, linkedUserId: true },
@@ -106,8 +112,8 @@ export async function saveRosterAction(input: {
       data: input.students.map((s) => ({
         classId: input.classId,
         stt: s.stt,
-        studentCode: s.studentCode,
-        fullName: s.fullName,
+        studentCode: s.studentCode || String(s.stt),
+        fullName: s.fullName.trim(),
         linkedUserId: linkMap.get(s.stt) ?? null,
       })),
     })
@@ -168,6 +174,7 @@ export async function updateRosterEntryAction(input: {
 }): Promise<ActionResult> {
   const user = await getSessionUser()
   if (!user || user.role !== 'teacher') return { success: false, error: 'Không có quyền' }
+  if (!isUuid(input.entryId)) return { success: false, error: 'ID học sinh không hợp lệ' }
 
   const entry = await prisma.classRosterEntry.findUnique({ where: { id: input.entryId } })
   if (!entry) return { success: false, error: 'Không tìm thấy học sinh' }
@@ -193,6 +200,7 @@ export async function updateRosterEntryAction(input: {
 export async function deleteRosterEntryAction(entryId: string): Promise<ActionResult> {
   const user = await getSessionUser()
   if (!user || user.role !== 'teacher') return { success: false, error: 'Không có quyền' }
+  if (!isUuid(entryId)) return { success: false, error: 'ID học sinh không hợp lệ' }
 
   const entry = await prisma.classRosterEntry.findUnique({ where: { id: entryId } })
   if (!entry) return { success: false, error: 'Không tìm thấy' }
@@ -214,6 +222,19 @@ export async function deleteRosterEntryAction(entryId: string): Promise<ActionRe
 export async function getClassRosterAction(classId: string): Promise<ActionResult<RosterEntryPublic[]>> {
   const user = await getSessionUser()
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
+
+  // Scope: only teacher of class or enrolled student may view roster
+  const hasAccess = await prisma.classroom.findFirst({
+    where: {
+      id: classId,
+      OR: [
+        { teacherId: user.id },
+        { members: { some: { studentId: user.id } } },
+      ],
+    },
+    select: { id: true },
+  })
+  if (!hasAccess) return { success: false, error: 'Không có quyền xem danh sách lớp này' }
 
   const entries = await prisma.classRosterEntry.findMany({
     where: { classId },
@@ -305,11 +326,14 @@ export async function claimRosterNameAction(input: {
   }
 
   await prisma.$transaction(async (tx) => {
-    // Link roster entry to user
-    await tx.classRosterEntry.update({
-      where: { id: input.rosterId },
+    // Link roster entry to user — scoped to this class only
+    const linked = await tx.classRosterEntry.updateMany({
+      where: { id: input.rosterId, classId: input.classId },
       data: { linkedUserId: user.id },
     })
+    if (linked.count === 0) {
+      throw new Error('Không tìm thấy tên trong danh sách lớp')
+    }
     // Also add to ClassMember if not already there
     await tx.classMember.upsert({
       where: { classId_studentId: { classId: input.classId, studentId: user.id } },
@@ -442,13 +466,21 @@ export async function resolveChangeRequestAction(input: {
     where: { id: input.requestId },
     include: {
       class: true,
-      currentRoster: true,
-      targetRoster: true,
+      currentRoster: { select: { classId: true, fullName: true, linkedUserId: true } },
+      targetRoster: { select: { classId: true, fullName: true, linkedUserId: true } },
     },
   })
   if (!req) return { success: false, error: 'Không tìm thấy yêu cầu' }
   if (req.class.teacherId !== user.id) return { success: false, error: 'Không có quyền' }
   if (req.status !== 'PENDING') return { success: false, error: 'Yêu cầu đã được xử lý' }
+
+  // Ensure rosters belong to the same class as the request
+  if (
+    req.currentRoster.classId !== req.classId ||
+    req.targetRoster.classId !== req.classId
+  ) {
+    return { success: false, error: 'Yêu cầu không hợp lệ — roster không thuộc lớp này' }
+  }
 
   const newStatus = input.approve ? ('APPROVED' as const) : ('REJECTED' as const)
 
@@ -459,14 +491,14 @@ export async function resolveChangeRequestAction(input: {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Unlink from current
-      await tx.classRosterEntry.update({
-        where: { id: req.currentRosterId },
+      // Unlink from current — scoped to this class only
+      await tx.classRosterEntry.updateMany({
+        where: { id: req.currentRosterId, classId: req.classId },
         data: { linkedUserId: null },
       })
-      // Link to target
-      await tx.classRosterEntry.update({
-        where: { id: req.targetRosterId },
+      // Link to target — scoped to this class only
+      await tx.classRosterEntry.updateMany({
+        where: { id: req.targetRosterId, classId: req.classId },
         data: { linkedUserId: req.userId },
       })
       // Mark request resolved
