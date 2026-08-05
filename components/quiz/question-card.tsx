@@ -65,6 +65,7 @@ export function QuestionCard({ question, index, onChange, onDelete }: QuestionCa
           placeholder="Nhập nội dung câu hỏi... (dùng $...$ cho công thức toán)"
           rows={2}
           showPreview
+          previewLayout="split"
           aria-label={`Nội dung câu ${index + 1}`}
         />
       </div>
@@ -132,6 +133,8 @@ export function QuestionCard({ question, index, onChange, onDelete }: QuestionCa
                 : 'Lời giải chi tiết...'
             }
             showPreview={!!(question.explanation?.trim())}
+            previewLayout="split"
+            showToolbar={question.type !== 'MULTIPLE_CHOICE' && question.type !== 'TRUE_FALSE_GROUP'}
             aria-label="Giải thích"
           />
         </div>

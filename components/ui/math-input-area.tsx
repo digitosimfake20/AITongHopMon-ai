@@ -12,8 +12,12 @@ interface MathInputAreaProps {
   multiline?: boolean
   rows?: number
   placeholder?: string
-  /** Show a rendered KaTeX preview below the input when value is non-empty. Default: true */
+  /** Show math toolbar above the input. Default: true */
+  showToolbar?: boolean
+  /** Show a rendered KaTeX preview when value is non-empty. Default: true */
   showPreview?: boolean
+  /** `below` = preview under input; `split` = input left, rendered math right (like teacher quiz editor) */
+  previewLayout?: 'below' | 'split'
   className?: string
   inputClassName?: string
   'aria-label'?: string
@@ -31,6 +35,8 @@ export function MathInputArea({
   rows = 2,
   placeholder,
   showPreview = true,
+  showToolbar = true,
+  previewLayout = 'below',
   className,
   inputClassName,
   'aria-label': ariaLabel,
@@ -62,39 +68,97 @@ export function MathInputArea({
   }
 
   const inputClass = cn(
-    'w-full rounded-b-lg border border-input bg-background px-3 py-2.5 text-sm outline-none',
-    'focus:ring-2 focus:ring-ring',
+    'w-full bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring',
+    previewLayout === 'split' ? 'min-h-11 flex-1 border-0' : 'rounded-b-lg border border-input',
     inputClassName,
   )
 
+  const previewPanel =
+    showPreview && value.trim() ? (
+      <div
+        className={cn(
+          'text-sm text-foreground',
+          previewLayout === 'split'
+            ? 'min-w-0 flex-1 border-t border-border px-4 py-2.5 sm:border-t-0 sm:border-l'
+            : 'mt-2 rounded-lg bg-secondary/50 px-4 py-2.5',
+        )}
+      >
+        {previewLayout === 'split' && (
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:hidden">
+            Hiển thị
+          </p>
+        )}
+        <MathText text={value} />
+      </div>
+    ) : null
+
+  const inputWrapperClass =
+    previewLayout === 'split' && showPreview && value.trim()
+      ? 'min-w-0 flex-1'
+      : 'w-full'
+
   return (
     <div className={cn('w-full', className)}>
-      <MathToolbar onInsert={handleInsert} />
-      {multiline ? (
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          aria-label={ariaLabel}
-          className={cn(inputClass, 'resize-y')}
-        />
-      ) : (
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          aria-label={ariaLabel}
-          className={cn(inputClass, 'min-h-11')}
-        />
-      )}
-      {showPreview && value.trim() && (
-        <div className="mt-2 rounded-lg bg-secondary/50 px-4 py-2.5 text-sm text-foreground">
-          <MathText text={value} />
+      {showToolbar && <MathToolbar onInsert={handleInsert} />}
+      {previewLayout === 'split' ? (
+        <div className="overflow-hidden rounded-b-lg border border-input bg-background">
+          {showToolbar && showPreview && value.trim() && (
+            <div className="hidden border-b border-border px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:grid sm:grid-cols-2">
+              <span>Nhập LaTeX</span>
+              <span className="sm:border-l sm:pl-3">Hiển thị</span>
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row sm:items-stretch">
+            {multiline ? (
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                rows={rows}
+                aria-label={ariaLabel}
+                className={cn(inputClass, 'resize-y', inputWrapperClass)}
+              />
+            ) : (
+              <input
+                ref={inputRef}
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                aria-label={ariaLabel}
+                className={cn(inputClass, inputWrapperClass)}
+              />
+            )}
+            {previewPanel}
+          </div>
         </div>
+      ) : multiline ? (
+        <>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            aria-label={ariaLabel}
+            className={cn(inputClass, 'resize-y rounded-b-lg border border-input')}
+          />
+          {previewPanel}
+        </>
+      ) : (
+        <>
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            aria-label={ariaLabel}
+            className={cn(inputClass, 'min-h-11 rounded-b-lg border border-input')}
+          />
+          {previewPanel}
+        </>
       )}
     </div>
   )

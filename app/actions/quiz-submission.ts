@@ -4,6 +4,11 @@ import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
+import { findClassTestByTestId } from '@/lib/adaptive/find-class-test'
+import {
+  recordAdaptiveRound1Submit,
+  recordAdaptiveRound2Submit,
+} from '@/app/actions/test-group'
 import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
 import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 
@@ -162,6 +167,27 @@ export async function submitQuizAction(
     }
   })
   void runPostSubmissionAIPipeline(user.id, pipelineDetails)
+
+  // Adaptive group: record round progress
+  const classTest = await findClassTestByTestId(input.testId)
+  if (classTest?.isAdaptive) {
+    if (input.testId === classTest.mediumTestId) {
+      await recordAdaptiveRound1Submit(
+        classTest.id,
+        user.id,
+        submission.id,
+        finalScore,
+        classTest.passScoreThreshold,
+        classTest.easyTestId!,
+        classTest.hardTestId!,
+      )
+    } else if (
+      input.testId === classTest.easyTestId ||
+      input.testId === classTest.hardTestId
+    ) {
+      await recordAdaptiveRound2Submit(classTest.id, user.id, submission.id)
+    }
+  }
 
   return { success: true, data: { submissionId: submission.id } }
 }

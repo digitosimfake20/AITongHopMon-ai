@@ -1,15 +1,26 @@
 'use server'
 
+import { cache } from 'react'
 import type { UserRole } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import type { SessionUser } from '@/lib/auth/types'
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient()
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser()
+
+  if (error?.code === 'refresh_token_not_found') {
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // ignore — stale cookies will clear on next response
+    }
+    return null
+  }
 
   if (!user?.email) return null
 
@@ -39,7 +50,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   await syncUserProfile(profile)
 
   return profile
-}
+})
 
 export async function syncUserProfile(input: {
   id: string

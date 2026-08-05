@@ -27,7 +27,7 @@ export interface TopicMasteryItem {
   topic: string
   total: number
   correct: number
-  accuracy: number  // 0-100
+  accuracy: number
   status: 'WEAK' | 'MEDIUM' | 'MASTERED'
 }
 
@@ -62,6 +62,19 @@ export interface StudentDetail {
   scoreHistory: ScoreHistoryEntry[]
 }
 
+type BehaviorAggRow = {
+  fast_wrong: number
+  slow_wrong: number
+  correct_fast: number
+  correct_steady: number
+}
+
+type TopicAggRow = {
+  topic: string
+  total: number
+  correct: number
+}
+
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
@@ -69,21 +82,22 @@ export interface StudentDetail {
 export async function getStudentsForClass(classId: string): Promise<StudentListItem[]> {
   const members = await prisma.classMember.findMany({
     where: { classId },
-    include: {
-      student: { select: { id: true, fullName: true, email: true } },
-    },
+    include: { student: { select: { id: true, fullName: true, email: true } } },
     orderBy: { joinedAt: 'asc' },
   })
 
   const studentIds = members.map((m) => m.studentId)
 
-  const submissionStats = await prisma.submission.groupBy({
-    by: ['studentId'],
-    where: { studentId: { in: studentIds }, test: { classId } },
-    _count: { id: true },
-    _avg: { score: true },
-    _max: { submittedAt: true },
-  })
+  const submissionStats =
+    studentIds.length === 0
+      ? []
+      : await prisma.submission.groupBy({
+          by: ['studentId'],
+          where: { studentId: { in: studentIds }, test: { classId } },
+          _count: { id: true },
+          _avg: { score: true },
+          _max: { submittedAt: true },
+        })
 
   const statsByStudent = new Map(submissionStats.map((s) => [s.studentId, s]))
 
@@ -101,110 +115,124 @@ export async function getStudentsForClass(classId: string): Promise<StudentListI
   })
 }
 
+function behaviorAggQuery(studentId: string, classId: string) {
+  return prisma.$queryRaw<BehaviorAggRow[]>`
+    SELECT
+      COALESCE(SUM(CASE WHEN NOT sd.is_correct AND sd.time_spent_seconds < 15 THEN 1 ELSE 0 END), 0)::int AS fast_wrong,
+      COALESCE(SUM(CASE WHEN NOT sd.is_correct AND sd.time_spent_seconds > 120 THEN 1 ELSE 0 END), 0)::int AS slow_wrong,
+      COALESCE(SUM(CASE WHEN sd.is_correct AND sd.time_spent_seconds < 10 THEN 1 ELSE 0 END), 0)::int AS correct_fast,
+      COALESCE(SUM(CASE WHEN sd.is_correct AND sd.time_spent_seconds >= 10 AND sd.time_spent_seconds <= 120 THEN 1 ELSE 0 END), 0)::int AS correct_steady
+    FROM core.submission_details sd
+    INNER JOIN core.submissions s ON s.id = sd.submission_id
+    INNER JOIN core.tests t ON t.id = s.test_id
+    WHERE s.student_id = ${studentId}::uuid
+      AND t.class_id = ${classId}::uuid
+  `
+}
+
+function topicAggQuery(studentId: string, classId: string) {
+  return prisma.$queryRaw<TopicAggRow[]>`
+    SELECT
+      COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác') AS topic,
+      COUNT(*)::int AS total,
+      SUM(CASE WHEN sd.is_correct THEN 1 ELSE 0 END)::int AS correct
+    FROM core.submission_details sd
+    INNER JOIN core.submissions s ON s.id = sd.submission_id
+    INNER JOIN core.tests t ON t.id = s.test_id
+    INNER JOIN core.questions q ON q.id = sd.question_id
+    WHERE s.student_id = ${studentId}::uuid
+      AND t.class_id = ${classId}::uuid
+    GROUP BY COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác')
+  `
+}
+
+function buildBehaviorSignals(row: BehaviorAggRow): BehaviorSignal[] {
+  const signals: BehaviorSignal[] = []
+  if (row.fast_wrong >= 2) {
+    signals.push({
+      type: 'CARELESS',
+      emoji: '',
+      label: 'Làm ẩu / Đánh lụi',
+      description: `${row.fast_wrong} câu sai trong < 15s — có thể đang đoán mò`,
+      count: row.fast_wrong,
+    })
+  }
+  if (row.slow_wrong >= 2) {
+    signals.push({
+      type: 'STUCK',
+      emoji: '',
+      label: 'Bế tắc / Ngâm lâu',
+      description: `${row.slow_wrong} câu sai trong > 120s — gặp lỗ hổng kiến thức nghiêm trọng`,
+      count: row.slow_wrong,
+    })
+  }
+  if (row.correct_fast >= 3) {
+    signals.push({
+      type: 'CONFIDENT',
+      emoji: '',
+      label: 'Chắc chắn / Tốc độ tốt',
+      description: `${row.correct_fast} câu đúng nhanh — nắm vững kiến thức`,
+      count: row.correct_fast,
+    })
+  }
+  if (row.correct_steady > 0) {
+    signals.push({
+      type: 'STEADY',
+      emoji: '',
+      label: 'Suy nghĩ cẩn thận',
+      description: `${row.correct_steady} câu đúng với thời gian hợp lý`,
+      count: row.correct_steady,
+    })
+  }
+  return signals
+}
+
+function buildTopicMastery(rows: TopicAggRow[]): TopicMasteryItem[] {
+  return rows
+    .map((row) => {
+      const accuracy = row.total > 0 ? Math.round((row.correct / row.total) * 100) : 0
+      const status: TopicMasteryItem['status'] =
+        accuracy >= 80 ? 'MASTERED' : accuracy >= 50 ? 'MEDIUM' : 'WEAK'
+      return { topic: row.topic, total: row.total, correct: row.correct, accuracy, status }
+    })
+    .sort((a, b) => a.accuracy - b.accuracy)
+}
+
 export async function getStudentDetail(
   studentId: string,
   classId: string,
 ): Promise<StudentDetail | null> {
-  const student = await prisma.user.findUnique({
-    where: { id: studentId },
-    select: { id: true, fullName: true, email: true },
+  // Sequential queries — do NOT wrap in $transaction on PgBouncer (1 connection).
+  // Each query releases the pool slot quickly under concurrent load.
+  const membership = await prisma.classMember.findFirst({
+    where: { classId, studentId },
+    include: { student: { select: { id: true, fullName: true, email: true } } },
   })
-  if (!student) return null
+  if (!membership) return null
 
-  // All submissions
   const submissions = await prisma.submission.findMany({
     where: { studentId, test: { classId } },
     include: { test: { select: { id: true, title: true } } },
     orderBy: { submittedAt: 'desc' },
   })
+  const behaviorRows = await behaviorAggQuery(studentId, classId)
+  const topicRows = await topicAggQuery(studentId, classId)
 
-  // All submission details (for behavior analysis + topic mastery)
-  const allDetails = await prisma.submissionDetail.findMany({
-    where: { submission: { studentId, test: { classId } } },
-    select: {
-      isCorrect: true,
-      timeSpentSeconds: true,
-      question: { select: { topic: true } },
-    },
-    take: 2000,
-  })
-
-  // ── Behavior signals ────────────────────────────────────────────────────────
-  let fastWrong = 0   // wrong + < 15s → careless
-  let slowWrong = 0   // wrong + > 120s → stuck
-  let correctFast = 0 // correct + < 10s → confident
-  let correctSteady = 0 // correct + 10-120s → steady
-
-  for (const d of allDetails) {
-    if (!d.isCorrect && d.timeSpentSeconds < 15) fastWrong++
-    else if (!d.isCorrect && d.timeSpentSeconds > 120) slowWrong++
-    else if (d.isCorrect && d.timeSpentSeconds < 10) correctFast++
-    else if (d.isCorrect) correctSteady++
+  const student = membership.student
+  const behavior = behaviorRows[0] ?? {
+    fast_wrong: 0,
+    slow_wrong: 0,
+    correct_fast: 0,
+    correct_steady: 0,
   }
+  const topicMastery = buildTopicMastery(topicRows)
 
-  const behaviorSignals: BehaviorSignal[] = []
-  if (fastWrong >= 2) behaviorSignals.push({
-    type: 'CARELESS',
-    emoji: '',
-    label: 'Làm ẩu / Đánh lụi',
-    description: `${fastWrong} câu sai trong < 15s — có thể đang đoán mò`,
-    count: fastWrong,
-  })
-  if (slowWrong >= 2) behaviorSignals.push({
-    type: 'STUCK',
-    emoji: '',
-    label: 'Bế tắc / Ngâm lâu',
-    description: `${slowWrong} câu sai trong > 120s — gặp lỗ hổng kiến thức nghiêm trọng`,
-    count: slowWrong,
-  })
-  if (correctFast >= 3) behaviorSignals.push({
-    type: 'CONFIDENT',
-    emoji: '',
-    label: 'Chắc chắn / Tốc độ tốt',
-    description: `${correctFast} câu đúng nhanh — nắm vững kiến thức`,
-    count: correctFast,
-  })
-  if (correctSteady > 0) behaviorSignals.push({
-    type: 'STEADY',
-    emoji: '',
-    label: 'Suy nghĩ cẩn thận',
-    description: `${correctSteady} câu đúng với thời gian hợp lý`,
-    count: correctSteady,
-  })
-
-  // ── Topic mastery matrix ────────────────────────────────────────────────────
-  const topicMap = new Map<string, { total: number; correct: number }>()
-  for (const d of allDetails) {
-    const topic = d.question.topic || 'Chủ đề khác'
-    if (!topicMap.has(topic)) topicMap.set(topic, { total: 0, correct: 0 })
-    const entry = topicMap.get(topic)!
-    entry.total++
-    if (d.isCorrect) entry.correct++
-  }
-
-  const topicMastery: TopicMasteryItem[] = [...topicMap.entries()]
-    .sort((a, b) => a[1].correct / a[1].total - b[1].correct / b[1].total)
-    .map(([topic, stats]) => {
-      const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
-      const status: TopicMasteryItem['status'] =
-        accuracy >= 80 ? 'MASTERED' : accuracy >= 50 ? 'MEDIUM' : 'WEAK'
-      return { topic, ...stats, accuracy, status }
-    })
-
-  // ── Weak topics (for AI prompt) ─────────────────────────────────────────────
-  const wrongTopicMap = new Map<string, number>()
-  for (const d of allDetails) {
-    if (!d.isCorrect) {
-      const t = d.question.topic || 'Chủ đề khác'
-      wrongTopicMap.set(t, (wrongTopicMap.get(t) ?? 0) + 1)
-    }
-  }
-  const weakTopics = [...wrongTopicMap.entries()]
-    .sort((a, b) => b[1] - a[1])
+  const weakTopics = topicMastery
+    .map((t) => ({ topic: t.topic, wrongCount: t.total - t.correct }))
+    .filter((t) => t.wrongCount > 0)
+    .sort((a, b) => b.wrongCount - a.wrongCount)
     .slice(0, 5)
-    .map(([topic, wrongCount]) => ({ topic, wrongCount }))
 
-  // ── Score history (oldest first for trend chart) ────────────────────────────
   const scoreHistory: ScoreHistoryEntry[] = [...submissions]
     .reverse()
     .map((s) => ({
@@ -234,7 +262,7 @@ export async function getStudentDetail(
       submittedAt: s.submittedAt,
     })),
     weakTopics,
-    behaviorSignals,
+    behaviorSignals: buildBehaviorSignals(behavior),
     topicMastery,
     scoreHistory,
   }

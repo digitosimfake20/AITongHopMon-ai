@@ -74,6 +74,8 @@ model User {
   classMemberships      ClassMember[]
   createdTests          Test[]                 @relation("TestCreator")
   createdQuizPackages   QuizPackage[]          @relation("PackageCreator")
+  createdSystemTests    SystemTest[]           @relation("SystemTestCreator")
+  adaptiveSessions      AdaptiveStudentSession[]
   submissions           Submission[]
   knowledgeStates       StudentKnowledgeState[]
   cognitiveProfile      StudentCognitiveProfile?
@@ -100,11 +102,116 @@ model Classroom {
   members      ClassMember[]
   tests        Test[]
   quizPackages QuizPackage[]
+  classTests   ClassTest[]
   roster       ClassRosterEntry[]
   changeRequests ProfileChangeRequest[]
 
   @@index([teacherId])
   @@map("classes")
+  @@schema("core")
+}
+
+/// Ngân hàng đề hệ thống (Admin đăng lên, Giáo viên chọn giao cho lớp)
+/// Cụm đề phân hóa 3 cấp độ (EASY / MEDIUM / HARD)
+model TestGroup {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  subject     String   @default("Toán")
+  grade       String   @default("8")
+  topic       String   @default("")
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  systemTests SystemTest[]
+  classTests  ClassTest[]
+
+  @@index([subject])
+  @@index([grade])
+  @@map("test_groups")
+  @@schema("core")
+}
+
+model SystemTest {
+  id              String           @id @default(uuid()) @db.Uuid
+  title           String
+  subject         String           @default("Toán")
+  grade           String           @default("8")
+  durationMinutes Int              @map("duration_minutes")
+  questionCount   Int              @default(0) @map("question_count")
+  questions       Json
+  isSystem        Boolean          @default(true) @map("is_system")
+  groupId         String?          @map("group_id") @db.Uuid
+  difficulty      DifficultyLevel?
+  createdBy       String?          @map("created_by") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  creator    User?       @relation("SystemTestCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  group      TestGroup?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  classTests ClassTest[]
+
+  @@index([subject])
+  @@index([grade])
+  @@index([groupId])
+  @@map("system_tests")
+  @@schema("core")
+}
+
+/// Bài tập đã được Giáo viên giao từ SystemTest hoặc TestGroup vào một lớp cụ thể
+model ClassTest {
+  id           String   @id @default(uuid()) @db.Uuid
+  classId      String   @map("class_id") @db.Uuid
+  /// Đề đơn lẻ
+  systemTestId String?  @map("system_test_id") @db.Uuid
+  testId       String?  @unique @map("test_id") @db.Uuid
+  /// Cụm đề phân hóa
+  testGroupId  String?  @map("test_group_id") @db.Uuid
+  isAdaptive   Boolean  @default(false) @map("is_adaptive")
+  easyTestId   String?  @unique @map("easy_test_id") @db.Uuid
+  mediumTestId String?  @unique @map("medium_test_id") @db.Uuid
+  hardTestId   String?  @unique @map("hard_test_id") @db.Uuid
+  startTime    DateTime @map("start_time")
+  endTime      DateTime @map("end_time")
+  /// -1 = không giới hạn số lần làm (cụm adaptive luôn = 2 lượt bắt buộc)
+  maxAttempts  Int      @default(1) @map("max_attempts")
+  allowReview  Boolean  @default(true) @map("allow_review")
+  passScoreThreshold Float @default(8.0) @map("pass_score_threshold")
+  lowScoreThreshold  Float @default(5.0) @map("low_score_threshold")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  class      Classroom  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  systemTest SystemTest? @relation(fields: [systemTestId], references: [id], onDelete: Restrict)
+  testGroup  TestGroup? @relation(fields: [testGroupId], references: [id], onDelete: Restrict)
+  test       Test?      @relation("ClassTestSingle", fields: [testId], references: [id], onDelete: Cascade)
+  easyTest   Test?      @relation("AdaptiveEasy", fields: [easyTestId], references: [id], onDelete: Cascade)
+  mediumTest Test?      @relation("AdaptiveMedium", fields: [mediumTestId], references: [id], onDelete: Cascade)
+  hardTest   Test?      @relation("AdaptiveHard", fields: [hardTestId], references: [id], onDelete: Cascade)
+  adaptiveSessions AdaptiveStudentSession[]
+
+  @@index([classId])
+  @@index([systemTestId])
+  @@index([testGroupId])
+  @@map("class_tests")
+  @@schema("core")
+}
+
+/// Theo dõi tiến trình 2 lượt làm bài của học sinh trong cụm đề phân hóa
+model AdaptiveStudentSession {
+  id                 String           @id @default(uuid()) @db.Uuid
+  classTestId        String           @map("class_test_id") @db.Uuid
+  studentId          String           @map("student_id") @db.Uuid
+  round1SubmissionId String?          @map("round1_submission_id") @db.Uuid
+  round2TestId       String?          @map("round2_test_id") @db.Uuid
+  round2Difficulty   DifficultyLevel? @map("round2_difficulty")
+  round2SubmissionId String?          @map("round2_submission_id") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  classTest ClassTest @relation(fields: [classTestId], references: [id], onDelete: Cascade)
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classTestId, studentId])
+  @@index([studentId])
+  @@map("adaptive_student_sessions")
   @@schema("core")
 }
 
@@ -200,6 +307,10 @@ model Test {
   class       Classroom    @relation(fields: [classId], references: [id], onDelete: Cascade)
   creator     User         @relation("TestCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   submissions Submission[]
+  classTest              ClassTest? @relation("ClassTestSingle")
+  adaptiveEasyClassTest  ClassTest? @relation("AdaptiveEasy")
+  adaptiveMediumClassTest ClassTest? @relation("AdaptiveMedium")
+  adaptiveHardClassTest  ClassTest? @relation("AdaptiveHard")
 
   // Reverse relations for the optional parent QuizPackage (Standard vs Adaptive)
   standardPackage QuizPackage? @relation("StandardTest")

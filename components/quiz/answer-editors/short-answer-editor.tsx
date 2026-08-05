@@ -22,7 +22,7 @@ export function ShortAnswerEditor({ question, onChange }: ShortAnswerEditorProps
         multiline={false}
         placeholder="Ví dụ: -6 hoặc $x = 10$"
         showPreview
-        inputClassName="max-w-sm"
+        previewLayout="split"
         aria-label="Đáp án đúng"
       />
     </div>

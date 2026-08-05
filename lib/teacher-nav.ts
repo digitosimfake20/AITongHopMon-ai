@@ -2,6 +2,8 @@ import {
   BarChart3,
   ClipboardList,
   Home,
+  Library,
+  Sparkles,
   Users,
 } from 'lucide-react'
 import type { TeacherNavItem } from '@/lib/teacher-types'
@@ -18,6 +20,18 @@ export const TEACHER_NAV: TeacherNavItem[] = [
     label: 'Giao bài & Ngân hàng Đề',
     href: '/teacher/assignments',
     icon: ClipboardList,
+  },
+  {
+    id: 'test-bank',
+    label: 'Đề hệ thống',
+    href: '/teacher/test-bank',
+    icon: Library,
+  },
+  {
+    id: 'adaptive',
+    label: 'Phân hóa 2 lượt',
+    href: '/teacher/adaptive',
+    icon: Sparkles,
   },
   {
     id: 'gaps',

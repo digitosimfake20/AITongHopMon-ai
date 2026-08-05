@@ -35,7 +35,19 @@ export async function middleware(request: NextRequest) {
 
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser()
+
+  if (error?.code === 'refresh_token_not_found') {
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // ignore
+    }
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
 
   const { pathname } = request.nextUrl
   const isPublic =

@@ -32,7 +32,7 @@ export default async function QuizzesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {quizzes.map((quiz) => (
-            <QuizCard key={quiz.testId} quiz={quiz} />
+            <QuizCard key={quiz.classTestId ?? quiz.testId} quiz={quiz} />
           ))}
         </div>
       )}
