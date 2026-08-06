@@ -1,12 +1,11 @@
-# Mathz — Nền tảng học Toán 8 có AI (Zeno)
+# Mathz — Nền tảng học có AI (Zeno)
 
-> Dự án **Tin học trẻ Phù Đổng** · Lớp học đảo ngược · AI tutor · Quiz thích ứng 2 lượt · Kho đề hệ thống
 
-App web giúp học sinh lớp 8 ôn Toán kiểu “có người nhắc nhở riêng”, giáo viên giao bài / xem lớp yếu chỗ nào, admin quản lý kho đề. Logo FPT · theme đen/trắng · Zeno AI không màu tím nữa đâu 😮‍💨
+
+
 
 ---
 
-## Có gì hay?
 
 | Ai | Làm được gì |
 |---|---|
@@ -18,7 +17,6 @@ App web giúp học sinh lớp 8 ôn Toán kiểu “có người nhắc nhở r
 
 ---
 
-## Cắm USB / chạy trên máy BGK (checklist nhanh)
 
 ### Cần có sẵn
 
@@ -173,5 +171,4 @@ pnpm lint         # check code
 - Adaptive 2 lượt: L1 luôn TB · L2 &lt; 8.0 → Dễ · ≥ 8.0 → Khó  
 
 ---
-
-*Nếu app chạy được + demo được flow HS → GV → adaptive là BGK hiểu 80% rồi. Good luck Phù Đổng 🚀*
+Cảm ơn cá quý thầy, cô đã đọc hết của nhóm chúng em ạ.
