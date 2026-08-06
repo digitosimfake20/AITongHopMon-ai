@@ -52,8 +52,8 @@ export default async function AdaptivePage() {
     <main className="space-y-6 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950">
-          <Zap className="size-5 text-violet-600" />
+        <div className="flex size-10 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-950">
+          <Zap className="size-5 text-teal-600" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200">
@@ -125,7 +125,7 @@ export default async function AdaptivePage() {
           </p>
           <Link
             href="/quizzes"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
           >
             <BookOpen className="size-4" />
             Xem đề kiểm tra
@@ -166,7 +166,7 @@ export default async function AdaptivePage() {
                   ) : (
                     <Link
                       href={`/quiz/take/${test.id}`}
-                      className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
                     >
                       Làm bài
                     </Link>

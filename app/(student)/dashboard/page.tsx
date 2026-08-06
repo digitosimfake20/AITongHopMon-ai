@@ -11,5 +11,11 @@ export default async function DashboardPage() {
     shell.classLabel,
   )
 
-  return <DashboardGrid data={data} />
+  return (
+    <DashboardGrid
+      data={data}
+      streakDays={shell.streakDays}
+      fullStudentName={user.fullName}
+    />
+  )
 }

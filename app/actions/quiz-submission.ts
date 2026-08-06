@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
@@ -12,6 +13,7 @@ import {
 import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
 import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
+import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,7 +42,7 @@ export interface SubmitQuizInput {
 
 function scoreTrueFalse(
   studentAnswers: Record<string, boolean>,
-  correctStr: string | null, // "T,F,T,T"
+  correctStr: string | null,
   maxPoints: number,
 ): number {
   if (!correctStr) return 0
@@ -94,8 +96,13 @@ export async function submitQuizAction(
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
   if (user.role !== 'student') return { success: false, error: 'Chỉ học sinh mới được nộp bài' }
 
-  // Fetch test and all questions
-  const test = await prisma.test.findUnique({ where: { id: input.testId } })
+  const [test, prevAttempts] = await Promise.all([
+    prisma.test.findUnique({ where: { id: input.testId } }),
+    prisma.submission.count({
+      where: { testId: input.testId, studentId: user.id },
+    }),
+  ])
+
   if (!test) return { success: false, error: 'Không tìm thấy đề kiểm tra' }
 
   const questionIds = test.questionIds as string[]
@@ -105,40 +112,37 @@ export async function submitQuizAction(
   })
   const qMap = new Map(questions.map((q) => [q.id, q]))
 
-  // Determine attempt number
-  const prevAttempts = await prisma.submission.count({
-    where: { testId: input.testId, studentId: user.id },
-  })
   const attemptNumber = prevAttempts + 1
+  const isPractice = isPracticeTestTitle(test.title)
 
-  // Score each answer
   let totalScore = 0
   let correctCount = 0
 
-  const details: Prisma.SubmissionDetailCreateManySubmissionInput[] = input.answers.map((a) => {
+  const scoredAnswers = input.answers.map((a) => {
     const q = qMap.get(a.questionId)
     const maxPts = q?.points ?? 1
-    const { isCorrect, pointsEarned } = scoreAnswer(a.questionType, a.answer, q?.correctOption ?? null, maxPts)
-    if (isCorrect) correctCount++
-    totalScore += pointsEarned
+    const scored = scoreAnswer(a.questionType, a.answer, q?.correctOption ?? null, maxPts)
+    if (scored.isCorrect) correctCount++
+    totalScore += scored.pointsEarned
+    return { answer: a, q, scored }
+  })
 
-    const selectedOption =
-      typeof a.answer === 'string' ? a.answer : JSON.stringify(a.answer)
+  const finalScore = Math.min(10, Math.round(totalScore * 100) / 100)
 
-    return {
+  const details: Prisma.SubmissionDetailCreateManySubmissionInput[] = scoredAnswers.map(
+    ({ answer: a, scored }) => ({
       questionId: a.questionId,
-      selectedOption,
+      selectedOption:
+        typeof a.answer === 'string' ? a.answer : JSON.stringify(a.answer),
       studentAnswer:
         typeof a.answer === 'string'
           ? Prisma.JsonNull
           : (a.answer as Prisma.InputJsonValue),
-      isCorrect,
-      pointsEarned,
+      isCorrect: scored.isCorrect,
+      pointsEarned: scored.pointsEarned,
       timeSpentSeconds: a.timeSpentSeconds,
-    }
-  })
-
-  const finalScore = Math.min(10, Math.round(totalScore * 100) / 100)
+    }),
+  )
 
   const submission = await prisma.submission.create({
     data: {
@@ -154,41 +158,51 @@ export async function submitQuizAction(
     },
   })
 
-  // ── Fire-and-forget: AI pipeline (BKT + cognitive profile update) ──────────
-  const pipelineDetails: SubmissionDetailForPipeline[] = input.answers.map((a) => {
-    const q = qMap.get(a.questionId)
-    const { isCorrect } = scoreAnswer(a.questionType, a.answer, q?.correctOption ?? null, q?.points ?? 1)
-    return {
+  const pipelineDetails: SubmissionDetailForPipeline[] = scoredAnswers.map(
+    ({ answer: a, q, scored }) => ({
       questionId: a.questionId,
       topic: normalizeTopicName(q?.topic),
       subject: q?.subject ?? 'Toán',
       type: a.questionType,
-      isCorrect,
+      isCorrect: scored.isCorrect,
       timeSpentSeconds: a.timeSpentSeconds,
+    }),
+  )
+
+  const submissionId = submission.id
+  const testId = input.testId
+
+  after(async () => {
+    try {
+      await runPostSubmissionAIPipeline(user.id, pipelineDetails, {
+        skipAiCanonicalization: isPractice,
+      })
+
+      if (isPractice) return
+
+      const classTest = await findClassTestByTestId(testId)
+      if (!classTest?.isAdaptive) return
+
+      if (testId === classTest.mediumTestId) {
+        await recordAdaptiveRound1Submit(
+          classTest.id,
+          user.id,
+          submissionId,
+          finalScore,
+          classTest.passScoreThreshold,
+          classTest.easyTestId!,
+          classTest.hardTestId!,
+        )
+      } else if (
+        testId === classTest.easyTestId ||
+        testId === classTest.hardTestId
+      ) {
+        await recordAdaptiveRound2Submit(classTest.id, user.id, submissionId)
+      }
+    } catch (err) {
+      console.error('[submitQuizAction] post-submit work failed:', err)
     }
   })
-  void runPostSubmissionAIPipeline(user.id, pipelineDetails)
 
-  // Adaptive group: record round progress
-  const classTest = await findClassTestByTestId(input.testId)
-  if (classTest?.isAdaptive) {
-    if (input.testId === classTest.mediumTestId) {
-      await recordAdaptiveRound1Submit(
-        classTest.id,
-        user.id,
-        submission.id,
-        finalScore,
-        classTest.passScoreThreshold,
-        classTest.easyTestId!,
-        classTest.hardTestId!,
-      )
-    } else if (
-      input.testId === classTest.easyTestId ||
-      input.testId === classTest.hardTestId
-    ) {
-      await recordAdaptiveRound2Submit(classTest.id, user.id, submission.id)
-    }
-  }
-
-  return { success: true, data: { submissionId: submission.id } }
+  return { success: true, data: { submissionId } }
 }

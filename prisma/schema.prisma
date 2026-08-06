@@ -1,4 +1,4 @@
-// 8A2 Learning Platform — Web Core + AI Engine
+// Learning Platform — Web Core + AI Engine
 // Schemas: `core` (web) | `ai` (engine & memory)
 
 generator client {

@@ -1,6 +1,7 @@
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { MobileDashboardNav } from '@/components/dashboard/mobile-dashboard-nav'
+import { ActiveQuizBanner } from '@/components/student/active-quiz-banner'
 import type { StudentShellContext } from '@/lib/dashboard/context'
 
 interface StudentShellProps {
@@ -21,6 +22,7 @@ export function StudentShell({ shell, children }: StudentShellProps) {
           classLabel={shell.classLabel}
           streakDays={shell.streakDays}
         />
+        <ActiveQuizBanner />
         <DashboardHeader
           studentName={shell.studentName}
           initials={shell.initials}

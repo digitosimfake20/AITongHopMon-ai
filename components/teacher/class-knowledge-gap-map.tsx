@@ -95,8 +95,8 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
           <StatCard
             label="Tỷ lệ hoàn thành"
             value={`${data.stats.completionRate}%`}
-            icon={<CheckCircle2 className="size-4 text-violet-600" />}
-            tone="violet"
+            icon={<CheckCircle2 className="size-4 text-teal-600" />}
+            tone="teal"
           />
           <StatCard
             label="HS cần chú ý"
@@ -261,7 +261,7 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
       {/* AI tier recommendations */}
       <section>
         <SectionHeading
-          icon={<Sparkles className="size-4 text-violet-500" />}
+          icon={<Sparkles className="size-4 text-teal-500" />}
           title="Phân nhóm & đề xuất AI"
           subtitle="Giao bài phù hợp từng nhóm — kèm điểm mạnh từng HS"
         />
@@ -321,12 +321,12 @@ function StatCard({
   label: string
   value: string
   icon: React.ReactNode
-  tone: 'blue' | 'emerald' | 'violet' | 'amber'
+  tone: 'blue' | 'emerald' | 'teal' | 'amber'
 }) {
   const tones = {
     blue: 'bg-blue-50 dark:bg-blue-950/30',
     emerald: 'bg-emerald-50 dark:bg-emerald-950/30',
-    violet: 'bg-violet-50 dark:bg-violet-950/30',
+    teal: 'bg-teal-50 dark:bg-teal-950/30',
     amber: 'bg-amber-50 dark:bg-amber-950/30',
   }
   return (
@@ -562,8 +562,8 @@ function TierCard({
         )}
 
         {aiResult && tier.id === 'needsSupport' && (
-          <div className="rounded-lg border border-violet-200 bg-violet-50/80 p-3 text-xs dark:border-violet-900 dark:bg-violet-950/30">
-            <p className="font-semibold text-violet-700 dark:text-violet-300">Gợi ý Zeno AI</p>
+          <div className="rounded-lg border border-teal-200 bg-teal-50/80 p-3 text-xs dark:border-teal-900 dark:bg-teal-950/30">
+            <p className="font-semibold text-teal-700 dark:text-teal-300">Gợi ý Zeno AI</p>
             <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-400">
               {aiResult.summary}
             </p>

@@ -88,11 +88,11 @@ export function KnowledgeRoadmap({
   return (
     <div className="space-y-6">
       {/* Header stats */}
-      <div className="rounded-2xl border border-indigo-200/70 bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/50 p-5 dark:border-indigo-900/40 dark:from-indigo-950/30 dark:via-slate-900 dark:to-violet-950/20">
+      <div className="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50/80 via-white to-teal-50/50 p-5 dark:border-sky-900/40 dark:from-sky-950/30 dark:via-slate-900 dark:to-teal-950/20">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950">
-              <MapIcon className="size-5 text-indigo-600" />
+            <div className="flex size-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950">
+              <MapIcon className="size-5 text-sky-600" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200">
@@ -100,7 +100,7 @@ export function KnowledgeRoadmap({
               </h1>
               <p className="text-sm text-slate-500">
                 {states.length} chủ đề · Thành thạo tổng thể{' '}
-                <span className="font-semibold text-indigo-600">{overallMastery}%</span>
+                <span className="font-semibold text-sky-600">{overallMastery}%</span>
               </p>
             </div>
           </div>
@@ -111,13 +111,13 @@ export function KnowledgeRoadmap({
           </div>
         </div>
         <div className="mt-4">
-          <div className="mb-1 flex justify-between text-xs font-medium text-indigo-700 dark:text-indigo-300">
+          <div className="mb-1 flex justify-between text-xs font-medium text-sky-700 dark:text-sky-300">
             <span>Tiến độ tổng thể</span>
             <span>{overallMastery}%</span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-indigo-100 dark:bg-indigo-900">
+          <div className="h-2.5 overflow-hidden rounded-full bg-sky-100 dark:bg-sky-900">
             <div
-              className="h-full rounded-full bg-indigo-500 transition-all"
+              className="h-full rounded-full bg-sky-500 transition-all"
               style={{ width: `${overallMastery}%` }}
             />
           </div>
@@ -255,8 +255,8 @@ export function KnowledgeRoadmap({
       )}
 
       {zenoSummary && (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-900 dark:bg-violet-950/30">
-          <p className="mb-1 text-xs font-semibold text-violet-600 dark:text-violet-400">
+        <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4 dark:border-teal-900 dark:bg-teal-950/30">
+          <p className="mb-1 text-xs font-semibold text-teal-600 dark:text-teal-400">
             Nhật ký học tập của Zeno
           </p>
           <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">

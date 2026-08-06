@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GraduationCap, LayoutGrid, Menu, X } from 'lucide-react'
+import { LayoutGrid, Menu, X } from 'lucide-react'
+import { Logo } from '@/components/brand/logo'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
@@ -36,9 +37,7 @@ export function MobileTeacherNav({ className, classId }: MobileTeacherNavProps) 
     <div className="border-b border-border bg-card/40 lg:hidden">
       <div className="flex min-h-14 items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="size-4" aria-hidden="true" />
-          </div>
+          <Logo showWordmark={false} href="/teacher" size={32} />
           <span className="font-semibold text-foreground">Mathz Teacher</span>
           <Badge variant="secondary">{className}</Badge>
         </div>

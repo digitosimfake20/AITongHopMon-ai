@@ -1,4 +1,4 @@
--- 8A2 Learning Platform — Full database init (reference SQL)
+-- Learning Platform — Full database init (reference SQL)
 -- Generated from prisma/schema.prisma
 -- Schemas: core (Web Core) | ai (AI Engine)
 

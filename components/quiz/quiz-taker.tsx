@@ -6,6 +6,13 @@ import { AlertCircle, CheckCircle2, Clock, Loader2, Send } from 'lucide-react'
 import { MathText } from '@/components/quiz/math-text'
 import { submitQuizAction } from '@/app/actions/quiz-submission'
 import type { QuizTakingData, QuizTakingQuestion } from '@/lib/quiz/quiz-bank-queries'
+import {
+  clearActiveQuizSession,
+  getActiveQuizSession,
+  getRemainingSeconds,
+  patchActiveQuizAnswers,
+  startActiveQuizSession,
+} from '@/lib/quiz/active-quiz-session'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -29,21 +36,45 @@ interface AnswerMap {
 // Timer hook
 // ---------------------------------------------------------------------------
 
-function useCountdownTimer(initialSeconds: number, onExpire: () => void) {
-  const [remaining, setRemaining] = useState(initialSeconds)
+function useWallClockTimer(
+  timeLimitMinutes: number,
+  startedAt: number | null,
+  onExpire: () => void,
+) {
+  const totalSeconds = timeLimitMinutes * 60
+  const computeRemaining = useCallback(() => {
+    if (!startedAt) return totalSeconds
+    return getRemainingSeconds({
+      testId: '',
+      testTitle: '',
+      startedAt,
+      timeLimitMinutes,
+      answers: {},
+    })
+  }, [startedAt, timeLimitMinutes, totalSeconds])
+
+  const [remaining, setRemaining] = useState(() => computeRemaining())
   const cbRef = useRef(onExpire)
   cbRef.current = onExpire
+  const expiredRef = useRef(false)
 
   useEffect(() => {
-    if (remaining <= 0) { cbRef.current(); return }
+    setRemaining(computeRemaining())
+    expiredRef.current = false
+  }, [computeRemaining, startedAt])
+
+  useEffect(() => {
+    if (!startedAt) return
     const id = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) { cbRef.current(); return 0 }
-        return prev - 1
-      })
+      const next = computeRemaining()
+      setRemaining(next)
+      if (next <= 0 && !expiredRef.current) {
+        expiredRef.current = true
+        cbRef.current()
+      }
     }, 1000)
     return () => clearInterval(id)
-  }, [remaining])
+  }, [startedAt, computeRemaining])
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, '0')
   const ss = String(remaining % 60).padStart(2, '0')
@@ -318,6 +349,18 @@ function ConfirmSubmitDialog({
   )
 }
 
+function SubmittingOverlay() {
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-background/90 backdrop-blur-sm">
+      <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
+      <div className="text-center">
+        <p className="text-lg font-semibold text-foreground">Đang chấm và nộp bài...</p>
+        <p className="mt-1 text-sm text-muted-foreground">Vui lòng không đóng trang</p>
+      </div>
+    </div>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Main QuizTaker
 // ---------------------------------------------------------------------------
@@ -329,46 +372,52 @@ interface QuizTakerProps {
 export function QuizTaker({ data }: QuizTakerProps) {
   const router = useRouter()
   const [answers, setAnswers] = useState<AnswerMap>({})
+  const [startedAt, setStartedAt] = useState<number | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const submitLock = useRef(false)
 
-  // Track first-interaction time per question for AI analysis
   const interactionStart = useRef<Record<string, number>>({})
   const interactionEnd = useRef<Record<string, number>>({})
 
   const totalSeconds = data.timeLimitMinutes * 60
 
-  const handleExpire = useCallback(() => {
-    // Auto-submit when time runs out
-    setShowConfirm(false)
-    doSubmit()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const { remaining, display, isWarning } = useCountdownTimer(totalSeconds, handleExpire)
-
-  function handleAnswer(questionId: string, type: QuizTakingQuestion['type'], value: QuizAnswer) {
-    const now = Date.now()
-    if (!(questionId in interactionStart.current)) {
-      interactionStart.current[questionId] = now
+  useEffect(() => {
+    let session = getActiveQuizSession()
+    if (!session || session.testId !== data.testId) {
+      session = startActiveQuizSession(data.testId, data.title, data.timeLimitMinutes)
     }
-    interactionEnd.current[questionId] = now
-    setAnswers((prev) => ({ ...prev, [questionId]: { type, value } }))
-  }
+    setStartedAt(session.startedAt)
+    if (session.answers && Object.keys(session.answers).length > 0) {
+      setAnswers(session.answers as AnswerMap)
+    }
+  }, [data.testId, data.title, data.timeLimitMinutes])
 
-  function getTimeSpent(questionId: string): number {
-    const start = interactionStart.current[questionId]
-    const end = interactionEnd.current[questionId]
-    if (!start) return 0
-    return Math.round(((end ?? Date.now()) - start) / 1000)
-  }
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!isSubmitting && startedAt) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [isSubmitting, startedAt])
 
-  async function doSubmit() {
+  const doSubmit = useCallback(async () => {
+    if (submitLock.current) return
+    submitLock.current = true
     setIsSubmitting(true)
+    setShowConfirm(false)
     setError(null)
+    clearActiveQuizSession(data.testId)
 
-    const elapsedSeconds = totalSeconds - remaining
+    const session = getActiveQuizSession()
+    const elapsedSeconds = session
+      ? Math.min(totalSeconds, Math.floor((Date.now() - session.startedAt) / 1000))
+      : totalSeconds
 
     const answerList = data.questions.map((q) => {
       const a = answers[q.id]
@@ -380,18 +429,58 @@ export function QuizTaker({ data }: QuizTakerProps) {
       }
     })
 
-    const result = await submitQuizAction({
-      testId: data.testId,
-      totalTimeSpentSeconds: elapsedSeconds,
-      answers: answerList,
-    })
+    try {
+      const result = await submitQuizAction({
+        testId: data.testId,
+        totalTimeSpentSeconds: elapsedSeconds,
+        answers: answerList,
+      })
 
-    if (result.success && result.data) {
-      router.push(`/quiz/result/${result.data.submissionId}`)
-    } else {
+      if (result.success && result.data) {
+        window.location.assign(`/quiz/result/${result.data.submissionId}`)
+        return
+      }
+
+      submitLock.current = false
       setError(result.error ?? 'Không thể nộp bài. Vui lòng thử lại.')
       setIsSubmitting(false)
+    } catch {
+      submitLock.current = false
+      setError('Không thể nộp bài. Vui lòng thử lại.')
+      setIsSubmitting(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, data, totalSeconds])
+
+  const handleExpire = useCallback(() => {
+    setShowConfirm(false)
+    void doSubmit()
+  }, [doSubmit])
+
+  const { remaining, display, isWarning } = useWallClockTimer(
+    data.timeLimitMinutes,
+    startedAt,
+    handleExpire,
+  )
+
+  function handleAnswer(questionId: string, type: QuizTakingQuestion['type'], value: QuizAnswer) {
+    const now = Date.now()
+    if (!(questionId in interactionStart.current)) {
+      interactionStart.current[questionId] = now
+    }
+    interactionEnd.current[questionId] = now
+    setAnswers((prev) => {
+      const next = { ...prev, [questionId]: { type, value } }
+      patchActiveQuizAnswers(data.testId, next)
+      return next
+    })
+  }
+
+  function getTimeSpent(questionId: string): number {
+    const start = interactionStart.current[questionId]
+    const end = interactionEnd.current[questionId]
+    if (!start) return 0
+    return Math.round(((end ?? Date.now()) - start) / 1000)
   }
 
   const answeredCount = data.questions.filter((q) => answers[q.id] !== undefined).length
@@ -402,6 +491,13 @@ export function QuizTaker({ data }: QuizTakerProps) {
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => setShowLeaveModal(true)}
+              className="mb-0.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              ← Quay lại
+            </button>
             <h1 className="truncate text-sm font-semibold text-foreground">{data.title}</h1>
             <p className="text-xs text-muted-foreground">
               Đã trả lời {answeredCount}/{data.questions.length} câu
@@ -477,10 +573,42 @@ export function QuizTaker({ data }: QuizTakerProps) {
         <ConfirmSubmitDialog
           answeredCount={answeredCount}
           totalCount={data.questions.length}
-          onConfirm={doSubmit}
+          onConfirm={() => void doSubmit()}
           onCancel={() => setShowConfirm(false)}
           isSubmitting={isSubmitting}
         />
+      )}
+
+      {isSubmitting && <SubmittingOverlay />}
+
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-foreground">Đang làm bài</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Bạn đang trong tiến trình làm bài. Thời gian vẫn tiếp tục trôi. Bạn có muốn tiếp tục làm không?
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLeaveModal(false)
+                  router.push('/dashboard')
+                }}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary"
+              >
+                Về Dashboard
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLeaveModal(false)}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Tiếp tục làm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

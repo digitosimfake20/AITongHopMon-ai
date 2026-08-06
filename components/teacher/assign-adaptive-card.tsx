@@ -15,7 +15,7 @@ export function AssignAdaptiveCard() {
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Một cú nhấp để giao bài tập thích ứng theo năng lực từng học sinh, hoặc tạo
-          bài kiểm tra 15 phút nhanh cho lớp 8A2.
+          bài kiểm tra 15 phút nhanh cho lớp.
         </p>
       </div>
 

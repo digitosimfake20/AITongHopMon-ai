@@ -299,6 +299,8 @@ export interface QuizTakingData {
   timeLimitMinutes: number
   previousAttempts: number
   questions: QuizTakingQuestion[]
+  topic?: string
+  isPersonalPractice?: boolean
   adaptiveContext?: {
     classTestId: string
     round: 1 | 2
@@ -402,6 +404,7 @@ export async function getQuizForTaking(
         content: true,
         options: true,
         points: true,
+        topic: true,
       },
     }),
     prisma.submission.count({ where: { testId, studentId } }),
@@ -423,6 +426,13 @@ export async function getQuizForTaking(
       }
     })
 
+  const firstTopic = orderedQuestions.length
+    ? questions.find((q) => q.id === orderedQuestions[0].id)?.topic
+    : undefined
+  const topicFromTitle = test.title.includes('—')
+    ? test.title.split('—').pop()?.trim()
+    : undefined
+
   return {
     testId: test.id,
     title: classTest?.isAdaptive
@@ -431,6 +441,8 @@ export async function getQuizForTaking(
     timeLimitMinutes: test.timeLimitMinutes,
     previousAttempts: prevSubmissions,
     questions: orderedQuestions,
+    topic: firstTopic ?? topicFromTitle ?? classTest?.testGroup?.title,
+    isPersonalPractice: test.title.startsWith('Luyện tập cá nhân hóa'),
     adaptiveContext,
   }
 }

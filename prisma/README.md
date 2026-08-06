@@ -1,4 +1,4 @@
-# 🗄️ 8A2 Learning Platform — Database Architecture
+# 🗄️  Learning Platform — Database Architecture
 
 Hệ thống Zeno sử dụng **2 PostgreSQL Schemas** được lưu trữ và quản lý trực tiếp trên **Supabase**.
 

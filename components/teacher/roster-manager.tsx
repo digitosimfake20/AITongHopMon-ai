@@ -256,7 +256,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
           {/* Add manual */}
           <button
             onClick={() => setShowAddRow((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700"
           >
             <Plus className="size-3.5" />
             Thêm thủ công
@@ -292,7 +292,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
 
       {/* ── Add manual row form ──────────────────────────────────────────── */}
       {showAddRow && (
-        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-800 dark:bg-violet-950/30">
+        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-teal-200 bg-teal-50 p-3 dark:border-teal-800 dark:bg-teal-950/30">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-medium text-slate-500">STT</label>
             <input
@@ -325,7 +325,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
           <button
             onClick={addRow}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
           >
             {isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
             Thêm
@@ -375,7 +375,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
                         autoFocus
                         value={editValues.fullName}
                         onChange={(e) => setEditValues((p) => ({ ...p, fullName: e.target.value }))}
-                        className="w-full rounded border border-violet-400 bg-white px-2 py-1 text-sm focus:outline-none dark:bg-slate-900"
+                        className="w-full rounded border border-teal-400 bg-white px-2 py-1 text-sm focus:outline-none dark:bg-slate-900"
                       />
                     ) : (
                       <span className="font-medium text-slate-700 dark:text-slate-200">

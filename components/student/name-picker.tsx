@@ -45,7 +45,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
       {/* Header */}
       <div>
         <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-          Chọn tên của bạn — <span className="text-violet-600">{className}</span>
+          Chọn tên của bạn — <span className="text-teal-600">{className}</span>
         </h3>
         {alreadyClaimed ? (
           <p className="mt-1 text-sm text-emerald-600">
@@ -66,7 +66,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
           placeholder="Tìm tên..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
       </div>
 
@@ -90,8 +90,8 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
                   : isLinkedByMe
                     ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/30'
                     : isSelected
-                      ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-400 dark:border-violet-600 dark:bg-violet-950/30'
-                      : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/50 dark:border-slate-700 dark:bg-slate-800/50',
+                      ? 'border-teal-400 bg-teal-50 ring-2 ring-teal-400 dark:border-teal-600 dark:bg-teal-950/30'
+                      : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50 dark:border-slate-700 dark:bg-slate-800/50',
               ].join(' ')}
             >
               {/* STT badge */}
@@ -109,7 +109,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
               {/* Status icon */}
               {isLinkedByMe && <UserCheck className="size-4 shrink-0 text-emerald-500" />}
               {isLinkedByOther && <UserX className="size-4 shrink-0 text-slate-400" />}
-              {isSelected && !isLinkedByMe && <Check className="size-4 shrink-0 text-violet-600" />}
+              {isSelected && !isLinkedByMe && <Check className="size-4 shrink-0 text-teal-600" />}
             </button>
           )
         })}
@@ -124,7 +124,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
         <button
           onClick={handleConfirm}
           disabled={isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
         >
           {isPending ? (
             <Loader2 className="size-4 animate-spin" />

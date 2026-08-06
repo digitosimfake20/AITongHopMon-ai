@@ -92,7 +92,7 @@ export function JoinClassForm({ currentUserId }: JoinClassFormProps) {
       <input
         value={code}
         onChange={(e) => setCode(normalizeClassCode(e.target.value).slice(0, 8))}
-        placeholder="MATH8A2X"
+        placeholder="MATHABCX"
         maxLength={8}
         required
         className="mt-4 min-h-11 w-full rounded-lg border border-input bg-background px-4 font-mono text-lg tracking-widest uppercase"

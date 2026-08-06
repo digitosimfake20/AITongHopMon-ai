@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BrainCircuit, LayoutGrid, Menu, X } from 'lucide-react'
+import { LayoutGrid, Menu, X } from 'lucide-react'
+import { Logo } from '@/components/brand/logo'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
@@ -25,10 +26,8 @@ export function MobileDashboardNav({
     <div className="border-b border-border bg-card/40 lg:hidden">
       <div className="flex min-h-14 items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <BrainCircuit className="size-4" aria-hidden="true" />
-          </div>
-          <span className="font-semibold text-foreground">8A2 Platform</span>
+          <Logo showWordmark={false} href="/dashboard" size={32} />
+          <span className="font-semibold text-foreground">Edtech Platform</span>
           <Badge variant="secondary">{classLabel}</Badge>
         </div>
         <button

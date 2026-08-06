@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Clock,
   Lock,
-  Star,
   Trophy,
   AlertCircle,
   Sparkles,
@@ -14,6 +13,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { QuizBankItem } from '@/lib/quiz/quiz-bank-queries'
 import { difficultyLabel } from '@/lib/adaptive/adaptive-logic'
+import {
+  resolveAdaptiveQuizStatus,
+  resolveStandardQuizStatus,
+} from '@/lib/quiz/quiz-display-status'
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   EASY: 'Dễ',
@@ -39,43 +42,46 @@ function formatDeadline(d: Date): string {
 
 interface QuizCardProps {
   quiz: QuizBankItem
+  isPractice?: boolean
 }
 
-export function QuizCard({ quiz }: QuizCardProps) {
+export function QuizCard({ quiz, isPractice }: QuizCardProps) {
   if (quiz.isAdaptiveGroup && quiz.adaptiveProgress) {
     return <AdaptiveGroupQuizCard quiz={quiz} />
   }
 
-  const isDone = !!quiz.latestSubmission
+  const status = resolveStandardQuizStatus(quiz)
   const score = quiz.latestSubmission?.score ?? null
   const attemptNum = quiz.latestSubmission?.attemptNumber ?? 0
   const resultId = quiz.latestSubmission?.id
-  const canTake = quiz.availability === 'open'
-  const canReview = isDone && quiz.allowReview && !!resultId
-
+  const canReview = status.isDone && quiz.allowReview && !!resultId
   const diffColor = DIFFICULTY_COLORS[quiz.difficultyLevel] ?? DIFFICULTY_COLORS.MEDIUM
   const diffLabel = DIFFICULTY_LABELS[quiz.difficultyLevel] ?? quiz.difficultyLevel
 
-  const statusBanner =
-    quiz.availability === 'not_started' ? (
-      <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-        <Clock className="size-3.5 shrink-0" />
-        Đề thi mở lúc {quiz.startTime && formatDeadline(quiz.startTime)}
-      </div>
-    ) : quiz.availability === 'expired' ? (
-      <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-300">
-        <AlertCircle className="size-3.5 shrink-0" />
-        Đã hết hạn deadline
-        {quiz.endTime && (
-          <span className="opacity-80">· Hết hạn {formatDeadline(quiz.endTime)}</span>
-        )}
-      </div>
-    ) : quiz.availability === 'max_attempts' ? (
-      <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-        <Lock className="size-3.5 shrink-0" />
-        Đã hoàn thành 2 lượt bắt buộc
-      </div>
-    ) : null
+  const statusBanner = status.showNotStartedBanner ? (
+    <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+      <Clock className="size-3.5 shrink-0" />
+      Đề thi mở lúc {quiz.startTime && formatDeadline(quiz.startTime)}
+    </div>
+  ) : status.showOverdueBanner ? (
+    <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-300">
+      <AlertCircle className="size-3.5 shrink-0" />
+      Quá hạn
+      {quiz.endTime && (
+        <span className="opacity-80">· Hết hạn {formatDeadline(quiz.endTime)}</span>
+      )}
+    </div>
+  ) : status.showMaxAttemptsBanner ? (
+    <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+      <Lock className="size-3.5 shrink-0" />
+      Đã hoàn thành 2 lượt bắt buộc
+    </div>
+  ) : status.showCompletedBanner && status.progressLine ? (
+    <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+      <CheckCircle2 className="size-3.5 shrink-0" />
+      Đã hoàn thành — {status.progressLine}
+    </div>
+  ) : null
 
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
@@ -85,14 +91,14 @@ export function QuizCard({ quiz }: QuizCardProps) {
           <h3 className="font-semibold leading-snug text-foreground">{quiz.title}</h3>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
+          {isPractice && (
+            <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
+              Luyện thêm
+            </span>
+          )}
           {quiz.classTestId && (
             <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">
               Hệ thống
-            </span>
-          )}
-          {quiz.packageMode === 'ADAPTIVE_PACKAGE' && (
-            <span className="rounded-full bg-emerald-950/50 px-2 py-0.5 text-[11px] font-medium text-emerald-400 dark:text-emerald-400">
-              adaptive
             </span>
           )}
         </div>
@@ -118,27 +124,31 @@ export function QuizCard({ quiz }: QuizCardProps) {
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${diffColor}`}>
           {diffLabel}
         </span>
-        {quiz.maxAttempts != null && (
-          <span className="rounded-full border border-border bg-background px-2.5 py-0.5 text-xs text-muted-foreground">
-            {quiz.attemptCount}/{quiz.maxAttempts} lượt
-          </span>
-        )}
       </div>
 
       {statusBanner}
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-        {isDone ? (
+        {status.isDone ? (
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="size-4 text-green-600" aria-hidden />
             <span className="text-muted-foreground">
-              Đã nộp ({attemptNum} lần) —{' '}
-              <span className="font-semibold text-foreground">{score?.toFixed(1)}/10</span>
+              {status.statusLabel}
+              {score != null && (
+                <>
+                  {' '}
+                  — <span className="font-semibold text-foreground">{score.toFixed(1)}/10</span>
+                  {attemptNum > 0 && ` (lượt ${attemptNum})`}
+                </>
+              )}
             </span>
           </div>
         ) : (
-          <Badge variant="destructive" className="gap-1">
-            Chưa làm
+          <Badge
+            variant={status.statusLabel === 'Quá hạn' ? 'destructive' : 'secondary'}
+            className="gap-1"
+          >
+            {status.statusLabel}
           </Badge>
         )}
 
@@ -154,20 +164,20 @@ export function QuizCard({ quiz }: QuizCardProps) {
               Xem kết quả
             </Button>
           )}
-          {canTake ? (
+          {status.canTake ? (
             <Button
               className="min-h-9 gap-1.5"
               nativeButton={false}
               render={<Link href={`/quiz/take/${quiz.testId}`} />}
             >
-              {isDone ? 'Làm lại bài' : 'Bắt đầu làm bài'}
+              {status.isDone ? 'Làm lại bài' : 'Bắt đầu làm bài'}
             </Button>
-          ) : (
+          ) : status.statusLabel !== 'Quá hạn' ? (
             <Button className="min-h-9 gap-1.5" disabled>
               <Lock className="size-3.5" />
               Không thể làm
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </article>
@@ -176,42 +186,32 @@ export function QuizCard({ quiz }: QuizCardProps) {
 
 function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
   const progress = quiz.adaptiveProgress!
-  const canTake = quiz.availability === 'open' && progress.nextTestId != null
-  const isComplete = progress.status === 'completed'
+  const status = resolveAdaptiveQuizStatus(quiz)
 
-  const statusBanner =
-    quiz.availability === 'not_started' ? (
-      <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-        <Clock className="size-3.5 shrink-0" />
-        Đề thi mở lúc {quiz.startTime && formatDeadline(quiz.startTime)}
-      </div>
-    ) : quiz.availability === 'expired' ? (
-      <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-300">
-        <AlertCircle className="size-3.5 shrink-0" />
-        Đã hết hạn deadline
-      </div>
-    ) : isComplete ? (
-      <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-xs text-green-800 dark:bg-green-950/30 dark:text-green-300">
-        <CheckCircle2 className="size-3.5 shrink-0" />
-        Hoàn thành 2 lượt bắt buộc
-      </div>
-    ) : progress.status === 'round2_pending' ? (
-      <div className="flex items-center gap-2 rounded-lg bg-cyan-950/40 px-3 py-2 text-xs text-cyan-300 dark:bg-cyan-950/30">
-        <Sparkles className="size-3.5 shrink-0" />
-        AI gợi ý lượt 2:{' '}
-        <strong>
-          {progress.round2Difficulty ? difficultyLabel(progress.round2Difficulty) : '…'}
-        </strong>
-        {progress.round1Score != null && (
-          <span className="opacity-80">
-            (Lượt 1: {progress.round1Score.toFixed(1)}/10
-            {quiz.passScoreThreshold != null &&
-              ` · ngưỡng ${quiz.passScoreThreshold}`}
-            )
-          </span>
-        )}
-      </div>
-    ) : null
+  const statusBanner = status.showNotStartedBanner ? (
+    <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+      <Clock className="size-3.5 shrink-0" />
+      Đề thi mở lúc {quiz.startTime && formatDeadline(quiz.startTime)}
+    </div>
+  ) : status.showOverdueBanner ? (
+    <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-300">
+      <AlertCircle className="size-3.5 shrink-0" />
+      Quá hạn
+    </div>
+  ) : status.progressLine ? (
+    <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+      <CheckCircle2 className="size-3.5 shrink-0" />
+      {status.isDone ? 'Hoàn thành 2 lượt' : 'Tiến trình'}: {status.progressLine}
+    </div>
+  ) : progress.status === 'round2_pending' ? (
+    <div className="flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:bg-sky-950/30 dark:text-sky-300">
+      <Sparkles className="size-3.5 shrink-0" />
+      AI gợi ý lượt 2:{' '}
+      <strong>
+        {progress.round2Difficulty ? difficultyLabel(progress.round2Difficulty) : '…'}
+      </strong>
+    </div>
+  ) : null
 
   const actionLabel =
     progress.status === 'not_started'
@@ -221,13 +221,13 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
         : 'Hoàn thành'
 
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-slate-700/40 bg-slate-900/20 p-5 shadow-sm dark:bg-slate-950/30">
+    <article className="flex flex-col gap-4 rounded-2xl border border-teal-200/60 bg-gradient-to-br from-teal-50/50 to-sky-50/30 p-5 shadow-sm dark:border-teal-900/40 dark:from-teal-950/20 dark:to-sky-950/10">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-500" aria-hidden />
+          <Sparkles className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
           <h3 className="font-semibold leading-snug text-foreground">{quiz.title}</h3>
         </div>
-        <span className="rounded-full bg-emerald-950/50 px-2 py-0.5 font-mono text-[11px] font-medium text-emerald-400">
+        <span className="rounded-full bg-teal-100 px-2 py-0.5 font-mono text-[11px] font-medium text-teal-700 dark:bg-teal-950/50 dark:text-teal-400">
           adaptive×2
         </span>
       </div>
@@ -235,12 +235,8 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
         <span className="rounded-full border px-2.5 py-0.5">{quiz.subject}</span>
         {quiz.topic && <span className="rounded-full border px-2.5 py-0.5">{quiz.topic}</span>}
-        <span className="rounded-full border px-2.5 py-0.5">
-          {quiz.attemptCount}/2 lượt
-        </span>
       </div>
 
-      {/* Progress steps */}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div
           className={`rounded-lg border p-2.5 ${
@@ -261,7 +257,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
             progress.round2SubmissionId
               ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/20'
               : progress.round2Difficulty
-                ? 'border-cyan-500/40 bg-cyan-950/30 dark:border-cyan-800 dark:bg-cyan-950/20'
+                ? 'border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/20'
                 : 'border-dashed border-border opacity-60'
           }`}
         >
@@ -284,8 +280,8 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
       {statusBanner}
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-        <Badge variant={isComplete ? 'default' : 'secondary'}>
-          {isComplete ? 'Đã hoàn thành' : `${quiz.attemptCount}/2 lượt`}
+        <Badge variant={status.isDone ? 'default' : 'secondary'}>
+          {status.statusLabel}
         </Badge>
         <div className="flex gap-2">
           {progress.round1SubmissionId && quiz.allowReview && (
@@ -308,7 +304,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
               Lượt 2
             </Button>
           )}
-          {canTake ? (
+          {status.canTake ? (
             <Button
               className="min-h-9 gap-1.5"
               nativeButton={false}
@@ -320,7 +316,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           ) : (
             <Button className="min-h-9 gap-1.5" disabled>
               <Lock className="size-3.5" />
-              {quiz.availability === 'not_started' ? 'Chưa mở' : 'Không thể làm'}
+              {status.statusLabel === 'Chưa mở' ? 'Chưa mở' : 'Không thể làm'}
             </Button>
           )}
         </div>

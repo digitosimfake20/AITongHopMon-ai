@@ -94,8 +94,8 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
             className={[
               'flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-all',
               target?.id === e.id
-                ? 'border-violet-400 bg-violet-50 font-medium text-violet-700 dark:border-violet-600 dark:bg-violet-950/40 dark:text-violet-300'
-                : 'border-slate-200 bg-white hover:border-violet-300 dark:border-slate-700 dark:bg-slate-800',
+                ? 'border-teal-400 bg-teal-50 font-medium text-teal-700 dark:border-teal-600 dark:bg-teal-950/40 dark:text-teal-300'
+                : 'border-slate-200 bg-white hover:border-teal-300 dark:border-slate-700 dark:bg-slate-800',
             ].join(' ')}
           >
             <span className="w-5 shrink-0 text-center text-[10px] text-slate-400">{e.stt}</span>
@@ -121,7 +121,7 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
       <button
         onClick={handleSubmit}
         disabled={!target || isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
       >
         {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />}
         {target

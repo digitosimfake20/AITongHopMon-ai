@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BrainCircuit, LayoutGrid } from 'lucide-react'
+import { LayoutGrid } from 'lucide-react'
+import { Logo } from '@/components/brand/logo'
 import { Badge } from '@/components/ui/badge'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
 import { DASHBOARD_NAV } from '@/lib/dashboard-nav'
@@ -23,9 +24,7 @@ export function DashboardSidebar({
     <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
       <div className="border-b border-border px-5 py-5">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <BrainCircuit className="size-5" aria-hidden="true" />
-          </div>
+          <Logo showWordmark={false} href="/dashboard" size={40} />
           <div className="min-w-0">
             <p className="truncate font-semibold text-foreground">Lớp học đảo ngược</p>
             <Badge variant="secondary" className="mt-1">

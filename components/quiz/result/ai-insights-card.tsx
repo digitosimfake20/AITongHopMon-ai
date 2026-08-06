@@ -42,10 +42,10 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
   }
 
   return (
-    <div className="rounded-2xl border border-purple-200 bg-purple-50/60 p-5 dark:border-purple-900 dark:bg-purple-950/20">
+    <div className="rounded-2xl border border-teal-200 bg-teal-50/60 p-5 dark:border-teal-900 dark:bg-teal-950/20">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Brain className="size-5 text-purple-600" aria-hidden />
+          <Brain className="size-5 text-teal-600" aria-hidden />
           <h2 className="font-semibold text-foreground">Phân tích AI cá nhân hóa</h2>
         </div>
 
@@ -65,7 +65,7 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
               type="button"
               onClick={handleAnalyze}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
             >
               {isLoading ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -85,7 +85,7 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
       {analysis && isExpanded && (
         <div className="mt-4 space-y-4">
           {/* Praise */}
-          <div className="rounded-xl border border-purple-200 bg-background/70 px-4 py-3 dark:border-purple-800">
+          <div className="rounded-xl border border-teal-200 bg-background/70 px-4 py-3 dark:border-teal-800">
             <p className="text-sm leading-relaxed text-foreground">{analysis.praise}</p>
           </div>
 

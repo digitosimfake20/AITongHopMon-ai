@@ -87,7 +87,7 @@ export function InsightPanel() {
           Bài học tiếp theo được đề xuất
         </p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-card-foreground">
-          Hãy ôn lại kiến ​​thức về hô hấp hiếu khí và kỵ khí thông qua một ví dụ minh họa cụ thể, sau đó kiểm tra lại bốn học sinh đã được đánh dấu. Mọi khâu khác đã sẵn sàng để chuyển sang phần tiếp theo.
+          Hãy ôn lại kiến ​​thức về hằng đẳng thức và hệ phương trình bậc nhất qua một ví dụ minh họa cụ thể, sau đó kiểm tra lại bốn học sinh đã được đánh dấu. Mọi khâu khác đã sẵn sàng để chuyển sang phần tiếp theo.
         </p>
       </div>
     </div>

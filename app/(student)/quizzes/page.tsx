@@ -1,7 +1,7 @@
 import { BookOpen } from 'lucide-react'
 import { resolveStudentContext } from '@/lib/dashboard/context'
 import { getQuizBankForStudent } from '@/lib/quiz/quiz-bank-queries'
-import { QuizCard } from '@/components/student/quiz-card'
+import { QuizzesListClient } from '@/components/student/quizzes-list-client'
 
 export default async function QuizzesPage() {
   const { user, classroom } = await resolveStudentContext()
@@ -19,23 +19,7 @@ export default async function QuizzesPage() {
         )}
       </div>
 
-      {quizzes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
-          <BookOpen className="mx-auto size-10 text-muted-foreground/50" aria-hidden />
-          <p className="mt-4 font-medium text-muted-foreground">
-            Chưa có bài kiểm tra nào được giao.
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Hãy quay lại sau nhé!
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {quizzes.map((quiz) => (
-            <QuizCard key={quiz.classTestId ?? quiz.testId} quiz={quiz} />
-          ))}
-        </div>
-      )}
+      <QuizzesListClient quizzes={quizzes} />
     </main>
   )
 }

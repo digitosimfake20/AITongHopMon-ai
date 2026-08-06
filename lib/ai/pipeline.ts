@@ -8,6 +8,7 @@
 import prisma from '@/lib/prisma'
 import { computeTopicMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
+import { resolveTopicCanonicalSync } from '@/lib/knowledge/topic-canonicalize-ai'
 import { normalizeTopicName, resolveTopicKey } from '@/lib/knowledge/topic-normalize'
 
 // ---------------------------------------------------------------------------
@@ -47,11 +48,14 @@ function computePersona(
 export async function runPostSubmissionAIPipeline(
   studentId: string,
   details: SubmissionDetailForPipeline[],
+  options?: { skipAiCanonicalization?: boolean },
 ): Promise<void> {
   try {
     const uniqueLabels = [...new Set(details.map((d) => normalizeTopicName(d.topic)))]
     const subject = details[0]?.subject || 'Toán'
-    const canonicalMap = await ensureTopicsCanonicalized(uniqueLabels, subject)
+    const canonicalMap = options?.skipAiCanonicalization
+      ? new Map(uniqueLabels.map((label) => [label, resolveTopicCanonicalSync(label)]))
+      : await ensureTopicsCanonicalized(uniqueLabels, subject)
 
     // ── 1. Group by AI-canonical topicKey ─────────────────────────────────────
     type TopicBatch = {

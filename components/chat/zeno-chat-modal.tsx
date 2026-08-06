@@ -60,14 +60,14 @@ function MessageBubble({ msg }: { msg: ChatMessageDisplay }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
-        <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
+        <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
           <Bot className="size-4" />
         </div>
       )}
       <div
         className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
           isUser
-            ? 'rounded-tr-sm bg-violet-600 text-white'
+            ? 'rounded-tr-sm bg-teal-600 text-white'
             : 'rounded-tl-sm bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
         }`}
       >
@@ -173,13 +173,13 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
       <button
         onClick={() => setOpen(true)}
         aria-label="Mở chat Zeno"
-        className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+        className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
       >
         <Bot className="size-6" />
         {/* Pulse indicator */}
         <span className="absolute -right-0.5 -top-0.5 flex size-3.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-          <span className="relative inline-flex size-3.5 rounded-full bg-violet-500" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
+          <span className="relative inline-flex size-3.5 rounded-full bg-teal-500" />
         </span>
       </button>
 
@@ -195,13 +195,13 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
           {/* Chat panel */}
           <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900 sm:h-[600px]">
             {/* Header */}
-            <div className="flex items-center gap-3 rounded-t-2xl bg-violet-600 px-4 py-3 text-white">
+            <div className="flex items-center gap-3 rounded-t-2xl bg-teal-600 px-4 py-3 text-white">
               <div className="flex size-9 items-center justify-center rounded-full bg-white/20">
                 <Bot className="size-5" />
               </div>
               <div className="flex-1">
                 <p className="font-semibold leading-tight">Zeno AI</p>
-                <p className="text-xs text-violet-200">Gia sư Toán thông minh · Luôn sẵn sàng giúp đỡ</p>
+                <p className="text-xs text-teal-200">Gia sư Toán thông minh · Luôn sẵn sàng giúp đỡ</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
@@ -216,13 +216,13 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
             <div className="flex-1 overflow-y-auto p-4">
               {isLoadingHistory ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="size-6 animate-spin text-violet-500" />
+                  <Loader2 className="size-6 animate-spin text-teal-500" />
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-slate-400">
                   <MessageSquare className="size-10 opacity-40" />
                   <p className="text-sm">
-                    Xin chào! Mình là <strong className="text-violet-600">Zeno</strong>.<br />
+                    Xin chào! Mình là <strong className="text-teal-600">Zeno</strong>.<br />
                     Hỏi mình bất cứ điều gì về Toán nhé!
                   </p>
                 </div>
@@ -231,11 +231,11 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
               )}
               {isLoading && (
                 <div className="flex justify-start mb-3">
-                  <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
+                  <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
                     <Bot className="size-4" />
                   </div>
                   <div className="rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2.5 dark:bg-slate-800">
-                    <Loader2 className="size-4 animate-spin text-violet-500" />
+                    <Loader2 className="size-4 animate-spin text-teal-500" />
                   </div>
                 </div>
               )}
@@ -263,7 +263,7 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white transition-colors hover:bg-violet-700 disabled:opacity-40"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-colors hover:bg-teal-700 disabled:opacity-40"
                   aria-label="Gửi"
                 >
                   <Send className="size-4" />

@@ -16,8 +16,8 @@ export async function TeacherOnboarding({ fullName }: TeacherOnboardingProps) {
     <div className="mx-auto w-full max-w-4xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950">
-            <GraduationCap className="size-5 text-violet-600" />
+          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-950">
+            <GraduationCap className="size-5 text-teal-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Quản lý lớp học</h1>

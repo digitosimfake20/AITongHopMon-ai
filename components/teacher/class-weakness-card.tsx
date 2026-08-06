@@ -11,7 +11,7 @@ import {
 
 const ACTIVITY_ICON: Record<string, React.ReactNode> = {
   exercise: <BookOpen className="size-3.5 shrink-0 text-blue-500" />,
-  video: <Video className="size-3.5 shrink-0 text-purple-500" />,
+  video: <Video className="size-3.5 shrink-0 text-teal-500" />,
   discussion: <Users className="size-3.5 shrink-0 text-amber-500" />,
   quiz: <HelpCircle className="size-3.5 shrink-0 text-green-500" />,
 }
