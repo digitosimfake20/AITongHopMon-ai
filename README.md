@@ -117,7 +117,7 @@ Thiếu `OPENAI_API_KEY` → app vẫn chạy, mấy chức AI sẽ “tạm ngh
 
 ---
 
-## Tech stack (cho BGK hỏi)
+## Tech stack ()
 
 - **Next.js 16** + TypeScript + Tailwind + Shadcn  
 - **Supabase** — Auth + PostgreSQL  
