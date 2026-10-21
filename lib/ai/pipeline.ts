@@ -105,7 +105,7 @@ export async function runPostSubmissionAIPipeline(
 
       const existing = await prisma.studentKnowledgeState.findUnique({
         where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
-      })
+      })  
       const currentMastery = existing ? Number(existing.pMastery) : 0.2
 
       const mastery = computeTopicMasteryUpdate(currentMastery, batch.answers)

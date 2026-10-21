@@ -644,7 +644,7 @@ export async function recordAdaptiveRound1Submit(
 ): Promise<void> {
   const round2Difficulty = recommendRound2Difficulty(round1Score, passScoreThreshold)
   const round2TestId = round2Difficulty === 'HARD' ? hardTestId : easyTestId
-
+  
   await prisma.adaptiveStudentSession.upsert({
     where: { classTestId_studentId: { classTestId, studentId } },
     create: {

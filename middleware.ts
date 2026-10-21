@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const AUTH_PREFIXES = ['/login', '/signup', '/auth']
+const AUTH_COOKIE_HINT = /^(sb-|sb:)/
+const GET_USER_TIMEOUT_MS = 4_000
 
 function isAuthRoute(pathname: string): boolean {
   return AUTH_PREFIXES.some(
@@ -9,51 +11,89 @@ function isAuthRoute(pathname: string): boolean {
   )
 }
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request })
+function isPublicRoute(pathname: string): boolean {
+  return pathname === '/' || isAuthRoute(pathname) || pathname.startsWith('/auth/callback')
+}
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value)
-          })
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
-        },
-      },
-    },
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some(
+    (cookie) => AUTH_COOKIE_HINT.test(cookie.name) || cookie.name.includes('-auth-token'),
   )
+}
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('supabase-timeout')), ms)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
 
-  if (error?.code === 'refresh_token_not_found') {
-    try {
-      await supabase.auth.signOut()
-    } catch {
-      // ignore
-    }
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Landing page and other public routes should not wait on Auth.
+  if (isPublicRoute(pathname) && !hasSupabaseAuthCookie(request)) {
+    return NextResponse.next({ request })
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (isPublicRoute(pathname)) return NextResponse.next({ request })
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  const { pathname } = request.nextUrl
-  const isPublic =
-    pathname === '/' || isAuthRoute(pathname) || pathname.startsWith('/auth/callback')
+  let response = NextResponse.next({ request })
 
-  if (!user && !isPublic) {
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => {
+          request.cookies.set(name, value)
+        })
+        response = NextResponse.next({ request })
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options)
+        })
+      },
+    },
+  })
+
+  let user: { id: string } | null = null
+  try {
+    const result = await withTimeout(supabase.auth.getUser(), GET_USER_TIMEOUT_MS)
+    user = result.data.user
+
+    if (result.error?.code === 'refresh_token_not_found') {
+      try {
+        await withTimeout(supabase.auth.signOut(), 2_000)
+      } catch {
+        // ignore
+      }
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  } catch {
+    if (isPublicRoute(pathname)) return NextResponse.next({ request })
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (!user && !isPublicRoute(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
