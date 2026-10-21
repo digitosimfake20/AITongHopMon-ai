@@ -83,10 +83,17 @@ export function ZenoProactivePanel({
               <p className="text-sm font-semibold text-foreground">
                 Chào ngày mới, {firstName}! 
               </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Flame className="size-4 text-amber-500" aria-hidden />
-                Chuỗi học tập: <strong className="text-foreground">{streakDays} ngày</strong> liên tiếp
-              </p>
+              {streakDays > 0 ? (
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Flame className="size-4 text-amber-500" aria-hidden />
+                  Chuỗi học tập:{' '}
+                  <strong className="text-foreground">{streakDays} ngày</strong> liên tiếp
+                </p>
+              ) : (
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Làm bài hôm nay để bắt đầu chuỗi học tập.
+                </p>
+              )}
             </div>
           </div>
           {weakTopic ? (

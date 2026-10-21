@@ -174,7 +174,7 @@ export async function getQuizPackageForEdit(
   return { id: pkg.id, title: pkg.title, description: pkg.description, mode: pkg.mode, classId: pkg.classId, tests }
 }
 
-export async function getQuizPackagesForClass(classId: string): Promise<QuizPackageSummary[]> {
+async function getQuizPackagesForClassUncached(classId: string) {
   const packages = await prisma.quizPackage.findMany({
     where: { classId },
     orderBy: { createdAt: 'desc' },
@@ -197,8 +197,25 @@ export async function getQuizPackagesForClass(classId: string): Promise<QuizPack
       title: pkg.title,
       description: pkg.description,
       mode: pkg.mode,
-      createdAt: pkg.createdAt,
+      createdAt: pkg.createdAt.toISOString(),
       tests: tests.filter((test): test is QuizPackageTestSummary => test !== null),
     }
   })
+}
+
+export async function getQuizPackagesForClass(classId: string): Promise<QuizPackageSummary[]> {
+  const { cachedQuery } = await import('@/lib/cache/cached-query')
+  const { CacheTags, CacheTTL } = await import('@/lib/cache/tags')
+  const { asDateRequired } = await import('@/lib/cache/revive')
+
+  const cached = cachedQuery(getQuizPackagesForClassUncached, {
+    keyParts: ['packages'],
+    tags: [CacheTags.packages(classId), CacheTags.submissions(classId)],
+    revalidate: CacheTTL.packages,
+  })
+  const rows = await cached(classId)
+  return rows.map((pkg) => ({
+    ...pkg,
+    createdAt: asDateRequired(pkg.createdAt),
+  }))
 }

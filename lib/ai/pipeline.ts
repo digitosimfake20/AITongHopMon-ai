@@ -4,12 +4,28 @@
  * Updates:
  *  1. student_knowledge_states  — BKT mastery per topic (unique studentId + nodeId)
  *  2. student_cognitive_profiles — speed, careless rate, persona, strengths/weaknesses
+ *  3. Submission.aiFeedbackSummary — structured action plan (+ thin LLM polish)
+ *  4. GlobalAgentMemory keyInsights — curated insight (not raw log dump for UI)
  */
 import prisma from '@/lib/prisma'
-import { computeTopicMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
+import {
+  computeTopicMasteryUpdate,
+  contributesToMasteryUpdate,
+} from '@/lib/knowledge/mastery-evidence'
+import {
+  isStrengthMastery,
+  MASTERY_STATUS_MASTERED,
+  MASTERY_STATUS_PROGRESSING,
+} from '@/lib/knowledge/mastery-labels'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 import { resolveTopicCanonicalSync } from '@/lib/knowledge/topic-canonicalize-ai'
 import { normalizeTopicName, resolveTopicKey } from '@/lib/knowledge/topic-normalize'
+import {
+  buildStudentActionPlan,
+  curatedInsightFromPlan,
+  enrichActionPlanWithLLM,
+  type TopicBatchForPlan,
+} from '@/lib/ai/student-action-plan'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,10 +50,12 @@ function computePersona(
   carelessRate: number,
   avgMastery: number,
 ): string {
-  if (avgMastery >= 0.8) return 'Thành thạo'
+  if (avgMastery >= MASTERY_STATUS_MASTERED) return 'Thành thạo'
   if (carelessRate > 0.3 && avgSpeed < 20) return 'Nhanh nhạy nhưng ẩu'
   if (avgSpeed > 80) return 'Cẩn thận - Ngâm lâu'
-  if (carelessRate < 0.1 && avgMastery >= 0.6) return 'Chắc chắn, tốc độ tốt'
+  if (carelessRate < 0.1 && avgMastery >= MASTERY_STATUS_PROGRESSING) {
+    return 'Chắc chắn, tốc độ tốt'
+  }
   return 'Đang phát triển'
 }
 
@@ -48,7 +66,13 @@ function computePersona(
 export async function runPostSubmissionAIPipeline(
   studentId: string,
   details: SubmissionDetailForPipeline[],
-  options?: { skipAiCanonicalization?: boolean },
+  options?: {
+    skipAiCanonicalization?: boolean
+    /** When set, persist structured action plan onto this submission */
+    submissionId?: string
+    /** Skip LLM polish (practice quizzes / offline) */
+    skipLlmEnrich?: boolean
+  },
 ): Promise<void> {
   try {
     const uniqueLabels = [...new Set(details.map((d) => normalizeTopicName(d.topic)))]
@@ -67,6 +91,10 @@ export async function runPostSubmissionAIPipeline(
     const byNodeId = new Map<string, TopicBatch>()
 
     for (const d of details) {
+      // ESSAY: kept as isCorrect=false on SubmissionDetail for scoring UX, but
+      // unscored — never feed into BKT / KnowledgeNode mastery.
+      if (!contributesToMasteryUpdate(d.type)) continue
+
       const normalized = normalizeTopicName(d.topic)
       const canonical = canonicalMap.get(normalized) ?? (() => {
         const { topicName, topicKey } = resolveTopicKey(normalized)
@@ -87,7 +115,9 @@ export async function runPostSubmissionAIPipeline(
       })
     }
 
-    // ── 2. Upsert KnowledgeNodes + StudentKnowledgeStates (unique student+node) ─
+    // ── 2. Upsert KnowledgeNodes + StudentKnowledgeStates ─────────────────────
+    const planBatches: TopicBatchForPlan[] = []
+
     for (const batch of byNodeId.values()) {
       await prisma.knowledgeNode.upsert({
         where: { id: batch.nodeId },
@@ -98,14 +128,13 @@ export async function runPostSubmissionAIPipeline(
           difficultyLevel: 1,
         },
         update: {
-          // Keep first title unless empty; node id is the canonical topicKey
           title: batch.topicName,
         },
       })
 
       const existing = await prisma.studentKnowledgeState.findUnique({
         where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
-      })  
+      })
       const currentMastery = existing ? Number(existing.pMastery) : 0.2
 
       const mastery = computeTopicMasteryUpdate(currentMastery, batch.answers)
@@ -123,15 +152,36 @@ export async function runPostSubmissionAIPipeline(
           lastPracticedAt: new Date(),
         },
       })
+
+      planBatches.push({
+        topicName: batch.topicName,
+        topicKey: batch.nodeId,
+        pMastery: mastery,
+        answers: batch.answers,
+      })
     }
 
-    // ── 3. Compute overall cognitive signals ──────────────────────────────────
-    const allTimes = details.map((d) => d.timeSpentSeconds)
+    // ── 3. Action plan → Submission.aiFeedbackSummary ─────────────────────────
+    let plan = buildStudentActionPlan(planBatches)
+    if (!options?.skipLlmEnrich && !options?.skipAiCanonicalization) {
+      plan = await enrichActionPlanWithLLM(plan)
+    }
+
+    if (options?.submissionId) {
+      await prisma.submission.update({
+        where: { id: options.submissionId },
+        data: { aiFeedbackSummary: JSON.stringify(plan) },
+      })
+    }
+
+    // ── 4. Cognitive signals (auto-scored items only — ESSAY is unscored) ─────
+    const scoredDetails = details.filter((d) => contributesToMasteryUpdate(d.type))
+    const allTimes = scoredDetails.map((d) => d.timeSpentSeconds)
     const avgSpeed =
       allTimes.length > 0 ? allTimes.reduce((a, b) => a + b, 0) / allTimes.length : 30
 
-    const fastWrong = details.filter((d) => !d.isCorrect && d.timeSpentSeconds < 15).length
-    const carelessRate = details.length > 0 ? fastWrong / details.length : 0
+    const fastWrong = scoredDetails.filter((d) => !d.isCorrect && d.timeSpentSeconds < 15).length
+    const carelessRate = scoredDetails.length > 0 ? fastWrong / scoredDetails.length : 0
 
     const allStates = await prisma.studentKnowledgeState.findMany({
       where: { studentId },
@@ -139,13 +189,13 @@ export async function runPostSubmissionAIPipeline(
     })
 
     const strengths = allStates
-      .filter((s) => Number(s.pMastery) >= 0.8)
+      .filter((s) => isStrengthMastery(Number(s.pMastery)))
       .sort((a, b) => Number(b.pMastery) - Number(a.pMastery))
       .slice(0, 5)
       .map((s) => s.node.title)
 
     const weaknesses = allStates
-      .filter((s) => Number(s.pMastery) < 0.5)
+      .filter((s) => Number(s.pMastery) < MASTERY_STATUS_PROGRESSING)
       .sort((a, b) => Number(a.pMastery) - Number(b.pMastery))
       .slice(0, 5)
       .map((s) => s.node.title)
@@ -157,7 +207,7 @@ export async function runPostSubmissionAIPipeline(
 
     const persona = computePersona(avgSpeed, carelessRate, avgMastery)
 
-    // ── 4. Upsert StudentCognitiveProfile ─────────────────────────────────────
+    // ── 5. Upsert StudentCognitiveProfile ─────────────────────────────────────
     const existing = await prisma.studentCognitiveProfile.findUnique({
       where: { studentId },
     })
@@ -188,12 +238,23 @@ export async function runPostSubmissionAIPipeline(
       },
     })
 
-    // ── 5. Update GlobalAgentMemory long-term summary ─────────────────────────
+    // ── 6. GlobalAgentMemory — keep log + curated keyInsights for UI ───────────
     const memorySnippet = `[${new Date().toLocaleDateString('vi-VN')}] Bài kiểm tra vừa nộp. Điểm yếu hiện tại: ${weaknesses.slice(0, 3).join(', ') || 'Chưa xác định'}. Persona: ${persona}.`
+    const curated = curatedInsightFromPlan(plan)
 
     const existing_mem = await prisma.globalAgentMemory.findUnique({
       where: { studentId },
     })
+
+    const keyInsights = {
+      weaknesses,
+      strengths,
+      persona,
+      curatedInsight: curated,
+      nextPracticeTopics: plan.nextStep?.topicTitles ?? [],
+      weakTopicKeys: plan.nextStep?.topicKeys ?? [],
+      updatedAt: new Date().toISOString(),
+    }
 
     if (existing_mem) {
       const combined = `${existing_mem.longTermSummary}\n${memorySnippet}`.slice(-1500)
@@ -201,6 +262,7 @@ export async function runPostSubmissionAIPipeline(
         where: { studentId },
         data: {
           longTermSummary: combined,
+          keyInsights,
           totalProcessedMessages: existing_mem.totalProcessedMessages + details.length,
         },
       })
@@ -209,7 +271,7 @@ export async function runPostSubmissionAIPipeline(
         data: {
           studentId,
           longTermSummary: memorySnippet,
-          keyInsights: { weaknesses, strengths, persona },
+          keyInsights,
           totalProcessedMessages: details.length,
         },
       })

@@ -10,9 +10,15 @@ import {
 } from '@/lib/quiz/practice-quiz'
 import { createQuestionsInTransaction } from '@/lib/system-test/materialize-questions'
 import { collectPracticeQuestionsFromBank } from '@/lib/system-test/mix-practice-from-bank'
+import { bustCacheTags } from '@/lib/cache/cached-query'
+import { CacheTags } from '@/lib/cache/tags'
+import { MASTERY_STATUS_MASTERED } from '@/lib/knowledge/mastery-labels'
 
 export async function generateSmartQuizAction(options?: {
   saveForLater?: boolean
+  /** Prefer these topic keys / titles from the result action plan */
+  topicKeys?: string[]
+  topicTitles?: string[]
 }): Promise<ActionResult<GenerateSmartQuizResult>> {
   const user = await getSessionUser()
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
@@ -20,14 +26,31 @@ export async function generateSmartQuizAction(options?: {
     return { success: false, error: 'Chỉ học sinh mới có thể tạo bài luyện' }
   }
 
-  const weakStates = await prisma.studentKnowledgeState.findMany({
-    where: { studentId: user.id },
-    include: { node: true },
-    orderBy: { pMastery: 'asc' },
-    take: 3,
-  })
+  let weakTopics: string[] = (options?.topicTitles ?? []).filter(Boolean).slice(0, 3)
 
-  let weakTopics: string[] = weakStates.map((s) => s.node.title)
+  if (weakTopics.length === 0 && options?.topicKeys?.length) {
+    const keyed = await prisma.studentKnowledgeState.findMany({
+      where: {
+        studentId: user.id,
+        nodeId: { in: options.topicKeys },
+      },
+      include: { node: true },
+    })
+    weakTopics = keyed.map((s) => s.node.title)
+  }
+
+  if (weakTopics.length === 0) {
+    const weakStates = await prisma.studentKnowledgeState.findMany({
+      where: {
+        studentId: user.id,
+        pMastery: { lt: MASTERY_STATUS_MASTERED },
+      },
+      include: { node: true },
+      orderBy: { pMastery: 'asc' },
+      take: 3,
+    })
+    weakTopics = weakStates.map((s) => s.node.title)
+  }
 
   if (weakTopics.length === 0) {
     const profile = await prisma.studentCognitiveProfile.findUnique({
@@ -37,7 +60,11 @@ export async function generateSmartQuizAction(options?: {
   }
 
   if (weakTopics.length === 0) {
-    weakTopics = ['Phân thức đại số', 'Phương trình', 'Bất phương trình']
+    return {
+      success: false,
+      error:
+        'Chưa có chủ đề yếu để luyện. Hãy hoàn thành ít nhất một bài kiểm tra trước.',
+    }
   }
 
   const mixed = await collectPracticeQuestionsFromBank(weakTopics, { targetCount: 6 })
@@ -45,7 +72,7 @@ export async function generateSmartQuizAction(options?: {
   if (mixed.questions.length === 0) {
     return {
       success: false,
-      error: 'Chưa có câu hỏi phù hợp trong kho đề. Hãy liên hệ giáo viên.',
+      error: `Chưa có câu hỏi trong kho đề cho: ${weakTopics.join(', ')}. Hãy liên hệ giáo viên.`,
     }
   }
 
@@ -79,6 +106,12 @@ export async function generateSmartQuizAction(options?: {
       },
     })
   })
+
+  bustCacheTags(
+    CacheTags.quizBank(membership.classId),
+    CacheTags.quizBankStudent(membership.classId, user.id),
+    CacheTags.studentDash(user.id),
+  )
 
   return {
     success: true,

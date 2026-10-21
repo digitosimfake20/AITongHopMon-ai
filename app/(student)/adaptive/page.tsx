@@ -1,6 +1,10 @@
 import { resolveStudentContext } from '@/lib/dashboard/context'
 import prisma from '@/lib/prisma'
 import { AiProfileCard } from '@/components/student/ai-profile-card'
+import {
+  masteryStatusFromP,
+  masteryStatusLabelVi,
+} from '@/lib/knowledge/mastery-labels'
 import { Brain, Zap, TrendingDown, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
@@ -43,11 +47,6 @@ export default async function AdaptivePage() {
       }
     : null
 
-  const weakStates = knowledgeStates.filter((s) => Number(s.pMastery) < 0.5)
-  const mediumStates = knowledgeStates.filter(
-    (s) => Number(s.pMastery) >= 0.5 && Number(s.pMastery) < 0.8,
-  )
-
   return (
     <main className="space-y-6 p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -57,10 +56,10 @@ export default async function AdaptivePage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-            Luyện tập Thích ứng
+            Luyện theo lỗ hổng
           </h1>
           <p className="text-sm text-slate-500">
-            AI chọn câu hỏi dựa trên điểm yếu cá nhân của bạn
+            Trộn câu từ kho đề theo chủ đề BKT còn yếu — tách biệt với bài thích ứng 2 vòng của lớp
           </p>
         </div>
       </div>
@@ -77,17 +76,22 @@ export default async function AdaptivePage() {
           </h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {knowledgeStates.map((state) => {
-              const mastery = Math.round(Number(state.pMastery) * 100)
+              const p = Number(state.pMastery)
+              const mastery = Math.round(p * 100)
+              const status = masteryStatusFromP(p)
               const colorClass =
-                mastery < 50
+                status === 'WEAK'
                   ? 'border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/30'
-                  : mastery < 80
+                  : status === 'MEDIUM'
                     ? 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30'
                     : 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30'
               const barColor =
-                mastery < 50 ? 'bg-rose-400' : mastery < 80 ? 'bg-amber-400' : 'bg-emerald-500'
-              const label =
-                mastery < 50 ? 'Cần ôn lại' : mastery < 80 ? 'Đang tiến bộ' : 'Thành thạo'
+                status === 'WEAK'
+                  ? 'bg-rose-400'
+                  : status === 'MEDIUM'
+                    ? 'bg-amber-400'
+                    : 'bg-emerald-500'
+              const label = masteryStatusLabelVi(status)
 
               return (
                 <div

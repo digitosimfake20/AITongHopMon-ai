@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateAfterAssign, invalidateTestBank } from '@/lib/cache/invalidate'
 import { redirect } from 'next/navigation'
 import type { Prisma } from '@prisma/client'
 import { getSessionUser } from '@/lib/auth/session'
@@ -75,6 +76,7 @@ export async function publishSystemTestAction(
     select: { id: true },
   })
 
+  invalidateTestBank()
   revalidatePath('/admin/test-bank')
   revalidatePath('/teacher/test-bank')
   return { success: true, data: { id: created.id } }
@@ -188,6 +190,7 @@ export async function assignClassTestAction(
       return { classTestId: classTest.id, testId: test.id }
     }, MATERIALIZE_TEST_TX_OPTIONS)
 
+    invalidateAfterAssign(classId)
     revalidatePath('/teacher/test-bank')
     revalidatePath('/teacher/assignments')
     revalidatePath('/quizzes')
@@ -219,6 +222,7 @@ export async function deleteSystemTestAction(id: string): Promise<ActionResult> 
   }
 
   await prisma.systemTest.delete({ where: { id } })
+  invalidateTestBank()
   revalidatePath('/admin/test-bank')
   revalidatePath('/teacher/test-bank')
   return { success: true }

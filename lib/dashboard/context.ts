@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth/session'
 import { resolveStudentClassId, resolveTeacherClassId } from '@/lib/class/resolve-class-id'
+import { computeStreakDays } from '@/lib/dashboard/streak'
 import prisma from '@/lib/prisma'
 import { getInitials } from '@/lib/utils/initials'
 
@@ -50,10 +51,18 @@ export const resolveStudentContext = cache(async (): Promise<{
 
   if (!membership) redirect('/onboarding')
 
-  const masteryStates = await prisma.studentKnowledgeState.findMany({
-    where: { studentId: user.id },
-    select: { pMastery: true },
-  })
+  const [masteryStates, streakSubs] = await Promise.all([
+    prisma.studentKnowledgeState.findMany({
+      where: { studentId: user.id },
+      select: { pMastery: true },
+    }),
+    prisma.submission.findMany({
+      where: { studentId: user.id },
+      select: { submittedAt: true },
+      orderBy: { submittedAt: 'desc' },
+      take: 90,
+    }),
+  ])
 
   const masteryScore =
     masteryStates.length > 0
@@ -79,7 +88,7 @@ export const resolveStudentContext = cache(async (): Promise<{
       classLabel: membership.class.name,
       classId: membership.class.id,
       masteryScore,
-      streakDays: 0,
+      streakDays: computeStreakDays(streakSubs.map((s) => s.submittedAt)),
     },
   }
 })

@@ -1,5 +1,10 @@
 import prisma from '@/lib/prisma'
 import { getInitials } from '@/lib/utils/initials'
+import {
+  masteryStatusFromP,
+  MASTERY_STATUS_PROGRESSING,
+  type MasteryLabelStatus,
+} from '@/lib/knowledge/mastery-labels'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,10 +30,15 @@ export interface BehaviorSignal {
 
 export interface TopicMasteryItem {
   topic: string
+  topicKey?: string
+  /** Session / lifetime correct count when from submissions; else estimated from BKT */
   total: number
   correct: number
+  /** Percent 0–100 — for BKT rows this is round(pMastery * 100) */
   accuracy: number
-  status: 'WEAK' | 'MEDIUM' | 'MASTERED'
+  status: MasteryLabelStatus
+  pMastery?: number
+  source: 'bkt' | 'submission'
 }
 
 export interface ScoreHistoryEntry {
@@ -190,13 +200,44 @@ function buildBehaviorSignals(row: BehaviorAggRow): BehaviorSignal[] {
   return signals
 }
 
-function buildTopicMastery(rows: TopicAggRow[]): TopicMasteryItem[] {
+function buildTopicMasteryFromBkt(
+  states: Array<{
+    nodeId: string
+    pMastery: unknown
+    node: { title: string }
+  }>,
+): TopicMasteryItem[] {
+  return states
+    .map((s) => {
+      const pMastery = Number(s.pMastery)
+      const accuracy = Math.round(pMastery * 100)
+      return {
+        topic: s.node.title,
+        topicKey: s.nodeId,
+        total: 0,
+        correct: 0,
+        accuracy,
+        status: masteryStatusFromP(pMastery),
+        pMastery,
+        source: 'bkt' as const,
+      }
+    })
+    .sort((a, b) => a.accuracy - b.accuracy)
+}
+
+/** Fallback when student has submissions but no BKT states yet */
+function buildTopicMasteryFromSubmissions(rows: TopicAggRow[]): TopicMasteryItem[] {
   return rows
     .map((row) => {
       const accuracy = row.total > 0 ? Math.round((row.correct / row.total) * 100) : 0
-      const status: TopicMasteryItem['status'] =
-        accuracy >= 80 ? 'MASTERED' : accuracy >= 50 ? 'MEDIUM' : 'WEAK'
-      return { topic: row.topic, total: row.total, correct: row.correct, accuracy, status }
+      return {
+        topic: row.topic,
+        total: row.total,
+        correct: row.correct,
+        accuracy,
+        status: masteryStatusFromP(accuracy / 100),
+        source: 'submission' as const,
+      }
     })
     .sort((a, b) => a.accuracy - b.accuracy)
 }
@@ -219,7 +260,14 @@ export async function getStudentDetail(
     orderBy: { submittedAt: 'desc' },
   })
   const behaviorRows = await behaviorAggQuery(studentId, classId)
-  const topicRows = await topicAggQuery(studentId, classId)
+  const [bktStates, topicRows] = await Promise.all([
+    prisma.studentKnowledgeState.findMany({
+      where: { studentId },
+      include: { node: { select: { title: true } } },
+      orderBy: { pMastery: 'asc' },
+    }),
+    topicAggQuery(studentId, classId),
+  ])
 
   const student = membership.student
   const behavior = behaviorRows[0] ?? {
@@ -228,12 +276,22 @@ export async function getStudentDetail(
     correct_fast: 0,
     correct_steady: 0,
   }
-  const topicMastery = buildTopicMastery(topicRows)
+  const topicMastery =
+    bktStates.length > 0
+      ? buildTopicMasteryFromBkt(bktStates)
+      : buildTopicMasteryFromSubmissions(topicRows)
 
   const weakTopics = topicMastery
-    .map((t) => ({ topic: t.topic, wrongCount: t.total - t.correct }))
-    .filter((t) => t.wrongCount > 0)
-    .sort((a, b) => b.wrongCount - a.wrongCount)
+    .filter((t) => t.status !== 'MASTERED')
+    .map((t) => ({
+      topic: t.topic,
+      wrongCount:
+        t.source === 'submission'
+          ? Math.max(0, t.total - t.correct)
+          : t.pMastery != null && t.pMastery < MASTERY_STATUS_PROGRESSING
+            ? 2
+            : 1,
+    }))
     .slice(0, 5)
 
   const scoreHistory: ScoreHistoryEntry[] = [...submissions]

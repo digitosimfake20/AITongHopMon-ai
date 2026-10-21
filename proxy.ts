@@ -21,6 +21,17 @@ function hasSupabaseAuthCookie(request: NextRequest): boolean {
   )
 }
 
+function clearSupabaseCookies(response: NextResponse, request: NextRequest) {
+  for (const cookie of request.cookies.getAll()) {
+    if (AUTH_COOKIE_HINT.test(cookie.name) || cookie.name.includes('-auth-token')) {
+      response.cookies.set(cookie.name, '', {
+        path: '/',
+        maxAge: 0,
+      })
+    }
+  }
+}
+
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
@@ -35,12 +46,12 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Landing page and other public routes should not wait on Auth.
+  // Public pages without session cookies: skip Auth entirely.
   if (isPublicRoute(pathname) && !hasSupabaseAuthCookie(request)) {
     return NextResponse.next({ request })
   }
@@ -76,21 +87,32 @@ export async function middleware(request: NextRequest) {
     const result = await withTimeout(supabase.auth.getUser(), GET_USER_TIMEOUT_MS)
     user = result.data.user
 
+    // Stale / missing refresh token: wipe cookies, never redirect-loop /login → /login
     if (result.error?.code === 'refresh_token_not_found') {
       try {
         await withTimeout(supabase.auth.signOut(), 2_000)
       } catch {
         // ignore
       }
+      clearSupabaseCookies(response, request)
+      if (isPublicRoute(pathname)) return response
       const url = request.nextUrl.clone()
       url.pathname = '/login'
-      return NextResponse.redirect(url)
+      const redirect = NextResponse.redirect(url)
+      clearSupabaseCookies(redirect, request)
+      return redirect
     }
   } catch {
-    if (isPublicRoute(pathname)) return NextResponse.next({ request })
+    // Timeout / network: treat as logged-out for public routes
+    if (isPublicRoute(pathname)) {
+      clearSupabaseCookies(response, request)
+      return response
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirect = NextResponse.redirect(url)
+    clearSupabaseCookies(redirect, request)
+    return redirect
   }
 
   if (!user && !isPublicRoute(pathname)) {

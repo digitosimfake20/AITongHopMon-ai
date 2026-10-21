@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
 import type { AdaptiveAssignmentSummary } from '@/app/actions/test-group'
 import type { ClassSummary } from '@/lib/class/actions'
+import { cachedQuery } from '@/lib/cache/cached-query'
+import { CacheTags, CacheTTL } from '@/lib/cache/tags'
 import {
   mapSystemTestRows,
   mapTestGroupRows,
@@ -8,7 +10,7 @@ import {
   testGroupsQuery,
 } from '@/lib/test-bank/queries'
 
-export async function loadTeacherTestBankPageData(
+async function loadTeacherTestBankPageDataUncached(
   teacherId: string,
   classId: string,
 ) {
@@ -64,4 +66,22 @@ export async function loadTeacherTestBankPageData(
     classes: classSummaries,
     adaptiveAssignments,
   }
+}
+
+/** Cached: global bank (~5m) + class adaptive slice. Bust via invalidateTestBank / invalidateAfterAssign. */
+export async function loadTeacherTestBankPageData(
+  teacherId: string,
+  classId: string,
+) {
+  const cached = cachedQuery(loadTeacherTestBankPageDataUncached, {
+    keyParts: ['teacher-test-bank'],
+    tags: [
+      CacheTags.testBank,
+      CacheTags.testBankSystem,
+      CacheTags.testBankGroups,
+      CacheTags.adaptive(classId),
+    ],
+    revalidate: CacheTTL.testBank,
+  })
+  return cached(teacherId, classId)
 }

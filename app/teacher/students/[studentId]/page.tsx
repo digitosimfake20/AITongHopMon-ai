@@ -56,7 +56,7 @@ function ScoreBar({ score, total = 10 }: { score: number; total?: number }) {
 
 const MASTERY_CONFIG = {
   WEAK:     { emoji: '🔴', label: 'Yếu',           bar: 'bg-red-500',   badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' },
-  MEDIUM:   { emoji: '🟡', label: 'Cần luyện',     bar: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
+  MEDIUM:   { emoji: '🟡', label: 'Đang tiến bộ',  bar: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
   MASTERED: { emoji: '🟢', label: 'Thành thạo',   bar: 'bg-green-500', badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' },
 }
 
@@ -252,8 +252,11 @@ export default async function StudentDetailPage({ params }: PageProps) {
             <div className="border-b border-border px-4 py-4">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="size-4 text-destructive" />
-                <h2 className="font-semibold text-card-foreground">Phân tích theo Chủ đề</h2>
+                <h2 className="font-semibold text-card-foreground">Thành thạo theo Chủ đề (BKT)</h2>
               </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cùng thang đo với lộ trình học sinh (≥85% thành thạo, ≥60% đang tiến bộ).
+              </p>
             </div>
             {student.topicMastery.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
@@ -262,7 +265,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
             ) : (
               <ul className="divide-y divide-border">
                 {student.topicMastery.map((t) => (
-                  <TopicRow key={t.topic} t={t} />
+                  <TopicRow key={t.topicKey ?? t.topic} t={t} />
                 ))}
               </ul>
             )}

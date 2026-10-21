@@ -7,6 +7,23 @@ export const MASTERY_CAP_SINGLE_CORRECT = 0.6
 export const MASTERY_CAP_PROGRESSING = 0.84
 export const MASTERY_MASTERED_THRESHOLD = 0.85
 
+/**
+ * ESSAY is stored as isCorrect=false for scoring placeholders, but is not
+ * auto-graded — it must not enter BKT updates.
+ */
+export function contributesToMasteryUpdate(questionType: string): boolean {
+  return questionType !== 'ESSAY'
+}
+
+/** Pick only auto-scored answers for computeTopicMasteryUpdate. */
+export function masteryAnswersFromDetails(
+  details: ReadonlyArray<{ type: string; isCorrect: boolean }>,
+): Array<{ isCorrect: boolean }> {
+  return details
+    .filter((d) => contributesToMasteryUpdate(d.type))
+    .map((d) => ({ isCorrect: d.isCorrect }))
+}
+
 export function maxConsecutiveCorrect(
   answers: readonly { isCorrect: boolean }[],
 ): number {
@@ -63,6 +80,8 @@ export function bktUpdate(currentMastery: number, isCorrect: boolean): number {
 
 /**
  * Full mastery update for one topic in a submission: sequential BKT then evidence cap.
+ * Evidence caps only limit *growth* from thin sessions — never pull prior mastery down.
+ * Declines from incorrect answers still apply via BKT.
  */
 export function computeTopicMasteryUpdate(
   currentMastery: number,
@@ -72,5 +91,9 @@ export function computeTopicMasteryUpdate(
   for (const a of sessionAnswers) {
     mastery = bktUpdate(mastery, a.isCorrect)
   }
-  return applyEvidenceCap(mastery, sessionAnswers)
+  if (mastery <= currentMastery) {
+    return mastery
+  }
+  const capped = applyEvidenceCap(mastery, sessionAnswers)
+  return Math.max(currentMastery, capped)
 }

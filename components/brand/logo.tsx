@@ -24,7 +24,7 @@ export function Logo({
         alt={`${SITE_NAME} logo`}
         width={size}
         height={size}
-        className="rounded-md object-contain"
+        className="h-auto w-auto max-h-10 rounded-md object-contain"
         style={{ width: size, height: 'auto' }}
         priority
       />

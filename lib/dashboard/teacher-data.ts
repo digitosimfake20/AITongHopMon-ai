@@ -3,8 +3,10 @@ import prisma from '@/lib/prisma'
 import { getQuizPackagesForClass } from '@/lib/quiz/queries'
 import { getInitials } from '@/lib/utils/initials'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
+import { cachedQuery } from '@/lib/cache/cached-query'
+import { CacheTags, CacheTTL } from '@/lib/cache/tags'
 
-export async function getTeacherDashboardData(
+async function getTeacherDashboardDataUncached(
   teacherId: string,
   classId: string,
   fullName: string,
@@ -158,4 +160,24 @@ export async function getTeacherDashboardData(
     atRiskStudents,
     assignedQuizzes,
   }
+}
+
+/** Cached per class (~90s). Bust via bustClassCaches / invalidateAfterSubmit. */
+export async function getTeacherDashboardData(
+  teacherId: string,
+  classId: string,
+  fullName: string,
+  className: string,
+  studentCount: number,
+): Promise<TeacherDashboardData> {
+  const cached = cachedQuery(getTeacherDashboardDataUncached, {
+    keyParts: ['teacher-dash'],
+    tags: [
+      CacheTags.teacherDash(classId),
+      CacheTags.submissions(classId),
+      CacheTags.packages(classId),
+    ],
+    revalidate: CacheTTL.teacherDash,
+  })
+  return cached(teacherId, classId, fullName, className, studentCount)
 }

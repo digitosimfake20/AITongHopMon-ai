@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateAfterRoster } from '@/lib/cache/invalidate'
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
@@ -119,6 +120,7 @@ export async function saveRosterAction(input: {
     })
   })
 
+  invalidateAfterRoster(input.classId)
   revalidatePath('/onboarding')
   revalidatePath(`/teacher/students`)
   return { success: true }
@@ -158,6 +160,7 @@ export async function addRosterEntryAction(input: {
     },
   })
 
+  invalidateAfterRoster(input.classId)
   revalidatePath('/onboarding')
   revalidatePath('/teacher/students')
   return { success: true }
@@ -342,6 +345,7 @@ export async function claimRosterNameAction(input: {
     })
   })
 
+  invalidateAfterRoster(input.classId, user.id)
   revalidatePath('/onboarding')
   revalidatePath('/dashboard')
   return { success: true, data: { classId: input.classId, className: entry.class.name } }

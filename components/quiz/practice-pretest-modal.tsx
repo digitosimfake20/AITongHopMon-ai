@@ -63,7 +63,7 @@ export function PracticePreTestModal({
           <h2 className="text-lg font-bold">Bạn đã sẵn sàng chưa?</h2>
         </div>
         <p className="mb-4 text-sm text-muted-foreground">
-          Zeno đã trộn câu hỏi Dễ &amp; Trung bình từ kho đề để bạn ôn lại nền tảng.
+          Hệ thống trộn câu hỏi từ kho đề theo điểm yếu của bạn (không sinh đề bằng AI).
         </p>
 
         <div className="mb-5 space-y-3 rounded-xl border bg-muted/40 p-4 text-sm">

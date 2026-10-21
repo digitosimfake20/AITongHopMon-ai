@@ -14,6 +14,7 @@ import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
 import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
+import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -171,11 +172,17 @@ export async function submitQuizAction(
 
   const submissionId = submission.id
   const testId = input.testId
+  const classId = test.classId
+
+  // Bust dashboards / quiz bank immediately so next navigation is fresh
+  invalidateAfterSubmit(classId, user.id)
 
   after(async () => {
     try {
       await runPostSubmissionAIPipeline(user.id, pipelineDetails, {
         skipAiCanonicalization: isPractice,
+        skipLlmEnrich: isPractice,
+        submissionId,
       })
 
       if (isPractice) return
@@ -199,6 +206,8 @@ export async function submitQuizAction(
       ) {
         await recordAdaptiveRound2Submit(classTest.id, user.id, submissionId)
       }
+      // Adaptive session changed → bust again for teacher adaptive views
+      invalidateAfterSubmit(classId, user.id)
     } catch (err) {
       console.error('[submitQuizAction] post-submit work failed:', err)
     }

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateAfterAssign, invalidateTestBank } from '@/lib/cache/invalidate'
 import { redirect } from 'next/navigation'
 import type { DifficultyLevel, Prisma } from '@prisma/client'
 import { getSessionUser } from '@/lib/auth/session'
@@ -143,6 +144,7 @@ export async function publishTestGroupAction(
       return createdGroup
     })
 
+    invalidateTestBank()
     revalidatePath('/admin/test-bank')
     revalidatePath('/teacher/test-bank')
     return { success: true, data: { id: group.id } }
@@ -265,6 +267,7 @@ export async function assignAdaptiveGroupAction(
       return { classTestId: classTest.id }
     }, MATERIALIZE_TEST_TX_OPTIONS)
 
+    invalidateAfterAssign(classId)
     revalidatePath('/teacher/test-bank')
     revalidatePath('/teacher/adaptive')
     revalidatePath('/quizzes')
@@ -594,6 +597,7 @@ export async function updateTestGroupAction(
 
     await prismaDirect.$transaction([groupUpdate, ...tierUpdates])
 
+    invalidateTestBank()
     revalidatePath('/admin/test-bank')
     revalidatePath('/teacher/test-bank')
     revalidatePath('/quizzes')
@@ -624,6 +628,7 @@ export async function deleteTestGroupAction(id: string): Promise<ActionResult> {
   }
 
   await prisma.testGroup.delete({ where: { id } })
+  invalidateTestBank()
   revalidatePath('/admin/test-bank')
   revalidatePath('/teacher/test-bank')
   return { success: true }

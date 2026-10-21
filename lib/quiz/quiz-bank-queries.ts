@@ -52,7 +52,7 @@ function resolveAvailability(
   return 'open'
 }
 
-export async function getQuizBankForStudent(
+async function getQuizBankForStudentUncached(
   classId: string,
   studentId: string,
 ): Promise<QuizBankItem[]> {
@@ -273,6 +273,67 @@ export async function getQuizBankForStudent(
   })
 
   return [...adaptiveItems, ...regularItems]
+}
+
+function reviveQuizBankItem(item: QuizBankItem): QuizBankItem {
+  const startTime = item.startTime ? new Date(item.startTime as unknown as string) : null
+  const endTime = item.endTime ? new Date(item.endTime as unknown as string) : null
+  const latest = item.latestSubmission
+    ? {
+        ...item.latestSubmission,
+        submittedAt: new Date(item.latestSubmission.submittedAt as unknown as string),
+      }
+    : null
+
+  const now = new Date()
+  let availability = item.availability
+
+  if (startTime && endTime) {
+    if (item.isAdaptiveGroup) {
+      availability = resolveAvailability(now, startTime, endTime, item.attemptCount, 2)
+    } else if (now < startTime) {
+      availability = 'not_started'
+    } else if (now > endTime) {
+      availability = 'expired'
+    } else if (
+      item.maxAttempts != null &&
+      item.maxAttempts !== -1 &&
+      item.attemptCount >= item.maxAttempts
+    ) {
+      availability = 'max_attempts'
+    } else {
+      availability = 'open'
+    }
+  }
+
+  return {
+    ...item,
+    startTime,
+    endTime,
+    latestSubmission: latest,
+    availability,
+  }
+}
+
+/** Cached per student (~45s). Availability recomputed on read so deadlines stay honest. */
+export async function getQuizBankForStudent(
+  classId: string,
+  studentId: string,
+): Promise<QuizBankItem[]> {
+  const { cachedQuery } = await import('@/lib/cache/cached-query')
+  const { CacheTags, CacheTTL } = await import('@/lib/cache/tags')
+
+  const cached = cachedQuery(getQuizBankForStudentUncached, {
+    keyParts: ['quiz-bank'],
+    tags: [
+      CacheTags.quizBank(classId),
+      CacheTags.quizBankStudent(classId, studentId),
+      CacheTags.adaptive(classId),
+    ],
+    revalidate: CacheTTL.quizBank,
+  })
+  const items = await cached(classId, studentId)
+  return items.map(reviveQuizBankItem)
 }
 
 // ---------------------------------------------------------------------------

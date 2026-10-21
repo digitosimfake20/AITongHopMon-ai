@@ -14,7 +14,7 @@ export function AdaptivityHeroCard({ title, description }: AdaptivityHeroCardPro
       <div>
         <Badge variant="outline" className="gap-1.5">
           <Sparkles className="size-3 text-primary" aria-hidden="true" />
-          Bài tập thích ứng dành chuyên cho bạn
+          Luyện theo lỗ hổng kiến thức
         </Badge>
         <h2 className="mt-4 text-xl font-semibold tracking-tight text-card-foreground sm:text-2xl">
           {title}

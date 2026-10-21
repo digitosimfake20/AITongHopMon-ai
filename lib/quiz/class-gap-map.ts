@@ -129,7 +129,7 @@ type QuestionWrongRow = {
 // Query
 // ---------------------------------------------------------------------------
 
-export async function getClassGapMapData(
+async function getClassGapMapDataUncached(
   classId: string,
   teacherId: string,
 ): Promise<ClassGapMapData | null> {
@@ -488,4 +488,23 @@ export async function getClassGapMapData(
     criticalGaps,
     tierGroups,
   }
+}
+
+/** Cached per class (~3m). Bust on submit / assign / roster. */
+export async function getClassGapMapData(
+  classId: string,
+  teacherId: string,
+): Promise<ClassGapMapData | null> {
+  const { cachedQuery } = await import('@/lib/cache/cached-query')
+  const { CacheTags, CacheTTL } = await import('@/lib/cache/tags')
+
+  const cached = cachedQuery(getClassGapMapDataUncached, {
+    keyParts: ['class-gap'],
+    tags: [
+      CacheTags.classGap(classId),
+      CacheTags.submissions(classId),
+    ],
+    revalidate: CacheTTL.classGap,
+  })
+  return cached(classId, teacherId)
 }

@@ -43,9 +43,23 @@ export async function buildZenoSystemPrompt(studentId: string): Promise<string> 
     : `- Tên học sinh: ${studentName}
 - Chưa có đủ dữ liệu học tập để xây dựng hồ sơ.`
 
-  const longTermSection = memory?.longTermSummary
-    ? memory.longTermSummary.trim()
-    : 'Chưa có dữ liệu bộ nhớ dài hạn.'
+  const keyInsights = memory?.keyInsights as
+    | { curatedInsight?: string; nextPracticeTopics?: string[] }
+    | null
+    | undefined
+
+  const curated =
+    keyInsights?.curatedInsight?.trim() ||
+    (keyInsights?.nextPracticeTopics?.length
+      ? `Nên luyện: ${keyInsights.nextPracticeTopics.slice(0, 3).join(', ')}.`
+      : '')
+
+  const longTermSection = [
+    curated ? `Insight gần nhất: ${curated}` : null,
+    memory?.longTermSummary?.trim() || null,
+  ]
+    .filter(Boolean)
+    .join('\n') || 'Chưa có dữ liệu bộ nhớ dài hạn.'
 
   const recentChunkSection = recentChunks.length > 0
     ? recentChunks
@@ -59,15 +73,18 @@ export async function buildZenoSystemPrompt(studentId: string): Promise<string> 
   // ── Persona-specific pedagogical hint ────────────────────────────────────
   let personaHint = ''
   if (profile) {
-    switch (true) {
-      case profile.personaType === 'Nhanh nhạy nhưng ẩu':
+    switch (profile.personaType) {
+      case 'Nhanh nhạy nhưng ẩu':
         personaHint = 'Học sinh hay làm nhanh và mắc lỗi cẩu thả. Hãy nhẹ nhàng nhắc em kiểm tra lại dấu, đơn vị và bước tính trước khi kết luận.'
         break
-      case profile.personaType === 'Cẩn thận - Ngâm lâu':
+      case 'Cẩn thận - Ngâm lâu':
         personaHint = 'Học sinh suy nghĩ rất chậm và cẩn thận. Khuyến khích em tự tin hơn và đưa ra gợi ý nhỏ để tháo gỡ bế tắc nhanh hơn.'
         break
-      case profile.personaType === 'Thành thạo':
+      case 'Thành thạo':
         personaHint = 'Học sinh thành thạo tốt. Hãy đưa ra câu hỏi nâng cao, khuyến khích tư duy sâu hơn và liên hệ kiến thức.'
+        break
+      case 'Chắc chắn, tốc độ tốt':
+        personaHint = 'Học sinh làm chắc và tốc độ ổn. Giữ nhịp luyện tập, thỉnh thoảng thêm bài hơi khó để mở rộng.'
         break
       default:
         personaHint = 'Hãy giải thích từng bước rõ ràng, kiên nhẫn và động viên học sinh.'
@@ -77,7 +94,7 @@ export async function buildZenoSystemPrompt(studentId: string): Promise<string> 
   }
 
   // ── Assemble final prompt ─────────────────────────────────────────────────
-  return `Bạn là Zeno — gia sư AI thông minh, đồng cảm, là người bạn học đáng tin cậy dành cho học sinh lớp 8.
+  return `Bạn là Zeno — gia sư AI thông minh, đồng cảm, là người bạn học đáng tin cậy dành cho học sinh lớp 6-9.
 
 [HỒ SƠ HỌC SINH & BỘ NHỚ NGỮ CẢNH]
 ${profileSection}

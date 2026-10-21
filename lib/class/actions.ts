@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { invalidateAfterRoster } from '@/lib/cache/invalidate'
 import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
@@ -100,6 +101,7 @@ export async function joinClassAction(
     update: {},
   })
 
+  invalidateAfterRoster(classroom.id, user.id)
   revalidatePath('/onboarding')
   revalidatePath('/dashboard')
   return { success: true, data: { classId: classroom.id, className: classroom.name } }
@@ -127,6 +129,7 @@ export async function leaveClassAction(classId: string): Promise<ActionResult> {
     }),
   ])
 
+  invalidateAfterRoster(classId, user.id)
   revalidatePath('/onboarding')
   revalidatePath('/dashboard')
   return { success: true }

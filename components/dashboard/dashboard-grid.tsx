@@ -2,6 +2,7 @@ import { AdaptivityHeroCard } from '@/components/dashboard/adaptivity-hero-card'
 import { AssignmentsCard } from '@/components/dashboard/assignments-card'
 import { MasteryProgressCard } from '@/components/dashboard/mastery-progress-card'
 import { WeaknessRadarCard } from '@/components/dashboard/weakness-radar-card'
+import { ZenoInsightCard } from '@/components/dashboard/zeno-insight-card'
 import { AiProfileCard } from '@/components/student/ai-profile-card'
 import { ZenoProactivePanel } from '@/components/student/zeno-proactive-panel'
 import type { StudentDashboardData } from '@/lib/dashboard-types'
@@ -32,6 +33,7 @@ export function DashboardGrid({ data, streakDays, fullStudentName }: DashboardGr
         completedQuizzes={data.completedQuizzes}
         studyHours={data.studyHours}
       />
+      <ZenoInsightCard insight={data.zenoInsight} updatedAt={data.zenoUpdatedAt} />
       <WeaknessRadarCard topics={data.weakTopics} />
       <AssignmentsCard assignments={data.assignments} />
       <AiProfileCard profile={data.cognitiveProfile} />

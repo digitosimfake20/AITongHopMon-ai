@@ -59,7 +59,6 @@ export function TeacherTestBankClient({
   const [maxAttempts, setMaxAttempts] = useState<number>(1)
   const [allowReview, setAllowReview] = useState(true)
   const [passScoreThreshold, setPassScoreThreshold] = useState(8.0)
-  const [lowScoreThreshold, setLowScoreThreshold] = useState(5.0)
 
   const filtered = tests.filter((t) => {
     if (subjectFilter !== 'all' && t.subject !== subjectFilter) return false
@@ -90,7 +89,6 @@ export function TeacherTestBankClient({
     end.setDate(end.getDate() + 7)
     setEndTime(toLocalInputValue(end))
     setPassScoreThreshold(8.0)
-    setLowScoreThreshold(5.0)
     setMaxAttempts(1)
     setAllowReview(true)
   }
@@ -147,7 +145,7 @@ export function TeacherTestBankClient({
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
         passScoreThreshold,
-        lowScoreThreshold,
+        lowScoreThreshold: 5.0,
         allowReview,
       })
       toast.dismiss(toastId)
@@ -375,7 +373,7 @@ export function TeacherTestBankClient({
           onClose={() => setAssigningGroup(null)}
           onConfirm={handleConfirmAssignGroup}
           extra={
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Ngưỡng lên đề Khó (≥)</label>
                 <input
@@ -388,21 +386,9 @@ export function TeacherTestBankClient({
                   className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Ngưỡng xuống đề Dễ (&lt;)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min={0}
-                  max={10}
-                  value={lowScoreThreshold}
-                  onChange={(e) => setLowScoreThreshold(Number(e.target.value))}
-                  className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Lượt 2: &lt; {passScoreThreshold} → Dễ, ≥ {passScoreThreshold} → Khó
-                </p>
-              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Lượt 2: điểm &lt; {passScoreThreshold} → đề Dễ, ≥ {passScoreThreshold} → đề Khó.
+              </p>
             </div>
           }
         />

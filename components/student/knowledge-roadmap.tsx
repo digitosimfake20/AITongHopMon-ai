@@ -27,6 +27,10 @@ import {
   masteryStatusLabel,
   type MasteryStatus,
 } from '@/lib/knowledge/topic-clusters'
+import {
+  MASTERY_STATUS_MASTERED,
+  MASTERY_STATUS_PROGRESSING,
+} from '@/lib/knowledge/mastery-labels'
 import { cn } from '@/lib/utils'
 
 export interface KnowledgeStateItem {
@@ -57,9 +61,12 @@ export function KnowledgeRoadmap({
   zenoSummary,
   zenoUpdatedAt,
 }: KnowledgeRoadmapProps) {
-  const mastered = states.filter((s) => s.pMastery >= 0.8)
-  const progressing = states.filter((s) => s.pMastery >= 0.5 && s.pMastery < 0.8)
-  const weak = states.filter((s) => s.pMastery < 0.5)
+  const mastered = states.filter((s) => s.pMastery >= MASTERY_STATUS_MASTERED)
+  const progressing = states.filter(
+    (s) =>
+      s.pMastery >= MASTERY_STATUS_PROGRESSING && s.pMastery < MASTERY_STATUS_MASTERED,
+  )
+  const weak = states.filter((s) => s.pMastery < MASTERY_STATUS_PROGRESSING)
 
   const topStrengths = [...mastered]
     .sort((a, b) => b.pMastery - a.pMastery)
@@ -163,8 +170,12 @@ export function KnowledgeRoadmap({
           <Accordion defaultValue={defaultOpen} className="gap-3">
             {clusters.map((cluster) => {
               const ClusterIcon = getTopicClusterDef(cluster.clusterId).icon
-              const clusterMastered = cluster.states.filter((s) => s.pMastery >= 0.8).length
-              const clusterWeak = cluster.states.filter((s) => s.pMastery < 0.5).length
+              const clusterMastered = cluster.states.filter(
+                (s) => s.pMastery >= MASTERY_STATUS_MASTERED,
+              ).length
+              const clusterWeak = cluster.states.filter(
+                (s) => s.pMastery < MASTERY_STATUS_PROGRESSING,
+              ).length
 
               return (
                 <AccordionItem

@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import type { ActionResult } from '@/lib/auth/types'
+import { masteryStatusFromAccuracyPercent } from '@/lib/knowledge/mastery-labels'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 
@@ -13,21 +14,34 @@ import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai
 
 export interface TopicMastery {
   topic: string
+  topicKey?: string
   total: number
   correct: number
   accuracy: number  // 0–100
   status: 'WEAK' | 'MEDIUM' | 'MASTERED'
   advice?: string
+  pMastery?: number
 }
 
 export interface AIAnalysis {
   praise: string
   knowledgeGaps: Array<{ issue: string; advice: string }>
   topicMastery?: TopicMastery[]
+  nextStep?: {
+    type: 'practice'
+    topicKeys: string[]
+    topicTitles: string[]
+  } | null
+  signals?: {
+    carelessCount: number
+    stuckCount: number
+  }
 }
 
+/** @deprecated Adaptive routing is deterministic in lib/adaptive/adaptive-logic.ts */
 export type AdaptiveAction = 'UPGRADE' | 'RETRY_SAME' | 'DOWNGRADE' | 'SEEK_TEACHER'
 
+/** @deprecated Unused — keep type for legacy JSON only */
 export interface AdaptiveRouting {
   analysis: string
   recommendedAction: AdaptiveAction
@@ -67,7 +81,8 @@ OUTPUT JSON FORMAT (không có markdown, chỉ JSON thuần):
   ],
   "topicAdvice": [
     {
-      "topic": "Tên chủ đề (phải khớp chính xác tên được cung cấp)",
+      "topicKey": "slug-chu-de (khớp đúng danh sách cung cấp)",
+      "topic": "Tên chủ đề",
       "advice": "1 câu gợi ý học tập ngắn gọn, cụ thể cho chủ đề này"
     }
   ]
@@ -182,30 +197,46 @@ export async function analyzeSubmissionAction(
   ).catch(() => null)
 
   // ── Compute topic mastery from canonical topics ─────────────────────────────
-  const topicMap = new Map<string, { total: number; correct: number }>()
+  const topicMap = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()
   for (const d of submission.details) {
     const raw = normalizeTopicName(resolvedTopics.get(d.questionId))
     const canonical = canonicalMap.get(raw) ?? {
       topicName: raw,
       topicKey: topicToNodeId(raw),
     }
-    const topic = canonical.topicName
-    if (!topicMap.has(topic)) topicMap.set(topic, { total: 0, correct: 0 })
-    const entry = topicMap.get(topic)!
+    const key = canonical.topicKey
+    if (!topicMap.has(key)) {
+      topicMap.set(key, {
+        topic: canonical.topicName,
+        topicKey: key,
+        total: 0,
+        correct: 0,
+      })
+    }
+    const entry = topicMap.get(key)!
     entry.total++
     if (d.isCorrect) entry.correct++
   }
 
-  const topicMasteryBase = [...topicMap.entries()].map(([topic, stats]) => {
+  const topicMasteryBase = [...topicMap.values()].map((stats) => {
     const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
-    const status: TopicMastery['status'] =
-      accuracy >= 80 ? 'MASTERED' : accuracy >= 50 ? 'MEDIUM' : 'WEAK'
-    return { topic, ...stats, accuracy, status }
+    const status = masteryStatusFromAccuracyPercent(accuracy)
+    return {
+      topic: stats.topic,
+      topicKey: stats.topicKey,
+      total: stats.total,
+      correct: stats.correct,
+      accuracy,
+      status,
+    }
   })
 
   const weakTopics = topicMasteryBase
     .filter((t) => t.status !== 'MASTERED')
-    .map((t) => `"${t.topic}" (đúng ${t.correct}/${t.total} câu, ${t.accuracy}%)`)
+    .map(
+      (t) =>
+        `topicKey="${t.topicKey}" "${t.topic}" (đúng ${t.correct}/${t.total} câu, ${t.accuracy}%)`,
+    )
 
   // ── Build AI prompt ─────────────────────────────────────────────────────────
   const questionSummaries = submission.details.map((d, i) => {
@@ -215,7 +246,7 @@ export async function analyzeSubmissionAction(
 
   const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | Số câu đúng: ${submission.correctCount}/${submission.totalQuestions} | Thời gian: ${submission.timeSpentSeconds}s
 
-Các chủ đề cần được gợi ý học tập:
+Các chủ đề cần advice (dùng đúng topicKey trong JSON):
 ${weakTopics.length > 0 ? weakTopics.join('\n') : '(Không có chủ đề yếu)'}
 
 Chi tiết từng câu:
@@ -235,24 +266,46 @@ ${questionSummaries.join('\n')}`
   const raw = completion.choices[0]?.message?.content
   if (!raw) return { success: false, error: 'AI không phản hồi' }
 
-  let parsed: { praise: string; knowledgeGaps: AIAnalysis['knowledgeGaps']; topicAdvice?: { topic: string; advice: string }[] }
+  let parsed: {
+    praise: string
+    knowledgeGaps: AIAnalysis['knowledgeGaps']
+    topicAdvice?: { topicKey?: string; topic?: string; advice: string }[]
+  }
   try {
     parsed = JSON.parse(raw)
   } catch {
     return { success: false, error: 'Kết quả AI không hợp lệ' }
   }
 
-  // ── Merge AI advice into topic mastery ─────────────────────────────────────
-  const adviceMap = new Map((parsed.topicAdvice ?? []).map((t) => [t.topic, t.advice]))
+  // ── Merge AI advice by topicKey (fallback: exact topic name) ───────────────
+  const adviceByKey = new Map<string, string>()
+  const adviceByName = new Map<string, string>()
+  for (const t of parsed.topicAdvice ?? []) {
+    if (!t.advice) continue
+    if (t.topicKey) adviceByKey.set(t.topicKey, t.advice)
+    if (t.topic) adviceByName.set(t.topic, t.advice)
+  }
   const topicMastery: TopicMastery[] = topicMasteryBase.map((t) => ({
     ...t,
-    advice: adviceMap.get(t.topic),
+    advice: (t.topicKey && adviceByKey.get(t.topicKey)) || adviceByName.get(t.topic),
   }))
+
+  const weakForPractice = topicMasteryBase
+    .filter((t) => t.status !== 'MASTERED')
+    .slice(0, 3)
 
   const analysis: AIAnalysis = {
     praise: parsed.praise,
     knowledgeGaps: parsed.knowledgeGaps ?? [],
     topicMastery,
+    nextStep:
+      weakForPractice.length > 0
+        ? {
+            type: 'practice',
+            topicKeys: weakForPractice.map((t) => t.topicKey),
+            topicTitles: weakForPractice.map((t) => t.topic),
+          }
+        : null,
   }
 
   // Persist the analysis so it loads fast next time
@@ -264,60 +317,18 @@ ${questionSummaries.join('\n')}`
   return { success: true, data: analysis }
 }
 
-// ---------------------------------------------------------------------------
-// WORKFLOW 2: Adaptive Quiz Routing
-// ---------------------------------------------------------------------------
-
-const ROUTING_SYSTEM_PROMPT = `Bạn là hệ thống định tuyến bài tập thích ứng của nền tảng Zeno. Nhiệm vụ là phân tích kết quả học sinh và đề xuất bước tiếp theo phù hợp bằng tiếng Việt.
-
-QUY TẮC ĐỊNH TUYẾN:
-- Điểm >= 8.0: UPGRADE — nâng lên mức độ khó hơn.
-- Điểm < 8.0 + Lần thử 1: RETRY_SAME — khuyến khích ôn tập và thử lại cùng mức.
-- Điểm < 8.0 + Lần thử 2 + Mức MEDIUM hoặc HARD: DOWNGRADE — hạ xuống mức dễ hơn để củng cố.
-- Điểm < 8.0 + Lần thử 2 + Mức EASY: SEEK_TEACHER — cần giáo viên hỗ trợ trực tiếp.
-
-OUTPUT JSON FORMAT (không có markdown, chỉ JSON thuần):
-{
-  "analysis": "Phân tích ngắn gọn về kết quả (1-2 câu)",
-  "recommendedAction": "UPGRADE | RETRY_SAME | DOWNGRADE | SEEK_TEACHER",
-  "messageToStudent": "Lời nhắn thân thiện, khích lệ học sinh thực hiện bước tiếp theo"
-}`
-
-export async function routeAdaptiveQuizAction(input: {
+/**
+ * @deprecated Adaptive L2 routing is deterministic via
+ * `recommendRound2Difficulty` in lib/adaptive/adaptive-logic.ts.
+ * Kept as a no-op stub so old imports do not break; do not call.
+ */
+export async function routeAdaptiveQuizAction(_input: {
   score: number
   attemptNumber: number
   difficulty: 'EASY' | 'MEDIUM' | 'HARD'
 }): Promise<ActionResult<AdaptiveRouting>> {
-  const user = await getSessionUser()
-  if (!user) return { success: false, error: 'Chưa đăng nhập' }
-
-  const difficultyLabel: Record<string, string> = {
-    EASY: 'Dễ',
-    MEDIUM: 'Trung bình',
-    HARD: 'Khó',
-  }
-
-  const userPrompt = `Điểm: ${input.score}/10 | Lần thử: ${input.attemptNumber} | Mức độ hiện tại: ${difficultyLabel[input.difficulty] ?? input.difficulty}`
-
-  const openai = getOpenAIClient()
-  const completion = await openai.chat.completions.create({
-    model: OPENAI_MODEL_CHAT,
-    response_format: { type: 'json_object' },
-    temperature: 0.3,
-    max_tokens: 400,
-    messages: [
-      { role: 'system', content: ROUTING_SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-  })
-
-  const raw = completion.choices[0]?.message?.content
-  if (!raw) return { success: false, error: 'AI không phản hồi' }
-
-  try {
-    const routing = JSON.parse(raw) as AdaptiveRouting
-    return { success: true, data: routing }
-  } catch {
-    return { success: false, error: 'Kết quả AI không hợp lệ' }
+  return {
+    success: false,
+    error: 'Định tuyến thích ứng dùng thuật toán điểm số, không còn gọi AI.',
   }
 }

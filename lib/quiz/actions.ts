@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import type { Prisma } from '@prisma/client'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
+import { invalidatePackages } from '@/lib/cache/invalidate'
 import prisma from '@/lib/prisma'
 import { saveQuizPackageSchema, saveQuizSchema } from '@/lib/validations/quiz'
 import type { SaveQuizInput, SaveQuizPackageInput } from '@/lib/validations/quiz'
@@ -211,6 +212,7 @@ export async function saveQuizPackageAction(
     return { testIds: [easyId, mediumId, hardId], packageId: pkg.id }
   })
 
+  invalidatePackages(data.classId)
   revalidatePath('/teacher/assignments')
   revalidatePath('/teacher')
   revalidatePath('/quizzes')
@@ -243,6 +245,7 @@ export async function deleteQuizPackageAction(packageId: string): Promise<Action
     }
   })
 
+  invalidatePackages(pkg.classId)
   revalidatePath('/teacher/assignments')
   revalidatePath('/teacher')
   revalidatePath('/quizzes')
@@ -366,6 +369,7 @@ export async function updateQuizPackageAction(
     }
   })
 
+  invalidatePackages(pkg.classId)
   revalidatePath('/teacher/assignments')
   revalidatePath('/teacher')
   return { success: true, data: { packageId } }
@@ -409,6 +413,7 @@ export async function saveQuizAction(
     }),
   )
 
+  invalidatePackages(classId)
   revalidatePath('/teacher/assignments')
   revalidatePath('/teacher')
   revalidatePath('/quizzes')

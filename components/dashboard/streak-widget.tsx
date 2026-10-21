@@ -5,6 +5,8 @@ interface StreakWidgetProps {
 }
 
 export function StreakWidget({ days }: StreakWidgetProps) {
+  if (days <= 0) return null
+
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_-20px_rgba(0,0,0,0.12)] dark:shadow-[0_1px_2px_rgba(255,255,255,0.04),0_16px_40px_-20px_rgba(0,0,0,0.5)]">
       <div className="flex items-center gap-3">
