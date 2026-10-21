@@ -15,11 +15,16 @@ export interface WeakTopic {
 }
 
 export interface Assignment {
+  /** Test to open (`/quiz/take/[id]`) — for adaptive, the next round’s test id */
   id: string
   title: string
+  kind?: 'standard' | 'adaptive'
+  subtitle?: string
   deadline?: string
   status: 'pending' | 'completed'
   score?: string
+  statusHint?: string
+  classTestId?: string
   /** Submission ID used to link to the result/AI-analysis page */
   submissionId?: string
 }

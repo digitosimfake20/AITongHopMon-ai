@@ -58,7 +58,17 @@ export function ZenoProactivePanel({
     }
 
     if (saveForLater) {
-      toast.success('Đã lưu vào danh sách "Làm sau"')
+      const { addSavedPractice } = await import('@/lib/quiz/active-quiz-session')
+      addSavedPractice({
+        testId: result.data.testId,
+        title: `Luyện tập — ${result.data.weakTopic}`,
+        topic: result.data.weakTopic,
+        questionCount: result.data.questionCount,
+        timeLimitMinutes: result.data.timeLimitMinutes,
+        savedAt: Date.now(),
+      })
+      toast.success('Đã thêm vào tab "Làm sau"')
+      window.location.href = '/quizzes?tab=later'
       return
     }
 

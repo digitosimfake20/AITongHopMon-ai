@@ -1,4 +1,5 @@
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
+import { AccessBlockedPage } from '@/components/ui/access-blocked-page'
 import { Clock, Star, Target, TrendingUp } from 'lucide-react'
 import { getSessionUser } from '@/lib/auth/session'
 import { getSubmissionResult } from '@/lib/quiz/submission-queries'
@@ -41,7 +42,16 @@ export default async function QuizResultPage({ params }: PageProps) {
   if (!user) redirect('/login')
 
   const result = await getSubmissionResult(id, { id: user.id, role: user.role })
-  if (!result) notFound()
+  if (!result) {
+    return (
+      <AccessBlockedPage
+        title="Không xem được kết quả"
+        description="Bài nộp không tồn tại hoặc bạn không có quyền xem. Nếu vừa nộp bài, thử mở lại từ Ngân hàng đề."
+        backHref="/quizzes"
+        backLabel="Về ngân hàng đề"
+      />
+    )
+  }
 
   const grade = scoreGrade(result.score)
   const official = submissionOfficialStatsFromDetails(

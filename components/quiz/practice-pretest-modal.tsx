@@ -44,6 +44,7 @@ export function PracticePreTestModal({
       savedAt: Date.now(),
     })
     onOpenChange(false)
+    router.push('/quizzes?tab=later')
   }
 
   return (
@@ -88,7 +89,7 @@ export function PracticePreTestModal({
             Bắt đầu làm bài
           </Button>
           <Button variant="outline" className="w-full" onClick={handleSaveLater}>
-            Làm sau
+            Lưu vào &quot;Làm sau&quot;
           </Button>
         </div>
       </div>

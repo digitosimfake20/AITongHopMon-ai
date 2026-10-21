@@ -3,9 +3,15 @@ import { resolveStudentContext } from '@/lib/dashboard/context'
 import { getQuizBankForStudent } from '@/lib/quiz/quiz-bank-queries'
 import { QuizzesListClient } from '@/components/student/quizzes-list-client'
 
-export default async function QuizzesPage() {
+interface PageProps {
+  searchParams: Promise<{ tab?: string }>
+}
+
+export default async function QuizzesPage({ searchParams }: PageProps) {
+  const { tab } = await searchParams
   const { user, classroom } = await resolveStudentContext()
   const quizzes = await getQuizBankForStudent(classroom.id, user.id)
+  const defaultTab = tab === 'later' ? 'later' : 'all'
 
   return (
     <main className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -19,7 +25,7 @@ export default async function QuizzesPage() {
         )}
       </div>
 
-      <QuizzesListClient quizzes={quizzes} />
+      <QuizzesListClient quizzes={quizzes} defaultTab={defaultTab} />
     </main>
   )
 }

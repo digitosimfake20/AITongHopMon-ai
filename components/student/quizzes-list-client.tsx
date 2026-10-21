@@ -21,6 +21,7 @@ import { useEffect } from 'react'
 
 interface QuizzesListClientProps {
   quizzes: QuizBankItem[]
+  defaultTab?: string
 }
 
 function groupBySubject(items: QuizBankItem[]) {
@@ -55,7 +56,7 @@ function filterByStatus(items: QuizBankItem[], status: string) {
   })
 }
 
-export function QuizzesListClient({ quizzes }: QuizzesListClientProps) {
+export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListClientProps) {
   const [savedIds, setSavedIds] = useState<string[]>([])
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export function QuizzesListClient({ quizzes }: QuizzesListClientProps) {
   }
 
   return (
-    <Tabs defaultValue="all" className="space-y-4">
+    <Tabs defaultValue={defaultTab} className="space-y-4">
       <TabsList className="flex h-auto flex-wrap gap-1">
         <TabsTrigger value="all">Tất cả ({assigned.length})</TabsTrigger>
         <TabsTrigger value="subject">Theo môn</TabsTrigger>

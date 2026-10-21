@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { addSavedPractice } from '@/lib/quiz/active-quiz-session'
 import { Brain, Zap, Clock, AlertTriangle, TrendingUp, TrendingDown, BookOpen, Loader2 } from 'lucide-react'
 import { generateSmartQuizAction } from '@/app/actions/generate-smart-quiz'
 import { toast } from 'sonner'
@@ -13,6 +15,7 @@ interface AiProfileCardProps {
 }
 
 export function AiProfileCard({ profile }: AiProfileCardProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [pretestOpen, setPretestOpen] = useState(false)
@@ -29,7 +32,16 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
       const result = await generateSmartQuizAction({ saveForLater })
       if (result.success && result.data) {
         if (saveForLater) {
-          toast.success('Đã lưu vào tab "Làm sau" trong Ngân hàng đề')
+          addSavedPractice({
+            testId: result.data.testId,
+            title: `Luyện tập — ${result.data.weakTopic}`,
+            topic: result.data.weakTopic,
+            questionCount: result.data.questionCount,
+            timeLimitMinutes: result.data.timeLimitMinutes,
+            savedAt: Date.now(),
+          })
+          toast.success('Đã thêm vào tab "Làm sau" — mở Ngân hàng đề để làm bất cứ lúc nào')
+          router.push('/quizzes?tab=later')
           return
         }
         setPendingQuiz({
@@ -132,7 +144,7 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
             disabled={isPending}
             className="rounded-xl border border-teal-300 px-4 py-2.5 text-sm font-medium text-teal-700 hover:bg-teal-50 disabled:opacity-60 dark:border-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/30"
           >
-            Làm sau
+            Lưu vào &quot;Làm sau&quot;
           </button>
         </div>
 

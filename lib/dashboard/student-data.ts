@@ -9,6 +9,8 @@ import {
   MASTERY_STATUS_MASTERED,
   MASTERY_STATUS_PROGRESSING,
 } from '@/lib/knowledge/mastery-labels'
+import { assignmentsFromQuizBank } from '@/lib/dashboard/student-assignments'
+import { getQuizBankForStudent } from '@/lib/quiz/quiz-bank-queries'
 
 function formatRelativeTime(date: Date): string {
   const diffMs = Date.now() - date.getTime()
@@ -31,20 +33,8 @@ async function getStudentDashboardDataUncached(
   fullName: string,
   classLabel: string,
 ): Promise<CachedStudentDash> {
-  const [tests, submissions, knowledgeStates, cognitiveProfile, globalMemory] =
-    await prisma.$transaction([
-      prisma.test.findMany({
-        where: { classId },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          submissions: {
-            where: { studentId: userId },
-            orderBy: { submittedAt: 'desc' },
-            take: 1,
-            select: { id: true, score: true, submittedAt: true },
-          },
-        },
-      }),
+  const [submissions, knowledgeStates, cognitiveProfile, globalMemory, quizBank] =
+    await Promise.all([
       prisma.submission.findMany({
         where: {
           studentId: userId,
@@ -59,6 +49,7 @@ async function getStudentDashboardDataUncached(
       }),
       prisma.studentCognitiveProfile.findUnique({ where: { studentId: userId } }),
       prisma.globalAgentMemory.findUnique({ where: { studentId: userId } }),
+      getQuizBankForStudent(classId, userId),
     ])
 
   const masteryPercent =
@@ -104,24 +95,7 @@ async function getStudentDashboardDataUncached(
       ? `Trộn câu từ kho đề theo ${weakTopics.length} chủ đề còn yếu — không phải AI sinh đề mới.`
       : 'Hoàn thành bài kiểm tra để hệ thống ghi nhận điểm yếu và gợi ý luyện tập.'
 
-  const assignments = tests.map((test) => {
-    const latest = test.submissions[0]
-    if (latest) {
-      return {
-        id: test.id,
-        title: test.title,
-        status: 'completed' as const,
-        score: `${Number(latest.score).toFixed(1)}/10`,
-        submissionId: latest.id,
-      }
-    }
-    return {
-      id: test.id,
-      title: test.title,
-      status: 'pending' as const,
-      deadline: `${test.timeLimitMinutes} phút`,
-    }
-  })
+  const assignments = assignmentsFromQuizBank(quizBank)
 
   const firstName = fullName.split(/\s+/)[0] ?? fullName
 

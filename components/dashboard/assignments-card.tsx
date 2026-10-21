@@ -30,27 +30,40 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
               className="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="font-medium text-foreground">{item.title}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-foreground">{item.title}</p>
+                  {item.kind === 'adaptive' ? (
+                    <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                      Phân hóa 2 lượt
+                    </Badge>
+                  ) : null}
+                </div>
+                {item.subtitle ? (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>
+                ) : null}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   {item.deadline ? <span>⏱ {item.deadline}</span> : null}
+                  {item.statusHint ? <span>· {item.statusHint}</span> : null}
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 {item.status === 'pending' ? (
                   <>
-                    <Badge variant="destructive">Chưa làm</Badge>
+                    <Badge variant="destructive">
+                      {item.statusHint === 'Đang tiến hành' ? 'Đang làm dở' : 'Chưa làm'}
+                    </Badge>
                     <Button
                       className="min-h-11"
                       nativeButton={false}
                       render={<Link href={`/quiz/take/${item.id}`} />}
                     >
-                      Bắt đầu làm bài
+                      {item.kind === 'adaptive' ? 'Tiếp tục phân hóa' : 'Bắt đầu làm bài'}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                      Đã nộp — {item.score}
+                      {item.kind === 'adaptive' ? `Hoàn thành — ${item.score ?? ''}` : `Đã nộp — ${item.score}`}
                     </Badge>
                     {item.submissionId ? (
                       <Button

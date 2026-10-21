@@ -75,10 +75,10 @@ export function QuizPreTestGate({ data, children }: QuizPreTestGateProps) {
                   timeLimitMinutes: data.timeLimitMinutes,
                   savedAt: Date.now(),
                 })
-                router.push('/quizzes')
+                router.push('/quizzes?tab=later')
               }}
             >
-              Làm sau
+              Lưu vào &quot;Làm sau&quot;
             </Button>
           ) : null}
         </div>
