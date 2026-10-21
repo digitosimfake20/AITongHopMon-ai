@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Brain, ChevronDown, ChevronUp, Loader2, BookOpen } from 'lucide-react'
 import { analyzeSubmissionAction } from '@/app/actions/analyze-submission'
 import type { AIAnalysis } from '@/app/actions/analyze-submission'
+import { formatOfficialScoreLine } from '@/lib/knowledge/scored-submission-stats'
 import { generateSmartQuizAction } from '@/app/actions/generate-smart-quiz'
 import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'
 import { PracticePreTestModal } from '@/components/quiz/practice-pretest-modal'
@@ -23,6 +24,15 @@ function parseAnalysis(raw: string | null): AIAnalysis | null {
   } catch {
     return { praise: raw, knowledgeGaps: [] }
   }
+}
+
+/** Avoid duplicating the official stats banner inside the praise paragraph. */
+function praiseDisplayText(analysis: AIAnalysis): string {
+  const { praise, officialStats } = analysis
+  if (!officialStats || !praise.trim()) return praise
+  const line = formatOfficialScoreLine(officialStats)
+  if (praise.startsWith(line)) return praise.slice(line.length).trim()
+  return praise
 }
 
 export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIInsightsCardProps) {
@@ -134,8 +144,15 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
 
         {analysis && isExpanded && (
           <div className="mt-4 space-y-4">
+            {analysis.officialStats && (
+              <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs font-medium text-foreground">
+                {formatOfficialScoreLine(analysis.officialStats)}
+              </p>
+            )}
             <div className="rounded-xl border border-teal-200 bg-background/70 px-4 py-3 dark:border-teal-800">
-              <p className="text-sm leading-relaxed text-foreground">{analysis.praise}</p>
+              <p className="text-sm leading-relaxed text-foreground">
+                {praiseDisplayText(analysis) || '—'}
+              </p>
             </div>
 
             {analysis.topicMastery && analysis.topicMastery.length > 0 && (

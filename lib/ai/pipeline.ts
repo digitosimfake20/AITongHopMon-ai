@@ -72,6 +72,8 @@ export async function runPostSubmissionAIPipeline(
     submissionId?: string
     /** Skip LLM polish (practice quizzes / offline) */
     skipLlmEnrich?: boolean
+    /** Persisted submission counts — keeps AI feedback aligned with result page */
+    officialStats?: import('@/lib/knowledge/scored-submission-stats').SubmissionOfficialStats
   },
 ): Promise<void> {
   try {
@@ -162,7 +164,7 @@ export async function runPostSubmissionAIPipeline(
     }
 
     // ── 3. Action plan → Submission.aiFeedbackSummary ─────────────────────────
-    let plan = buildStudentActionPlan(planBatches)
+    let plan = buildStudentActionPlan(planBatches, options?.officialStats)
     if (!options?.skipLlmEnrich && !options?.skipAiCanonicalization) {
       plan = await enrichActionPlanWithLLM(plan)
     }

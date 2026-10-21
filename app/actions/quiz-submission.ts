@@ -12,9 +12,11 @@ import {
 } from '@/app/actions/test-group'
 import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
 import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
+import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
 import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
+import { scoreTrueFalseGroup } from '@/lib/quiz/score-true-false'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -41,25 +43,6 @@ export interface SubmitQuizInput {
 // Scoring helpers
 // ---------------------------------------------------------------------------
 
-function scoreTrueFalse(
-  studentAnswers: Record<string, boolean>,
-  correctStr: string | null,
-  maxPoints: number,
-): number {
-  if (!correctStr) return 0
-  const correct = correctStr.split(',').map((s) => s.trim() === 'T')
-  const labels = Object.keys(studentAnswers)
-  const numCorrect = labels.filter((_, i) => studentAnswers[labels[i]] === correct[i]).length
-  const total = correct.length
-
-  if (total === 0) return 0
-  if (numCorrect === total) return maxPoints
-  if (numCorrect === 3) return maxPoints * 0.5
-  if (numCorrect === 2) return maxPoints * 0.25
-  if (numCorrect === 1) return maxPoints * 0.1
-  return 0
-}
-
 function scoreAnswer(
   type: QuestionAnswerInput['type'],
   studentAnswer: QuestionAnswerInput['answer'],
@@ -73,7 +56,7 @@ function scoreAnswer(
     }
     case 'TRUE_FALSE_GROUP': {
       const ans = studentAnswer as Record<string, boolean>
-      const pts = scoreTrueFalse(ans, correctOption, maxPoints)
+      const pts = scoreTrueFalseGroup(ans, correctOption, maxPoints)
       return { isCorrect: pts >= maxPoints, pointsEarned: Math.round(pts * 100) / 100 }
     }
     case 'SHORT_ANSWER': {
@@ -183,6 +166,14 @@ export async function submitQuizAction(
         skipAiCanonicalization: isPractice,
         skipLlmEnrich: isPractice,
         submissionId,
+        officialStats: submissionOfficialStatsFromDetails(
+          pipelineDetails.map((d) => ({
+            type: d.type,
+            isCorrect: d.isCorrect,
+          })),
+          correctCount,
+          questionIds.length,
+        ),
       })
 
       if (isPractice) return

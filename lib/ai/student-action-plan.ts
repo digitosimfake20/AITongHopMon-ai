@@ -9,6 +9,10 @@ import {
   masteryStatusFromP,
   type MasteryLabelStatus,
 } from '@/lib/knowledge/mastery-labels'
+import {
+  formatOfficialScoreLine,
+  type SubmissionOfficialStats,
+} from '@/lib/knowledge/scored-submission-stats'
 
 export interface ActionPlanTopic {
   topic: string
@@ -22,6 +26,8 @@ export interface ActionPlanTopic {
 }
 
 export interface StudentActionPlan {
+  /** Authoritative counts from Submission — UI should prefer this over LLM prose. */
+  officialStats?: SubmissionOfficialStats
   praise: string
   knowledgeGaps: Array<{ issue: string; advice: string }>
   topicMastery: ActionPlanTopic[]
@@ -52,7 +58,10 @@ function defaultPraise(scoreHint: { correct: number; total: number }): string {
 }
 
 /** Build structured plan from updated BKT batches (no LLM). */
-export function buildStudentActionPlan(batches: TopicBatchForPlan[]): StudentActionPlan {
+export function buildStudentActionPlan(
+  batches: TopicBatchForPlan[],
+  officialStats?: SubmissionOfficialStats,
+): StudentActionPlan {
   let sessionCorrect = 0
   let sessionTotal = 0
   let carelessCount = 0
@@ -109,8 +118,13 @@ export function buildStudentActionPlan(batches: TopicBatchForPlan[]): StudentAct
     })
   }
 
+  const praiseBase = officialStats
+    ? formatOfficialScoreLine(officialStats)
+    : defaultPraise({ correct: sessionCorrect, total: sessionTotal })
+
   return {
-    praise: defaultPraise({ correct: sessionCorrect, total: sessionTotal }),
+    officialStats,
+    praise: praiseBase,
     knowledgeGaps,
     topicMastery,
     nextStep:
@@ -128,10 +142,34 @@ export function buildStudentActionPlan(batches: TopicBatchForPlan[]): StudentAct
 const THIN_ANALYSIS_PROMPT = `Bạn là gia sư Zeno. Viết phản hồi ngắn bằng tiếng Việt cho học sinh sau bài kiểm tra.
 CHỈ trả JSON thuần:
 {
-  "praise": "1-2 câu khen chân thực",
+  "encouragement": "1 câu động viên (KHÔNG nêu số câu đúng/sai — hệ thống đã có số chính thức)",
   "topicAdvice": [{ "topicKey": "...", "advice": "1 câu gợi ý cụ thể" }]
 }
-topicKey phải khớp đúng danh sách được cung cấp. Không bịa chủ đề mới.`
+topicKey phải khớp đúng danh sách được cung cấp. Không bịa chủ đề mới. Không đếm lại câu đúng.
+Nếu prompt có "toneHint" báo còn chủ đề yếu hoặc điểm trung bình: KHÔNG dùng "vững chắc", "nền tảng vững", "xuất sắc" — hãy thừa nhận còn dạng cần luyện và động viên tiếp tục.`
+
+/** One-line encouragement aligned with official stats + weak topics (no LLM counting). */
+export function deterministicEncouragement(plan: StudentActionPlan): string {
+  const weak = plan.topicMastery.filter((t) => t.status !== 'MASTERED')
+  const hasSevereWeak = weak.some((t) => t.accuracy < 50)
+  const scored = plan.officialStats?.scoredQuestionCount ?? 0
+  const ratio =
+    scored > 0 && plan.officialStats
+      ? plan.officialStats.correctCount / scored
+      : weak.length > 0
+        ? weak.reduce((s, t) => s + t.accuracy, 0) / (weak.length * 100)
+        : 1
+
+  if (hasSevereWeak || ratio < 0.65) {
+    return 'Em đã hoàn thành bài — vẫn còn vài dạng cần ôn thêm; luyện đúng chủ đề sẽ giúp điểm và độ tự tin tăng nhanh hơn.'
+  }
+  if (ratio < 0.85 || weak.length >= 2) {
+    return 'Tiến bộ rõ. Một số chủ đề còn lệch — tập trung luyện các dạng đó trước khi làm đề mới.'
+  }
+  return 'Làm tốt! Có thể thử thêm bài khó hơn một chút để củng cố.'
+}
+
+const OVERPRAISE_WHEN_WEAK = /vững chắc|nền tảng.*vững|xuất sắc|rất tốt.*toàn diện/i
 
 /** Optional LLM polish — merges advice by topicKey; keeps deterministic structure. */
 export async function enrichActionPlanWithLLM(
@@ -142,7 +180,9 @@ export async function enrichActionPlanWithLLM(
 
   try {
     const openai = getOpenAIClient()
+    const toneHint = deterministicEncouragement(plan)
     const userPrompt = `Lời khen mặc định: ${plan.praise}
+toneHint (bắt buộc phù hợp, không mâu thuẫn): ${toneHint}
 
 Chủ đề cần advice (dùng đúng topicKey):
 ${weak
@@ -167,6 +207,7 @@ ${weak
     if (!raw) return plan
 
     const parsed = JSON.parse(raw) as {
+      encouragement?: string
       praise?: string
       topicAdvice?: Array<{ topicKey: string; advice: string }>
     }
@@ -189,9 +230,20 @@ ${weak
       return match?.advice ? { ...gap, advice: match.advice } : gap
     })
 
+    let encouragement = (parsed.encouragement ?? parsed.praise)?.trim()
+    const needsCaution =
+      weak.some((t) => t.accuracy < 50) ||
+      (plan.officialStats &&
+        plan.officialStats.scoredQuestionCount > 0 &&
+        plan.officialStats.correctCount / plan.officialStats.scoredQuestionCount < 0.7)
+    if (!encouragement || (needsCaution && encouragement && OVERPRAISE_WHEN_WEAK.test(encouragement))) {
+      encouragement = deterministicEncouragement(plan)
+    }
+    const praise = encouragement ? `${plan.praise} ${encouragement}` : plan.praise
+
     return {
       ...plan,
-      praise: parsed.praise?.trim() || plan.praise,
+      praise,
       topicMastery,
       knowledgeGaps,
     }

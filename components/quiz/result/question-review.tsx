@@ -119,16 +119,30 @@ function TrueFalseReview({
               {sq.label})
             </span>
             <span className="flex-1"><MathText text={sq.content} /></span>
-            <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-xs font-medium">
               {isAnswered && (
-                <span className={student ? 'text-green-700' : 'text-red-700'}>
-                  {student ? 'Đúng' : 'Sai'}
+                <span className="text-foreground">
+                  Bạn chọn:{' '}
+                  <span className={student ? 'text-blue-700 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'}>
+                    {student ? 'Đ' : 'S'}
+                  </span>
                 </span>
               )}
-              <span className="text-muted-foreground">→</span>
-              <span className={correct ? 'text-green-700' : 'text-red-700'}>
-                Đáp án: {correct ? 'Đúng' : 'Sai'}
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">
+                Đáp án chuẩn:{' '}
+                <span className={correct ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                  {correct ? 'Đ' : 'S'}
+                </span>
               </span>
+              {isAnswered && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <span className={isCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                    {isCorrect ? 'Khớp' : 'Chưa khớp'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )

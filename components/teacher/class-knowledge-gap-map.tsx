@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import {
@@ -40,6 +38,7 @@ import {
 import { withClassParam } from '@/lib/class/with-class-param'
 import { masteryStatusLabel } from '@/lib/knowledge/topic-clusters'
 import type { ClassGapMapData, CriticalGap, StudentTierGroup } from '@/lib/quiz/class-gap-map'
+import { QUESTION_TYPE_LABELS } from '@/lib/quiz/types'
 import { cn } from '@/lib/utils'
 
 interface ClassKnowledgeGapMapProps {
@@ -75,6 +74,9 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
                   {data.chapterHint}
                 </span>
               </p>
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                {data.stats.aggregationNote}
+              </p>
             </div>
           </div>
         </div>
@@ -95,12 +97,14 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
           <StatCard
             label="Tỷ lệ hoàn thành"
             value={`${data.stats.completionRate}%`}
+            hint={`${data.stats.completionDetail.completedSlots}/${data.stats.completionDetail.expectedSlots} HS×bài`}
             icon={<CheckCircle2 className="size-4 text-teal-600" />}
             tone="teal"
           />
           <StatCard
             label="HS cần chú ý"
             value={`${data.stats.needsAttentionCount} HS`}
+            hint="Điểm TB bài kiểm tra < 5"
             icon={<AlertTriangle className="size-4 text-amber-600" />}
             tone="amber"
           />
@@ -171,8 +175,8 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
       <section>
         <SectionHeading
           icon={<TrendingUp className="size-4" />}
-          title="Bảng độ thành thạo theo chủ đề"
-          subtitle="Theo dõi tiến độ cả lớp trên từng dạng bài"
+          title="Tỷ lệ câu đúng theo chủ đề (mọi lượt làm)"
+          subtitle="Không phải BKT trên hồ sơ học sinh — chỉ câu tự chấm, không gồm ESSAY"
         />
         {data.topicMastery.length === 0 ? (
           <EmptyState message="Chưa có dữ liệu bài làm. Giao bài kiểm tra để lập bản đồ lỗ hổng." />
@@ -184,9 +188,9 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
                   <tr className="border-b bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/50">
                     <th className="px-4 py-3">Chủ đề / Dạng bài</th>
                     <th className="px-4 py-3">Cụm</th>
-                    <th className="px-4 py-3 w-48">Độ thành thạo</th>
-                    <th className="px-4 py-3">Trạng thái</th>
-                    <th className="px-4 py-3 text-right">HS yếu (&lt;50%)</th>
+                    <th className="px-4 py-3 w-48">% câu đúng (lớp)</th>
+                    <th className="px-4 py-3">Nhãn (theo % lượt)</th>
+                    <th className="px-4 py-3 text-right">HS &lt;50% trên chủ đề</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -240,7 +244,7 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
         <SectionHeading
           icon={<AlertTriangle className="size-4 text-rose-500" />}
           title="Lỗ hổng cấp thiết"
-          subtitle="Dạng bài nhiều HS mắc lỗi — ưu tiên phụ đạo"
+          subtitle="Theo từng câu hỏi (cùng chủ đề có thể có nhiều mục) — % = HS từng sai ≥1 lần"
         />
         {data.criticalGaps.length === 0 ? (
           <EmptyState message="Chưa phát hiện lỗ hổng cấp thiết. Lớp đang làm bài ổn định!" />
@@ -315,11 +319,13 @@ function SectionHeading({
 function StatCard({
   label,
   value,
+  hint,
   icon,
   tone,
 }: {
   label: string
   value: string
+  hint?: string
   icon: React.ReactNode
   tone: 'blue' | 'emerald' | 'teal' | 'amber'
 }) {
@@ -336,6 +342,7 @@ function StatCard({
         {label}
       </div>
       <p className="text-xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{value}</p>
+      {hint ? <p className="mt-0.5 text-[10px] text-slate-500">{hint}</p> : null}
     </div>
   )
 }
@@ -387,9 +394,12 @@ function CriticalGapCard({
             <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               {gap.title}{' '}
               <span className="font-normal text-rose-600 dark:text-rose-400">
-                ({gap.wrongPercent}% HS làm sai)
+                ({gap.wrongPercent}% HS từng sai ≥1 lần)
               </span>
             </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Chủ đề: {gap.topic} · {QUESTION_TYPE_LABELS[gap.questionType] ?? gap.questionType}
+            </p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
               {gap.description}
             </p>

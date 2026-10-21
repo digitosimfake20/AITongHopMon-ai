@@ -4,7 +4,13 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import type { ActionResult } from '@/lib/auth/types'
+import { contributesToMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
 import { masteryStatusFromAccuracyPercent } from '@/lib/knowledge/mastery-labels'
+import {
+  formatOfficialScoreLine,
+  submissionOfficialStatsFromDetails,
+  type SubmissionOfficialStats,
+} from '@/lib/knowledge/scored-submission-stats'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 
@@ -24,6 +30,7 @@ export interface TopicMastery {
 }
 
 export interface AIAnalysis {
+  officialStats?: SubmissionOfficialStats
   praise: string
   knowledgeGaps: Array<{ issue: string; advice: string }>
   topicMastery?: TopicMastery[]
@@ -66,9 +73,11 @@ QUY TẮC PHÂN TÍCH:
    - MULTIPLE_CHOICE: có thể do nhầm lẫn hoặc thiếu kiến thức.
    - ESSAY: cần xem xét thêm (không tự chấm được).
 
-3. Khen ngợi học sinh trung thực, không sáo rỗng.
+3. Khen ngợi học sinh trung thực, không sáo rỗng. KHÔNG nêu số câu đúng/sai khác với dòng "Số câu đúng" trong prompt.
 
-4. Với mỗi chủ đề yếu (accuracy < 80%), hãy đưa ra 1 câu gợi ý học tập cụ thể.
+4. Câu ESSAY (tự luận) chưa chấm tự động — không dùng để kết luận sai.
+
+5. Với mỗi chủ đề yếu (accuracy < 80%), hãy đưa ra 1 câu gợi ý học tập cụ thể.
 
 OUTPUT JSON FORMAT (không có markdown, chỉ JSON thuần):
 {
@@ -199,6 +208,7 @@ export async function analyzeSubmissionAction(
   // ── Compute topic mastery from canonical topics ─────────────────────────────
   const topicMap = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()
   for (const d of submission.details) {
+    if (!contributesToMasteryUpdate(d.question.type)) continue
     const raw = normalizeTopicName(resolvedTopics.get(d.questionId))
     const canonical = canonicalMap.get(raw) ?? {
       topicName: raw,
@@ -241,10 +251,22 @@ export async function analyzeSubmissionAction(
   // ── Build AI prompt ─────────────────────────────────────────────────────────
   const questionSummaries = submission.details.map((d, i) => {
     const topic = resolvedTopics.get(d.questionId) || d.question.topic
+    if (!contributesToMasteryUpdate(d.question.type)) {
+      return `Câu ${i + 1} [${d.question.type}|${topic}]: (tự luận — chưa chấm tự động) — ${d.timeSpentSeconds}s`
+    }
     return `Câu ${i + 1} [${d.question.type}|${topic}]: ${d.isCorrect ? '✓' : '✗'} — ${d.timeSpentSeconds}s — "${d.question.content.slice(0, 120)}"`
   })
 
-  const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | Số câu đúng: ${submission.correctCount}/${submission.totalQuestions} | Thời gian: ${submission.timeSpentSeconds}s
+  const officialStats = submissionOfficialStatsFromDetails(
+    submission.details.map((d) => ({
+      type: d.question.type,
+      isCorrect: d.isCorrect,
+    })),
+    submission.correctCount,
+    submission.totalQuestions,
+  )
+
+  const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | ${formatOfficialScoreLine(officialStats)} | Thời gian: ${submission.timeSpentSeconds}s
 
 Các chủ đề cần advice (dùng đúng topicKey trong JSON):
 ${weakTopics.length > 0 ? weakTopics.join('\n') : '(Không có chủ đề yếu)'}
@@ -295,7 +317,8 @@ ${questionSummaries.join('\n')}`
     .slice(0, 3)
 
   const analysis: AIAnalysis = {
-    praise: parsed.praise,
+    officialStats,
+    praise: parsed.praise?.trim() ?? '',
     knowledgeGaps: parsed.knowledgeGaps ?? [],
     topicMastery,
     nextStep:

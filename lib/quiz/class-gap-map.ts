@@ -12,6 +12,9 @@ import {
   resolveTopicCanonicalSync,
 } from '@/lib/knowledge/topic-canonicalize-ai'
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
+import { computeClassCompletionDetail } from '@/lib/quiz/class-completion-stats'
+import { criticalGapHeadline } from '@/lib/quiz/critical-gap-display'
+import type { QuestionType } from '@/lib/quiz/types'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,7 +24,11 @@ export interface ClassGapMapStats {
   studentCount: number
   classAverage: number
   completionRate: number
+  /** HS×bài đã có ít nhất một lượt nộp / HS×bài được giao */
+  completionDetail: { completedSlots: number; expectedSlots: number }
   needsAttentionCount: number
+  /** How metrics on this page are computed (not BKT pMastery). */
+  aggregationNote: string
 }
 
 export interface TopicMasteryRow {
@@ -50,8 +57,10 @@ export interface GapStudentChip {
 
 export interface CriticalGap {
   id: string
+  /** Distinct headline (question stem), not only topic label */
   title: string
   topic: string
+  questionType: QuestionType
   wrongPercent: number
   description: string
   sampleQuestion: string
@@ -156,6 +165,7 @@ async function getClassGapMapDataUncached(
     INNER JOIN core.tests t ON t.id = s.test_id
     INNER JOIN core.questions q ON q.id = sd.question_id
     WHERE t.class_id = ${classId}::uuid
+      AND q.type <> 'ESSAY'::core."QuestionType"
     GROUP BY COALESCE(
       NULLIF(TRIM(q.topic_key), ''),
       LOWER(REGEXP_REPLACE(TRIM(COALESCE(NULLIF(q.topic, ''), 'Chủ đề khác')), '\\s+', ' ', 'g'))
@@ -179,6 +189,7 @@ async function getClassGapMapDataUncached(
           INNER JOIN core.tests t ON t.id = s.test_id
           INNER JOIN core.questions q ON q.id = sd.question_id
           WHERE t.class_id = ${classId}::uuid
+            AND q.type <> 'ESSAY'::core."QuestionType"
           GROUP BY s.student_id, COALESCE(
             NULLIF(TRIM(q.topic_key), ''),
             LOWER(REGEXP_REPLACE(TRIM(COALESCE(NULLIF(q.topic, ''), 'Chủ đề khác')), '\\s+', ' ', 'g'))
@@ -294,6 +305,7 @@ async function getClassGapMapDataUncached(
     INNER JOIN core.questions q ON q.id = sd.question_id
     WHERE t.class_id = ${classId}::uuid
       AND sd.is_correct = false
+      AND q.type <> 'ESSAY'::core."QuestionType"
     GROUP BY sd.question_id, COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác')
     ORDER BY wrong_count DESC
     LIMIT 6
@@ -306,6 +318,7 @@ async function getClassGapMapDataUncached(
           where: { id: { in: questionIds } },
           select: {
             id: true,
+            type: true,
             content: true,
             explanation: true,
             topic: true,
@@ -320,6 +333,7 @@ async function getClassGapMapDataUncached(
           where: {
             isCorrect: false,
             questionId: { in: questionIds },
+            question: { type: { not: 'ESSAY' } },
             submission: { test: { classId } },
           },
           select: {
@@ -358,8 +372,9 @@ async function getClassGapMapDataUncached(
 
     return {
       id: row.question_id,
-      title: meta?.topic ?? row.topic,
-      topic: row.topic,
+      title: criticalGapHeadline(meta?.content, row.topic),
+      topic: meta?.topic?.trim() || row.topic,
+      questionType: (meta?.type ?? 'MULTIPLE_CHOICE') as QuestionType,
       wrongPercent,
       description:
         meta?.explanation?.trim() ||
@@ -441,14 +456,14 @@ async function getClassGapMapDataUncached(
     {
       id: 'good',
       label: 'Nhóm Khá',
-      description: 'Nắm lý thuyết tốt — cần luyện thêm dạng bài',
+      description: 'Điểm TB 5–8.4 — cần luyện thêm dạng bài (theo điểm bài kiểm tra, không phải BKT)',
       students: good,
       percent: pct(good.length),
     },
     {
       id: 'needsSupport',
       label: 'Nhóm Cần củng cố',
-      description: 'Hổng kiến thức nền — ưu tiên phụ đạo và Zeno AI',
+      description: 'Điểm TB bài kiểm tra < 5 — ưu tiên phụ đạo (không đồng nghĩa BKT/mastery)',
       students: needsSupport,
       percent: pct(needsSupport.length),
     },
@@ -464,12 +479,27 @@ async function getClassGapMapDataUncached(
 
   const tests = await prisma.test.findMany({
     where: { classId },
-    select: { id: true, _count: { select: { submissions: true } } },
+    select: { id: true },
   })
-  const totalExpected = studentCount * Math.max(tests.length, 1)
-  const totalSubmitted = tests.reduce((sum, t) => sum + t._count.submissions, 0)
-  const completionRate =
-    totalExpected > 0 ? Math.min(100, Math.round((totalSubmitted / totalExpected) * 100)) : 0
+  const completedPairs =
+    tests.length > 0 && studentCount > 0
+      ? await prisma.$queryRaw<{ cnt: number }[]>`
+          SELECT COUNT(*)::int AS cnt FROM (
+            SELECT DISTINCT s.student_id, s.test_id
+            FROM core.submissions s
+            INNER JOIN core.tests t ON t.id = s.test_id
+            WHERE t.class_id = ${classId}::uuid
+          ) pairs
+        `
+      : [{ cnt: 0 }]
+  const completion = computeClassCompletionDetail(
+    studentCount,
+    tests.length,
+    completedPairs[0]?.cnt ?? 0,
+  )
+
+  const aggregationNote =
+    'Chỉ số % chủ đề = tỷ lệ câu đúng trên mọi lượt làm (câu tự chấm; ESSAY lịch sử nếu có thì loại). HS yếu = accuracy chủ đề <50% trên lượt làm. Lỗ hổng cấp thiết = từng câu hỏi — % HS từng sai ≥1 lần (nhiều câu cùng chủ đề có thể liệt kê riêng). HS cần chú ý = điểm TB bài <5. Khác BKT trên hồ sơ học sinh.'
 
   return {
     className: classroom.name,
@@ -479,8 +509,13 @@ async function getClassGapMapDataUncached(
     stats: {
       studentCount,
       classAverage,
-      completionRate,
+      completionRate: completion.completionRate,
+      completionDetail: {
+        completedSlots: completion.completedSlots,
+        expectedSlots: completion.expectedSlots,
+      },
       needsAttentionCount: needsSupport.length,
+      aggregationNote,
     },
     strengths,
     topicMastery,
@@ -506,5 +541,8 @@ export async function getClassGapMapData(
     ],
     revalidate: CacheTTL.classGap,
   })
-  return cached(classId, teacherId)
+  const data = await cached(classId, teacherId)
+  // Do not treat cached null as authoritative (stale miss / ownership edge cases).
+  if (data) return data
+  return getClassGapMapDataUncached(classId, teacherId)
 }

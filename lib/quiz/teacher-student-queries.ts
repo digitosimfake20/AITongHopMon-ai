@@ -135,8 +135,10 @@ function behaviorAggQuery(studentId: string, classId: string) {
     FROM core.submission_details sd
     INNER JOIN core.submissions s ON s.id = sd.submission_id
     INNER JOIN core.tests t ON t.id = s.test_id
+    INNER JOIN core.questions q ON q.id = sd.question_id
     WHERE s.student_id = ${studentId}::uuid
       AND t.class_id = ${classId}::uuid
+      AND q.type <> 'ESSAY'::core."QuestionType"
   `
 }
 
@@ -152,6 +154,7 @@ function topicAggQuery(studentId: string, classId: string) {
     INNER JOIN core.questions q ON q.id = sd.question_id
     WHERE s.student_id = ${studentId}::uuid
       AND t.class_id = ${classId}::uuid
+      AND q.type <> 'ESSAY'::core."QuestionType"
     GROUP BY COALESCE(
       NULLIF(TRIM(q.topic_key), ''),
       LOWER(REGEXP_REPLACE(TRIM(COALESCE(NULLIF(q.topic, ''), 'Chủ đề khác')), '\\s+', ' ', 'g'))

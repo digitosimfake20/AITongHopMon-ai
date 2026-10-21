@@ -12,9 +12,6 @@ import { withClassParam } from '@/lib/class/with-class-param'
 import { cn } from '@/lib/utils'
 
 function teacherNavHref(item: TeacherNavItem, classId: string): string {
-  if (item.id === 'gaps') {
-    return withClassParam(`/teacher/classes/${classId}/gaps`, classId)
-  }
   return withClassParam(item.href, classId)
 }
 

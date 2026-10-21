@@ -7,7 +7,8 @@ import { TrueFalseEditor } from '@/components/quiz/answer-editors/true-false-edi
 import { MathInputArea } from '@/components/ui/math-input-area'
 import { applyTypeDefaults, QUESTION_TYPE_LABELS, type ParsedQuestion, type QuestionType } from '@/lib/quiz/types'
 
-const QUESTION_TYPES: QuestionType[] = ['MULTIPLE_CHOICE', 'TRUE_FALSE_GROUP', 'SHORT_ANSWER', 'ESSAY']
+/** ESSAY deprecated — keep type in schema/DB for legacy rows only */
+const QUESTION_TYPES: QuestionType[] = ['MULTIPLE_CHOICE', 'TRUE_FALSE_GROUP', 'SHORT_ANSWER']
 
 interface QuestionCardProps {
   question: ParsedQuestion

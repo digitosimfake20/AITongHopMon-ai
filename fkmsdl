@@ -1,0 +1,307 @@
+warning: in the working copy of 'app/actions/analyze-submission.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/actions/quiz-submission.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/quiz/result/[id]/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/quiz/result/ai-insights-card.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/teacher/class-knowledge-gap-map.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/ai/student-action-plan.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/dashboard/teacher-data.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/knowledge/mastery-evidence.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/quiz/class-gap-map.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/quiz/teacher-student-queries.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/quiz/topic-mastery.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/app/actions/analyze-submission.ts b/app/actions/analyze-submission.ts[m
+[1mindex 6b05e8c..0ed3866 100644[m
+[1m--- a/app/actions/analyze-submission.ts[m
+[1m+++ b/app/actions/analyze-submission.ts[m
+[36m@@ -4,7 +4,13 @@[m [mimport prisma from '@/lib/prisma'[m
+ import { getSessionUser } from '@/lib/auth/session'[m
+ import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'[m
+ import type { ActionResult } from '@/lib/auth/types'[m
+[32m+[m[32mimport { contributesToMasteryUpdate } from '@/lib/knowledge/mastery-evidence'[m
+ import { masteryStatusFromAccuracyPercent } from '@/lib/knowledge/mastery-labels'[m
+[32m+[m[32mimport {[m
+[32m+[m[32m  formatOfficialScoreLine,[m
+[32m+[m[32m  submissionOfficialStatsFromDetails,[m
+[32m+[m[32m  type SubmissionOfficialStats,[m
+[32m+[m[32m} from '@/lib/knowledge/scored-submission-stats'[m
+ import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'[m
+ import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'[m
+ [m
+[36m@@ -24,6 +30,7 @@[m [mexport interface TopicMastery {[m
+ }[m
+ [m
+ export interface AIAnalysis {[m
+[32m+[m[32m  officialStats?: SubmissionOfficialStats[m
+   praise: string[m
+   knowledgeGaps: Array<{ issue: string; advice: string }>[m
+   topicMastery?: TopicMastery[][m
+[36m@@ -66,9 +73,11 @@[m [mQUY TẮC PHÂN TÍCH:[m
+    - MULTIPLE_CHOICE: có thể do nhầm lẫn hoặc thiếu kiến thức.[m
+    - ESSAY: cần xem xét thêm (không tự chấm được).[m
+ [m
+[31m-3. Khen ngợi học sinh trung thực, không sáo rỗng.[m
+[32m+[m[32m3. Khen ngợi học sinh trung thực, không sáo rỗng. KHÔNG nêu số câu đúng/sai khác với dòng "Số câu đúng" trong prompt.[m
+ [m
+[31m-4. Với mỗi chủ đề yếu (accuracy < 80%), hãy đưa ra 1 câu gợi ý học tập cụ thể.[m
+[32m+[m[32m4. Câu ESSAY (tự luận) chưa chấm tự động — không dùng để kết luận sai.[m
+[32m+[m
+[32m+[m[32m5. Với mỗi chủ đề yếu (accuracy < 80%), hãy đưa ra 1 câu gợi ý học tập cụ thể.[m
+ [m
+ OUTPUT JSON FORMAT (không có markdown, chỉ JSON thuần):[m
+ {[m
+[36m@@ -199,6 +208,7 @@[m [mexport async function analyzeSubmissionAction([m
+   // ── Compute topic mastery from canonical topics ─────────────────────────────[m
+   const topicMap = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()[m
+   for (const d of submission.details) {[m
+[32m+[m[32m    if (!contributesToMasteryUpdate(d.question.type)) continue[m
+     const raw = normalizeTopicName(resolvedTopics.get(d.questionId))[m
+     const canonical = canonicalMap.get(raw) ?? {[m
+       topicName: raw,[m
+[36m@@ -241,10 +251,22 @@[m [mexport async function analyzeSubmissionAction([m
+   // ── Build AI prompt ─────────────────────────────────────────────────────────[m
+   const questionSummaries = submission.details.map((d, i) => {[m
+     const topic = resolvedTopics.get(d.questionId) || d.question.topic[m
+[32m+[m[32m    if (!contributesToMasteryUpdate(d.question.type)) {[m
+[32m+[m[32m      return `Câu ${i + 1} [${d.question.type}|${topic}]: (tự luận — chưa chấm tự động) — ${d.timeSpentSeconds}s`[m
+[32m+[m[32m    }[m
+     return `Câu ${i + 1} [${d.question.type}|${topic}]: ${d.isCorrect ? '✓' : '✗'} — ${d.timeSpentSeconds}s — "${d.question.content.slice(0, 120)}"`[m
+   })[m
+ [m
+[31m-  const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | Số câu đúng: ${submission.correctCount}/${submission.totalQuestions} | Thời gian: ${submission.timeSpentSeconds}s[m
+[32m+[m[32m  const officialStats = submissionOfficialStatsFromDetails([m
+[32m+[m[32m    submission.details.map((d) => ({[m
+[32m+[m[32m      type: d.question.type,[m
+[32m+[m[32m      isCorrect: d.isCorrect,[m
+[32m+[m[32m    })),[m
+[32m+[m[32m    submission.correctCount,[m
+[32m+[m[32m    submission.totalQuestions,[m
+[32m+[m[32m  )[m
+[32m+[m
+[32m+[m[32m  const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | ${formatOfficialScoreLine(officialStats)} | Thời gian: ${submission.timeSpentSeconds}s[m
+ [m
+ Các chủ đề cần advice (dùng đúng topicKey trong JSON):[m
+ ${weakTopics.length > 0 ? weakTopics.join('\n') : '(Không có chủ đề yếu)'}[m
+[36m@@ -295,7 +317,8 @@[m [m${questionSummaries.join('\n')}`[m
+     .slice(0, 3)[m
+ [m
+   const analysis: AIAnalysis = {[m
+[31m-    praise: parsed.praise,[m
+[32m+[m[32m    officialStats,[m
+[32m+[m[32m    praise: parsed.praise?.trim() ?? '',[m
+     knowledgeGaps: parsed.knowledgeGaps ?? [],[m
+     topicMastery,[m
+     nextStep:[m
+[1mdiff --git a/app/actions/quiz-submission.ts b/app/actions/quiz-submission.ts[m
+[1mindex 3964f10..6deb0d3 100644[m
+[1m--- a/app/actions/quiz-submission.ts[m
+[1m+++ b/app/actions/quiz-submission.ts[m
+[36m@@ -12,6 +12,7 @@[m [mimport {[m
+ } from '@/app/actions/test-group'[m
+ import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'[m
+ import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'[m
+[32m+[m[32mimport { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'[m
+ import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'[m
+ import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'[m
+ import { invalidateAfterSubmit } from '@/lib/cache/invalidate'[m
+[36m@@ -183,6 +184,14 @@[m [mexport async function submitQuizAction([m
+         skipAiCanonicalization: isPractice,[m
+         skipLlmEnrich: isPractice,[m
+         submissionId,[m
+[32m+[m[32m        officialStats: submissionOfficialStatsFromDetails([m
+[32m+[m[32m          pipelineDetails.map((d) => ({[m
+[32m+[m[32m            type: d.type,[m
+[32m+[m[32m            isCorrect: d.isCorrect,[m
+[32m+[m[32m          })),[m
+[32m+[m[32m          correctCount,[m
+[32m+[m[32m          questionIds.length,[m
+[32m+[m[32m        ),[m
+       })[m
+ [m
+       if (isPractice) return[m
+[1mdiff --git a/app/quiz/result/[id]/page.tsx b/app/quiz/result/[id]/page.tsx[m
+[1mindex 6fd241f..ab76236 100644[m
+[1m--- a/app/quiz/result/[id]/page.tsx[m
+[1m+++ b/app/quiz/result/[id]/page.tsx[m
+[36m@@ -47,7 +47,13 @@[m [mexport default async function QuizResultPage({ params }: PageProps) {[m
+     ? Math.round((result.correctCount / result.totalQuestions) * 100)[m
+     : 0[m
+   // Compute topic mastery immediately from DB data (no AI call needed)[m
+[31m-  const topicMastery = computeTopicMastery(result.questionResults)[m
+[32m+[m[32m  const topicMastery = computeTopicMastery([m
+[32m+[m[32m    result.questionResults.map((q) => ({[m
+[32m+[m[32m      topic: q.topic,[m
+[32m+[m[32m      isCorrect: q.isCorrect,[m
+[32m+[m[32m      type: q.type,[m
+[32m+[m[32m    })),[m
+[32m+[m[32m  )[m
+ [m
+   return ([m
+     <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">[m
+[1mdiff --git a/components/quiz/result/ai-insights-card.tsx b/components/quiz/result/ai-insights-card.tsx[m
+[1mindex 2895539..ea85ce4 100644[m
+[1m--- a/components/quiz/result/ai-insights-card.tsx[m
+[1m+++ b/components/quiz/result/ai-insights-card.tsx[m
+[36m@@ -4,6 +4,7 @@[m [mimport { useState, useTransition } from 'react'[m
+ import { Brain, ChevronDown, ChevronUp, Loader2, BookOpen } from 'lucide-react'[m
+ import { analyzeSubmissionAction } from '@/app/actions/analyze-submission'[m
+ import type { AIAnalysis } from '@/app/actions/analyze-submission'[m
+[32m+[m[32mimport { formatOfficialScoreLine } from '@/lib/knowledge/scored-submission-stats'[m
+ import { generateSmartQuizAction } from '@/app/actions/generate-smart-quiz'[m
+ import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'[m
+ import { PracticePreTestModal } from '@/components/quiz/practice-pretest-modal'[m
+[36m@@ -25,6 +26,15 @@[m [mfunction parseAnalysis(raw: string | null): AIAnalysis | null {[m
+   }[m
+ }[m
+ [m
+[32m+[m[32m/** Avoid duplicating the official stats banner inside the praise paragraph. */[m
+[32m+[m[32mfunction praiseDisplayText(analysis: AIAnalysis): string {[m
+[32m+[m[32m  const { praise, officialStats } = analysis[m
+[32m+[m[32m  if (!officialStats || !praise.trim()) return praise[m
+[32m+[m[32m  const line = formatOfficialScoreLine(officialStats)[m
+[32m+[m[32m  if (praise.startsWith(line)) return praise.slice(line.length).trim()[m
+[32m+[m[32m  return praise[m
+[32m+[m[32m}[m
+[32m+[m
+ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIInsightsCardProps) {[m
+   const [analysis, setAnalysis] = useState<AIAnalysis | null>(parseAnalysis(initialAnalysis))[m
+   const [isLoading, setIsLoading] = useState(false)[m
+[36m@@ -134,8 +144,15 @@[m [mexport function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn[m
+ [m
+         {analysis && isExpanded && ([m
+           <div className="mt-4 space-y-4">[m
+[32m+[m[32m            {analysis.officialStats && ([m
+[32m+[m[32m              <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs font-medium text-foreground">[m
+[32m+[m[32m                {formatOfficialScoreLine(analysis.officialStats)}[m
+[32m+[m[32m              </p>[m
+[32m+[m[32m            )}[m
+             <div className="rounded-xl border border-teal-200 bg-background/70 px-4 py-3 dark:border-teal-800">[m
+[31m-              <p className="text-sm leading-relaxed text-foreground">{analysis.praise}</p>[m
+[32m+[m[32m              <p className="text-sm leading-relaxed text-foreground">[m
+[32m+[m[32m                {praiseDisplayText(analysis) || '—'}[m
+[32m+[m[32m              </p>[m
+             </div>[m
+ [m
+             {analysis.topicMastery && analysis.topicMastery.length > 0 && ([m
+[1mdiff --git a/components/teacher/class-knowledge-gap-map.tsx b/components/teacher/class-knowledge-gap-map.tsx[m
+[1mindex c568010..aeb8dec 100644[m
+[1m--- a/components/teacher/class-knowledge-gap-map.tsx[m
+[1m+++ b/components/teacher/class-knowledge-gap-map.tsx[m
+[36m@@ -1,7 +1,5 @@[m
+ 'use client'[m
+ [m
+[31m-'use client'[m
+[31m-[m
+ import Link from 'next/link'[m
+ import { useState, useTransition } from 'react'[m
+ import {[m
+[36m@@ -75,6 +73,9 @@[m [mexport function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp[m
+                   {data.chapterHint}[m
+                 </span>[m
+               </p>[m
+[32m+[m[32m              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-500 dark:text-slate-400">[m
+[32m+[m[32m                {data.stats.aggregationNote}[m
+[32m+[m[32m              </p>[m
+             </div>[m
+           </div>[m
+         </div>[m
+[36m@@ -95,6 +96,7 @@[m [mexport function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp[m
+           <StatCard[m
+             label="Tỷ lệ hoàn thành"[m
+             value={`${data.stats.completionRate}%`}[m
+[32m+[m[32m            hint={`${data.stats.completionDetail.completedSlots}/${data.stats.completionDetail.expectedSlots} HS×bài`}[m
+             icon={<CheckCircle2 className="size-4 text-teal-600" />}[m
+             tone="teal"[m
+           />[m
+[36m@@ -171,8 +173,8 @@[m [mexport function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp[m
+       <section>[m
+         <SectionHeading[m
+           icon={<TrendingUp className="size-4" />}[m
+[31m-          title="Bảng độ thành thạo theo chủ đề"[m
+[31m-          subtitle="Theo dõi tiến độ cả lớp trên từng dạng bài"[m
+[32m+[m[32m          title="Tỷ lệ câu đúng theo chủ đề (mọi lượt làm)"[m
+[32m+[m[32m          subtitle="Không phải BKT trên hồ sơ học sinh — chỉ câu tự chấm, không gồm ESSAY"[m
+         />[m
+         {data.topicMastery.length === 0 ? ([m
+           <EmptyState message="Chưa có dữ liệu bài làm. Giao bài kiểm tra để lập bản đồ lỗ hổng." />[m
+[36m@@ -184,9 +186,9 @@[m [mexport function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp[m
+                   <tr className="border-b bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/50">[m
+                     <th className="px-4 py-3">Chủ đề / Dạng bài</th>[m
+                     <th className="px-4 py-3">Cụm</th>[m
+[31m-                    <th className="px-4 py-3 w-48">Độ thành thạo</th>[m
+[31m-                    <th className="px-4 py-3">Trạng thái</th>[m
+[31m-                    <th className="px-4 py-3 text-right">HS yếu (&lt;50%)</th>[m
+[32m+[m[32m                    <th className="px-4 py-3 w-48">% câu đúng (lớp)</th>[m
+[32m+[m[32m                    <th className="px-4 py-3">Nhãn (theo % lượt)</th>[m
+[32m+[m[32m                    <th className="px-4 py-3 text-right">HS &lt;50% trên chủ đề</th>[m
+                   </tr>[m
+                 </thead>[m
+                 <tbody>[m
+[36m@@ -315,11 +317,13 @@[m [mfunction SectionHeading({[m
+ function StatCard({[m
+   label,[m
+   value,[m
+[32m+[m[32m  hint,[m
+   icon,[m
+   tone,[m
+ }: {[m
+   label: string[m
+   value: string[m
+[32m+[m[32m  hint?: string[m
+   icon: React.ReactNode[m
+   tone: 'blue' | 'emerald' | 'teal' | 'amber'[m
+ }) {[m
+[36m@@ -336,6 +340,7 @@[m [mfunction StatCard({[m
+         {label}[m
+       </div>[m
+       <p className="text-xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{value}</p>[m
+[32m+[m[32m      {hint ? <p className="mt-0.5 text-[10px] text-slate-500">{hint}</p> : null}[m
+     </div>[m
+   )[m
+ }[m
+[36m@@ -387,7 +392,7 @@[m [mfunction CriticalGapCard({[m
+             <h3 className="font-semibold text-slate-900 dark:text-slate-100">[m
+               {gap.title}{' '}[m
+               <span className="font-normal text-rose-600 dark:text-rose-400">[m
+[31m-                ({gap.wrongPercent}% HS làm sai)[m
+[32m+[m[32m                ({gap.wrongPercent}% HS từng sai ≥1 lần)[m
+               </span>[m
+             </h3>[m
+             <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">[m
+[1mdiff --git a/lib/ai/pipeline.ts b/lib/ai/pipeline.ts[m
+[1mindex 21e50db..81584ed 100644[m
+[1m--- a/lib/ai/pipeline.ts[m
+[1m+++ b/lib/ai/pipeline.ts[m
+[36m@@ -72,6 +72,8 @@[m [mexport async function runPostSubmissionAIPipeline([m
+     submissionId?: string[m
+     /** Skip LLM polish (practice quizzes / offline) */[m
+     skipLlmEnrich?: boolean[m
+[32m+[m[32m    /** Persisted submission counts — keeps AI feedback aligned with result page */[m
+[32m+[m[32m    officialStats?: import('@/lib/knowledge/scored-submission-stats').SubmissionOfficialStats[m
+   },[m
+ ): Promise<void> {[m
+   try {[m
+[36m@@ -162,7 +164,7 @@[m [mexport async function runPostSubmissionAIPipeline([m
+     }[m
+ [m
+     // ── 3. Action plan → Submission.aiFeedbackSummary ─────────────────────────[m
+[31m-    let plan = buildStudentActionPlan(planBatches)[m
+[32m+[m[32m    let plan = buildStudentActionPlan(planBatches, options?.officialStats)[m
+     if (!options?.skipLlmEnrich && !options?.skipAiCanonicalization) {[m
+       plan = await enrichActionPlanWithLLM(plan)[m
+     }[m
+[1mdiff --git a/lib/ai/student-action-plan.ts b/lib/ai/student-action-plan.ts[m
+[1mindex 0bdeefc..d3a0974 100644[m
+[1m--- a/lib/ai/student-action-plan.ts[m
+[1m+++ b/lib/ai/student-action-plan.ts[m
+[36m@@ -9,6 +9,10 @@[m [mimport {[m
+   masteryStatusFromP,[m
+   type MasteryLabelStatus,[m
+ } from '@/lib/knowledge/mastery-labels'[m
+[32m+[m[32mimport {[m
+[32m+[m[32m  formatOfficialScoreLine,[m
+[32m+[m[32m  type SubmissionOfficialStats,[m
+[32m+[m[32m} from '@/lib/knowledge/scored-submission-stats'[m
+ [m
+ export interface ActionPlanTopic {[m
+   topic: string[m
+[36m@@ -22,6 +26,8 @@[m [mexport interf

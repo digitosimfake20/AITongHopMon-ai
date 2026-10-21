@@ -46,6 +46,7 @@ async function getTeacherDashboardDataUncached(
     where: {
       isCorrect: false,
       submission: { test: { classId } },
+      question: { type: { not: 'ESSAY' } },
     },
     select: {
       questionId: true,

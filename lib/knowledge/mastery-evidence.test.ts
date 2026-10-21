@@ -4,6 +4,10 @@ import {
   contributesToMasteryUpdate,
   masteryAnswersFromDetails,
 } from '@/lib/knowledge/mastery-evidence'
+import {
+  formatOfficialScoreLine,
+  submissionOfficialStatsFromDetails,
+} from '@/lib/knowledge/scored-submission-stats'
 
 describe('contributesToMasteryUpdate', () => {
   it('excludes ESSAY (unscored placeholder)', () => {
@@ -50,5 +54,34 @@ describe('ESSAY unscored must not change pMastery', () => {
     expect(fixed).toBeGreaterThan(withEssayBug)
     // Two corrects from 0.5 should increase mastery
     expect(fixed).toBeGreaterThan(current)
+  })
+})
+
+describe('submissionOfficialStatsFromDetails', () => {
+  it('counts correct only among auto-scored items when isCorrect provided', () => {
+    const stats = submissionOfficialStatsFromDetails(
+      [
+        { type: 'MULTIPLE_CHOICE', isCorrect: true },
+        { type: 'ESSAY', isCorrect: false },
+        { type: 'SHORT_ANSWER', isCorrect: false },
+      ],
+      99,
+      3,
+    )
+    expect(stats.correctCount).toBe(1)
+    expect(stats.scoredQuestionCount).toBe(2)
+  })
+})
+
+describe('formatOfficialScoreLine', () => {
+  it('mentions unscored essay count when present', () => {
+    const line = formatOfficialScoreLine({
+      correctCount: 5,
+      totalQuestions: 10,
+      scoredQuestionCount: 8,
+    })
+    expect(line).toContain('5/10')
+    expect(line).toContain('2')
+    expect(line).toMatch(/tự luận|chưa chấm/i)
   })
 })

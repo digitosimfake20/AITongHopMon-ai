@@ -6,6 +6,7 @@ import { QuestionReview } from '@/components/quiz/result/question-review'
 import { AIInsightsCard } from '@/components/quiz/result/ai-insights-card'
 import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'
 import { computeTopicMastery } from '@/lib/quiz/topic-mastery'
+import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,11 +44,22 @@ export default async function QuizResultPage({ params }: PageProps) {
   if (!result) notFound()
 
   const grade = scoreGrade(result.score)
-  const accuracy = result.totalQuestions > 0
-    ? Math.round((result.correctCount / result.totalQuestions) * 100)
-    : 0
+  const official = submissionOfficialStatsFromDetails(
+    result.questionResults.map((q) => ({ type: q.type, isCorrect: q.isCorrect })),
+    result.correctCount,
+    result.totalQuestions,
+  )
+  const scoredTotal = official.scoredQuestionCount || result.totalQuestions
+  const accuracy =
+    scoredTotal > 0 ? Math.round((official.correctCount / scoredTotal) * 100) : 0
   // Compute topic mastery immediately from DB data (no AI call needed)
-  const topicMastery = computeTopicMastery(result.questionResults)
+  const topicMastery = computeTopicMastery(
+    result.questionResults.map((q) => ({
+      topic: q.topic,
+      isCorrect: q.isCorrect,
+      type: q.type,
+    })),
+  )
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
@@ -69,7 +81,11 @@ export default async function QuizResultPage({ params }: PageProps) {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <StatBadge icon={<Clock className="size-4" />} label="Thời gian" value={formatTime(result.timeSpentSeconds)} />
-            <StatBadge icon={<Target className="size-4" />} label="Đúng" value={`${result.correctCount}/${result.totalQuestions}`} />
+            <StatBadge
+              icon={<Target className="size-4" />}
+              label="Đúng"
+              value={`${official.correctCount}/${scoredTotal}`}
+            />
             <StatBadge icon={<TrendingUp className="size-4" />} label="Độ chính xác" value={`${accuracy}%`} />
           </div>
         </div>

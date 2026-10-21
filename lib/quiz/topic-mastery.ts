@@ -1,13 +1,15 @@
 import type { TopicMastery } from '@/app/actions/analyze-submission'
+import { contributesToMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
 import { masteryStatusFromAccuracyPercent } from '@/lib/knowledge/mastery-labels'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 
 /** Compute session topic accuracy — grouped by canonical topicKey (same bands as BKT). */
 export function computeTopicMastery(
-  questions: Array<{ topic: string; isCorrect: boolean }>,
+  questions: Array<{ topic: string; isCorrect: boolean; type?: string }>,
 ): TopicMastery[] {
   const map = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()
   for (const q of questions) {
+    if (q.type && !contributesToMasteryUpdate(q.type)) continue
     const topic = normalizeTopicName(q.topic)
     const key = topicToNodeId(topic)
     if (!map.has(key)) map.set(key, { topic, topicKey: key, total: 0, correct: 0 })
