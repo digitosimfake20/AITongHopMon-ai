@@ -2,15 +2,25 @@ import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  prismaUrlLogged: boolean | undefined
 }
 
 /**
- * Supabase / PgBouncer on Vercel: cap connections per serverless instance.
- * Pool is often ~15 session slots — without this, concurrent lambdas exhaust it.
+ * Supabase on Vercel must use **transaction pooler** (6543), not session pooler (5432).
+ * Session pool is ~15 slots — concurrent serverless invocations exhaust it quickly.
  */
 function serverlessDatabaseUrl(raw: string | undefined): string | undefined {
   if (!raw) return raw
   let url = raw
+  let rewritten = false
+
+  if (/pooler\.supabase\.(com|co)/i.test(url)) {
+    if (/:5432(\/|\?|$)/.test(url)) {
+      url = url.replace(/:5432(\/|\?)/, ':6543$1')
+      rewritten = true
+    }
+  }
+
   const sep = () => (url.includes('?') ? '&' : '?')
 
   if (!url.includes('connection_limit=')) {
@@ -19,6 +29,30 @@ function serverlessDatabaseUrl(raw: string | undefined): string | undefined {
   if (url.includes(':6543') && !url.includes('pgbouncer=')) {
     url = `${url}${sep()}pgbouncer=true`
   }
+
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !globalForPrisma.prismaUrlLogged &&
+    rewritten
+  ) {
+    globalForPrisma.prismaUrlLogged = true
+    console.warn(
+      '[prisma] DATABASE_URL pointed at Supabase session pooler (:5432); runtime rewrote to :6543. Set Vercel DATABASE_URL to port 6543 with ?pgbouncer=true.',
+    )
+  }
+
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !globalForPrisma.prismaUrlLogged &&
+    /pooler\.supabase\.(com|co)/i.test(url) &&
+    /:5432(\/|\?|$)/.test(url)
+  ) {
+    globalForPrisma.prismaUrlLogged = true
+    console.error(
+      '[prisma] DATABASE_URL still uses session pooler (:5432) — expect EMAXCONNSESSION under load. Use transaction pooler :6543.',
+    )
+  }
+
   return url
 }
 
@@ -35,13 +69,7 @@ function createClient(): PrismaClient {
   })
 }
 
-/** Single pooled client — do not open a second session-mode client per lambda. */
 export const prisma = globalForPrisma.prisma ?? createClient()
-
-/**
- * @deprecated Use `prisma` — same instance. Kept for imports; avoids doubling DB connections on Vercel.
- * Migrations / `db push` use DIRECT_URL via schema `directUrl`, not this export.
- */
 export const prismaDirect = prisma
 
 globalForPrisma.prisma = prisma
