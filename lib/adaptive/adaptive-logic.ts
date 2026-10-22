@@ -1,11 +1,18 @@
 import type { DifficultyLevel } from '@prisma/client'
+import {
+  decideRound2Difficulty,
+  type Round1TimingInput,
+} from '@/lib/adaptive/adaptive-round2-decision'
 
-/** Lượt 2: >= passScore → HARD, ngược lại → EASY */
+export type { Round1TimingInput }
+
+/** Lượt 2: điểm + median thời gian/câu (ms) — xem adaptive-round2-decision.ts */
 export function recommendRound2Difficulty(
   round1Score: number,
   passScoreThreshold: number,
+  timing?: Round1TimingInput,
 ): DifficultyLevel {
-  return round1Score >= passScoreThreshold ? 'HARD' : 'EASY'
+  return decideRound2Difficulty(round1Score, passScoreThreshold, timing)
 }
 
 export function difficultyLabel(d: DifficultyLevel): string {
@@ -75,7 +82,7 @@ export function computeAdaptiveProgress(
   const round2Difficulty =
     session.round2Difficulty ??
     (round1Score != null
-      ? recommendRound2Difficulty(round1Score, ct.passScoreThreshold)
+      ? recommendRound2Difficulty(round1Score, ct.passScoreThreshold, undefined)
       : null)
 
   const round2TestId =

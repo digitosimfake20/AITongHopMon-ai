@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
 import { findClassTestByTestId } from '@/lib/adaptive/find-class-test'
+import { medianResponseMsFromTimeSpentSeconds } from '@/lib/adaptive/adaptive-round2-decision'
 import {
   recordAdaptiveRound1Submit,
   recordAdaptiveRound2Submit,
@@ -182,6 +183,9 @@ export async function submitQuizAction(
       if (!classTest?.isAdaptive) return
 
       if (testId === classTest.mediumTestId) {
+        const medianResponseMs = medianResponseMsFromTimeSpentSeconds(
+          input.answers.map((a) => a.timeSpentSeconds),
+        )
         await recordAdaptiveRound1Submit(
           classTest.id,
           user.id,
@@ -190,6 +194,7 @@ export async function submitQuizAction(
           classTest.passScoreThreshold,
           classTest.easyTestId!,
           classTest.hardTestId!,
+          { medianResponseMs },
         )
       } else if (
         testId === classTest.easyTestId ||

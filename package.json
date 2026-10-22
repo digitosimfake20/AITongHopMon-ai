@@ -13,6 +13,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "db:check-url": "node prisma/scripts/check-database-url.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

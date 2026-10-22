@@ -7,6 +7,7 @@ import type {
   AdaptiveStudentRow,
 } from '@/app/actions/test-group'
 import { difficultyLabel } from '@/lib/adaptive/adaptive-logic'
+import { ROUND2_SLOW_MEDIAN_MS } from '@/lib/adaptive/adaptive-round2-decision'
 import { Button } from '@/components/ui/button'
 import { withClassParam } from '@/lib/class/with-class-param'
 
@@ -69,6 +70,31 @@ export function AdaptiveSummaryClient({
         </div>
       </div>
 
+      <details className="rounded-2xl border border-border bg-muted/20 px-4 py-3 text-sm">
+        <summary className="cursor-pointer font-medium text-foreground">
+          Cây quyết định lượt 2 (GV kiểm tra)
+        </summary>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
+          <li>
+            <strong className="text-foreground">Biến 1 — Điểm lượt 1 (TB):</strong> so với ngưỡng{' '}
+            {assignment.passScoreThreshold}/10.
+          </li>
+          <li>
+            <strong className="text-foreground">Biến 2 — Median thời gian/câu (ms):</strong> tính từ
+            lượt 1; ngưỡng chậm = {ROUND2_SLOW_MEDIAN_MS} ms (
+            {ROUND2_SLOW_MEDIAN_MS / 1000}s/câu).
+          </li>
+          <li>Điểm &lt; ngưỡng → lượt 2 <strong>Dễ</strong>.</li>
+          <li>
+            Điểm ≥ ngưỡng và median ≤ ngưỡng chậm (hoặc chưa có TG) → lượt 2 <strong>Khó</strong>.
+          </li>
+          <li>
+            Điểm ≥ ngưỡng và median &gt; ngưỡng chậm → lượt 2 <strong>Dễ</strong> (củng cố tốc
+            độ).
+          </li>
+        </ol>
+      </details>
+
       <div className="overflow-x-auto rounded-2xl border border-border">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
@@ -77,13 +103,14 @@ export function AdaptiveSummaryClient({
               <th className="px-4 py-3 font-medium">Lượt 1 (TB)</th>
               <th className="px-4 py-3 font-medium">Lượt 2</th>
               <th className="px-4 py-3 font-medium">Trạng thái</th>
+              <th className="px-4 py-3 font-medium">Quyết định lượt 2</th>
               <th className="px-4 py-3 font-medium">Đánh giá AI</th>
             </tr>
           </thead>
           <tbody>
             {students.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                   <Users className="mx-auto size-8 opacity-40" />
                   <p className="mt-2">Chưa có học sinh trong lớp</p>
                 </td>
@@ -123,6 +150,20 @@ export function AdaptiveSummaryClient({
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.color}`}>
                         {st.label}
                       </span>
+                    </td>
+                    <td className="max-w-sm px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+                      {s.round2DecisionSummary ? (
+                        <>
+                          <p>{s.round2DecisionSummary}</p>
+                          {s.medianRound1ResponseMs != null && (
+                            <p className="mt-1 font-mono text-[10px] opacity-80">
+                              median TG/câu: {s.medianRound1ResponseMs} ms
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="max-w-xs px-4 py-3 text-xs leading-relaxed text-muted-foreground">
                       {s.evaluation}

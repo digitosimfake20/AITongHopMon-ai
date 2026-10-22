@@ -10,6 +10,10 @@ import prisma, { prismaDirect } from '@/lib/prisma'
 import { fetchTestGroupSummaries } from '@/lib/test-bank/queries'
 import { recommendRound2Difficulty } from '@/lib/adaptive/adaptive-logic'
 import {
+  explainAdaptiveRound2Decision,
+  medianResponseMsFromTimeSpentSeconds,
+} from '@/lib/adaptive/adaptive-round2-decision'
+import {
   createQuestionsInTransaction,
   materializeSystemTestInTransaction,
   MATERIALIZE_TEST_TX_OPTIONS,
@@ -79,6 +83,10 @@ export interface AdaptiveStudentRow {
   round2SubmissionId: string | null
   status: 'not_started' | 'round1_done' | 'completed'
   evaluation: string
+  /** Deterministic routing explanation (score + median ms per question) */
+  round2DecisionSummary: string | null
+  round2DecisionBranches: Array<{ id: string; label: string; taken: boolean }> | null
+  medianRound1ResponseMs: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -384,6 +392,30 @@ export async function getAdaptiveSummaryAction(
       : []
   const scoreBySubId = new Map(submissions.map((s) => [s.id, Number(s.score)]))
 
+  const round1SubIds = classTest.adaptiveSessions
+    .map((s) => s.round1SubmissionId)
+    .filter(Boolean) as string[]
+
+  const medianMsByRound1SubId = new Map<string, number | null>()
+  if (round1SubIds.length > 0) {
+    const detailRows = await prisma.submissionDetail.findMany({
+      where: { submissionId: { in: round1SubIds } },
+      select: { submissionId: true, timeSpentSeconds: true },
+    })
+    const timesBySub = new Map<string, number[]>()
+    for (const row of detailRows) {
+      const list = timesBySub.get(row.submissionId) ?? []
+      list.push(row.timeSpentSeconds)
+      timesBySub.set(row.submissionId, list)
+    }
+    for (const subId of round1SubIds) {
+      medianMsByRound1SubId.set(
+        subId,
+        medianResponseMsFromTimeSpentSeconds(timesBySub.get(subId) ?? []),
+      )
+    }
+  }
+
   const { buildAdaptiveEvaluation } = await import('@/lib/adaptive/adaptive-logic')
 
   const students: AdaptiveStudentRow[] = members.map(({ student }) => {
@@ -398,6 +430,17 @@ export async function getAdaptiveSummaryAction(
     let status: AdaptiveStudentRow['status'] = 'not_started'
     if (session?.round2SubmissionId) status = 'completed'
     else if (session?.round1SubmissionId) status = 'round1_done'
+
+    const medianRound1ResponseMs = session?.round1SubmissionId
+      ? (medianMsByRound1SubId.get(session.round1SubmissionId) ?? null)
+      : null
+
+    const decisionTrace =
+      round1Score != null
+        ? explainAdaptiveRound2Decision(round1Score, classTest.passScoreThreshold, {
+            medianResponseMs: medianRound1ResponseMs,
+          })
+        : null
 
     return {
       studentId: student.id,
@@ -414,6 +457,9 @@ export async function getAdaptiveSummaryAction(
         round2Score,
         classTest.passScoreThreshold,
       ),
+      round2DecisionSummary: decisionTrace?.summaryVi ?? null,
+      round2DecisionBranches: decisionTrace?.branches ?? null,
+      medianRound1ResponseMs,
     }
   })
 
@@ -646,8 +692,13 @@ export async function recordAdaptiveRound1Submit(
   passScoreThreshold: number,
   easyTestId: string,
   hardTestId: string,
+  timing?: import('@/lib/adaptive/adaptive-round2-decision').Round1TimingInput,
 ): Promise<void> {
-  const round2Difficulty = recommendRound2Difficulty(round1Score, passScoreThreshold)
+  const round2Difficulty = recommendRound2Difficulty(
+    round1Score,
+    passScoreThreshold,
+    timing,
+  )
   const round2TestId = round2Difficulty === 'HARD' ? hardTestId : easyTestId
   
   await prisma.adaptiveStudentSession.upsert({
