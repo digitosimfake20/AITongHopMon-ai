@@ -8,11 +8,9 @@ import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
 import prisma, { prismaDirect } from '@/lib/prisma'
 import { fetchTestGroupSummaries } from '@/lib/test-bank/queries'
-import { recommendRound2Difficulty } from '@/lib/adaptive/adaptive-logic'
-import {
-  explainAdaptiveRound2Decision,
-  medianResponseMsFromTimeSpentSeconds,
-} from '@/lib/adaptive/adaptive-round2-decision'
+import { difficultyLabel, recommendRound2Difficulty } from '@/lib/adaptive/adaptive-logic'
+import { explainAdaptiveRound2Decision } from '@/lib/adaptive/adaptive-round2-decision'
+import { assessQuestionTiming, type QuestionTimingQuality } from '@/lib/quiz/question-timing'
 import {
   createQuestionsInTransaction,
   materializeSystemTestInTransaction,
@@ -87,6 +85,8 @@ export interface AdaptiveStudentRow {
   round2DecisionSummary: string | null
   round2DecisionBranches: Array<{ id: string; label: string; taken: boolean }> | null
   medianRound1ResponseMs: number | null
+  timingQuality: QuestionTimingQuality | null
+  decisionMatchesStored: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -387,16 +387,17 @@ export async function getAdaptiveSummaryAction(
     submissionIds.length > 0
       ? await prisma.submission.findMany({
           where: { id: { in: submissionIds } },
-          select: { id: true, score: true },
+          select: { id: true, score: true, timeSpentSeconds: true },
         })
       : []
   const scoreBySubId = new Map(submissions.map((s) => [s.id, Number(s.score)]))
+  const totalSecondsBySubId = new Map(submissions.map((s) => [s.id, s.timeSpentSeconds]))
 
   const round1SubIds = classTest.adaptiveSessions
     .map((s) => s.round1SubmissionId)
     .filter(Boolean) as string[]
 
-  const medianMsByRound1SubId = new Map<string, number | null>()
+  const timingByRound1SubId = new Map<string, ReturnType<typeof assessQuestionTiming>>()
   if (round1SubIds.length > 0) {
     const detailRows = await prisma.submissionDetail.findMany({
       where: { submissionId: { in: round1SubIds } },
@@ -409,9 +410,14 @@ export async function getAdaptiveSummaryAction(
       timesBySub.set(row.submissionId, list)
     }
     for (const subId of round1SubIds) {
-      medianMsByRound1SubId.set(
+      const times = timesBySub.get(subId) ?? []
+      timingByRound1SubId.set(
         subId,
-        medianResponseMsFromTimeSpentSeconds(timesBySub.get(subId) ?? []),
+        assessQuestionTiming({
+          perQuestionSeconds: times,
+          totalSeconds: totalSecondsBySubId.get(subId) ?? null,
+          questionCount: times.length,
+        }),
       )
     }
   }
@@ -431,16 +437,26 @@ export async function getAdaptiveSummaryAction(
     if (session?.round2SubmissionId) status = 'completed'
     else if (session?.round1SubmissionId) status = 'round1_done'
 
-    const medianRound1ResponseMs = session?.round1SubmissionId
-      ? (medianMsByRound1SubId.get(session.round1SubmissionId) ?? null)
+    const timing = session?.round1SubmissionId
+      ? (timingByRound1SubId.get(session.round1SubmissionId) ?? null)
       : null
 
     const decisionTrace =
       round1Score != null
         ? explainAdaptiveRound2Decision(round1Score, classTest.passScoreThreshold, {
-            medianResponseMs: medianRound1ResponseMs,
+            medianResponseMs: timing?.medianMs ?? null,
+            reliable: timing?.reliable ?? false,
           })
         : null
+
+    const storedDifficulty = session?.round2Difficulty ?? null
+    const decisionMatchesStored =
+      !storedDifficulty || !decisionTrace || decisionTrace.difficulty === storedDifficulty
+    const round2DecisionSummary = !decisionTrace
+      ? null
+      : decisionMatchesStored
+        ? decisionTrace.summaryVi
+        : `Đã giao đề ${difficultyLabel(storedDifficulty)}. Không đủ dữ liệu để xác minh quyết định lịch sử.`
 
     return {
       studentId: student.id,
@@ -457,9 +473,11 @@ export async function getAdaptiveSummaryAction(
         round2Score,
         classTest.passScoreThreshold,
       ),
-      round2DecisionSummary: decisionTrace?.summaryVi ?? null,
-      round2DecisionBranches: decisionTrace?.branches ?? null,
-      medianRound1ResponseMs,
+      round2DecisionSummary,
+      round2DecisionBranches: decisionMatchesStored ? (decisionTrace?.branches ?? null) : null,
+      medianRound1ResponseMs: timing?.reliable ? (timing.medianMs ?? null) : null,
+      timingQuality: timing?.quality ?? null,
+      decisionMatchesStored,
     }
   })
 

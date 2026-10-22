@@ -1,4 +1,5 @@
 import type { DifficultyLevel } from '@prisma/client'
+import { formatDurationMs, formatDurationSeconds } from '@/lib/time/format-duration'
 
 /** Per-question median above this (ms) → passed students get EASY round 2 (fluency). */
 export const ROUND2_SLOW_MEDIAN_MS = 45_000
@@ -6,6 +7,11 @@ export const ROUND2_SLOW_MEDIAN_MS = 45_000
 export interface Round1TimingInput {
   /** Median per-question response time in milliseconds */
   medianResponseMs: number | null
+  /**
+   * False for missing or even-split estimates. Those must not change the branch.
+   * Omitted means reliable when a positive median is present.
+   */
+  reliable?: boolean
 }
 
 export interface AdaptiveRound2DecisionTrace {
@@ -51,10 +57,12 @@ export function explainAdaptiveRound2Decision(
   passScoreThreshold: number,
   timing?: Round1TimingInput,
 ): AdaptiveRound2DecisionTrace {
-  const medianResponseMs = timing?.medianResponseMs ?? null
+  const rawMedian = timing?.medianResponseMs ?? null
+  const reliable = timing?.reliable !== false && rawMedian != null && rawMedian > 0
+  const medianResponseMs = reliable ? rawMedian : null
   const passed = round1Score >= passScoreThreshold
-  const hasTiming = medianResponseMs != null && medianResponseMs > 0
-  const slow = hasTiming && medianResponseMs! > ROUND2_SLOW_MEDIAN_MS
+  const slow = reliable && medianResponseMs! > ROUND2_SLOW_MEDIAN_MS
+  const slowLabel = formatDurationSeconds(ROUND2_SLOW_MEDIAN_MS / 1000, { perQuestion: true })
 
   const branches: AdaptiveRound2DecisionTrace['branches'] = [
     {
@@ -64,12 +72,12 @@ export function explainAdaptiveRound2Decision(
     },
     {
       id: 'score_pass_fast',
-      label: `Điểm ≥ ${passScoreThreshold} và (không có TG câu / median ≤ ${ROUND2_SLOW_MEDIAN_MS / 1000}s) → Lượt 2: Khó`,
+      label: `Điểm ≥ ${passScoreThreshold} và (chưa đủ TG câu đáng tin, hoặc median ≤ ${slowLabel}) → Lượt 2: Khó`,
       taken: passed && !slow,
     },
     {
       id: 'score_pass_slow',
-      label: `Điểm ≥ ${passScoreThreshold} và median TG/câu > ${ROUND2_SLOW_MEDIAN_MS / 1000}s → Lượt 2: Dễ (củng cố)`,
+      label: `Điểm ≥ ${passScoreThreshold} và median TG/câu > ${slowLabel} (đo được) → Lượt 2: Dễ`,
       taken: passed && slow,
     },
   ]
@@ -82,12 +90,12 @@ export function explainAdaptiveRound2Decision(
     summaryVi = `Điểm ${round1Score.toFixed(1)}/10 < ngưỡng ${passScoreThreshold} → giao đề Dễ.`
   } else if (slow) {
     difficulty = 'EASY'
-    summaryVi = `Điểm ${round1Score.toFixed(1)}/10 đạt ngưỡng; median ${(medianResponseMs! / 1000).toFixed(1)}s/câu (> ${ROUND2_SLOW_MEDIAN_MS / 1000}s) → giao đề Dễ để củng cố.`
+    summaryVi = `Điểm ${round1Score.toFixed(1)}/10 đạt ngưỡng; median ${formatDurationMs(medianResponseMs!, { perQuestion: true })} (> ${slowLabel}) → giao đề Dễ để củng cố.`
   } else {
     difficulty = 'HARD'
-    const timeNote = hasTiming
-      ? `; median ${(medianResponseMs! / 1000).toFixed(1)}s/câu`
-      : '; chưa có thời gian câu (chỉ theo điểm)'
+    const timeNote = reliable
+      ? `; median ${formatDurationMs(medianResponseMs!, { perQuestion: true })}`
+      : '; thời gian từng câu không đủ tin cậy (chỉ theo điểm)'
     summaryVi = `Điểm ${round1Score.toFixed(1)}/10 ≥ ${passScoreThreshold}${timeNote} → giao đề Khó.`
   }
 

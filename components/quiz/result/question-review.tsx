@@ -5,6 +5,7 @@ import { MathText } from '@/components/quiz/math-text'
 import type { QuestionResultRow } from '@/lib/quiz/submission-queries'
 import { cn } from '@/lib/utils'
 import { normalizeLatexDelimiters } from '@/lib/utils/katex-formatter'
+import { formatDurationSeconds } from '@/lib/time/format-duration'
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D']
 
@@ -230,7 +231,7 @@ export function QuestionReview({ index, result }: QuestionReviewProps) {
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="rounded-full bg-secondary px-2 py-0.5">
-            ⏱ {result.timeSpentSeconds}s
+            ⏱ {result.timeSpentSeconds > 0 ? formatDurationSeconds(result.timeSpentSeconds) : 'Chưa đo'}
           </span>
           <span className="rounded-full bg-secondary px-2 py-0.5">
             {Number(result.pointsEarned).toFixed(2)}/{Number(result.points).toFixed(2)} điểm

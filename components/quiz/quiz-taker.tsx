@@ -13,6 +13,7 @@ import {
   patchActiveQuizAnswers,
   startActiveQuizSession,
 } from '@/lib/quiz/active-quiz-session'
+import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -381,6 +382,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
 
   const interactionStart = useRef<Record<string, number>>({})
   const interactionEnd = useRef<Record<string, number>>({})
+  const startedAtRef = useRef<number | null>(null)
 
   const totalSeconds = data.timeLimitMinutes * 60
 
@@ -389,6 +391,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
     if (!session || session.testId !== data.testId) {
       session = startActiveQuizSession(data.testId, data.title, data.timeLimitMinutes)
     }
+    startedAtRef.current = session.startedAt
     setStartedAt(session.startedAt)
     if (session.answers && Object.keys(session.answers).length > 0) {
       setAnswers(session.answers as AnswerMap)
@@ -412,31 +415,35 @@ export function QuizTaker({ data }: QuizTakerProps) {
     setIsSubmitting(true)
     setShowConfirm(false)
     setError(null)
-    clearActiveQuizSession(data.testId)
 
-    const session = getActiveQuizSession()
-    const elapsedSeconds = session
-      ? Math.min(totalSeconds, Math.floor((Date.now() - session.startedAt) / 1000))
-      : totalSeconds
+    const startedAtMs = startedAtRef.current ?? getActiveQuizSession()?.startedAt ?? null
+    const elapsed = resolveElapsedSeconds({
+      startedAtMs,
+      nowMs: Date.now(),
+      timeLimitSeconds: totalSeconds,
+    })
 
     const answerList = data.questions.map((q) => {
       const a = answers[q.id]
+      const measured = getTimeSpent(q.id)
       return {
         questionId: q.id,
         questionType: q.type as Parameters<typeof submitQuizAction>[0]['answers'][number]['questionType'],
         answer: a?.value ?? (q.type === 'TRUE_FALSE_GROUP' ? {} : ''),
-        timeSpentSeconds: getTimeSpent(q.id) || Math.round(elapsedSeconds / data.questions.length),
+        timeSpentSeconds: measured > 0 ? measured : 0,
       }
     })
 
     try {
       const result = await submitQuizAction({
         testId: data.testId,
-        totalTimeSpentSeconds: elapsedSeconds,
+        totalTimeSpentSeconds: elapsed.seconds,
+        clientStartedAtMs: startedAtMs,
         answers: answerList,
       })
 
       if (result.success && result.data) {
+        clearActiveQuizSession(data.testId)
         window.location.assign(`/quiz/result/${result.data.submissionId}`)
         return
       }

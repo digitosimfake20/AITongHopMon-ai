@@ -6,6 +6,7 @@ import { getStudentDetail, type TopicMasteryItem } from '@/lib/quiz/teacher-stud
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StudentDetailActions } from '@/components/teacher/student-detail-actions'
+import { formatDurationSeconds } from '@/lib/time/format-duration'
 
 interface PageProps {
   params: Promise<{ studentId: string }>
@@ -23,12 +24,6 @@ function formatDate(date: Date): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date)
-}
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return m > 0 ? `${m}p ${s}s` : `${s}s`
 }
 
 function ScoreBar({ score, total = 10 }: { score: number; total?: number }) {
@@ -220,7 +215,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
                       <p className="truncate font-medium text-foreground">{sub.testTitle}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Clock className="size-3" /> {formatTime(sub.timeSpentSeconds)}
+                          <Clock className="size-3" /> {formatDurationSeconds(sub.timeSpentSeconds)}
                         </span>
                         <span>{formatDate(sub.submittedAt)}</span>
                       </div>

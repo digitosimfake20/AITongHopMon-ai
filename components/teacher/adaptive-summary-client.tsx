@@ -8,6 +8,13 @@ import type {
 } from '@/app/actions/test-group'
 import { difficultyLabel } from '@/lib/adaptive/adaptive-logic'
 import { ROUND2_SLOW_MEDIAN_MS } from '@/lib/adaptive/adaptive-round2-decision'
+import { formatDurationMs, formatDurationSeconds } from '@/lib/time/format-duration'
+
+const TIMING_LABEL = {
+  measured: 'Đo được',
+  estimated: 'Ước tính — không dùng để phân hóa',
+  insufficient: 'Không đủ dữ liệu',
+} as const
 import { Button } from '@/components/ui/button'
 import { withClassParam } from '@/lib/class/with-class-param'
 
@@ -80,9 +87,9 @@ export function AdaptiveSummaryClient({
             {assignment.passScoreThreshold}/10.
           </li>
           <li>
-            <strong className="text-foreground">Biến 2 — Median thời gian/câu (ms):</strong> tính từ
-            lượt 1; ngưỡng chậm = {ROUND2_SLOW_MEDIAN_MS} ms (
-            {ROUND2_SLOW_MEDIAN_MS / 1000}s/câu).
+            <strong className="text-foreground">Biến 2 — Median thời gian/câu:</strong> chỉ khi đo được
+            từng câu; ngưỡng chậm = {formatDurationSeconds(ROUND2_SLOW_MEDIAN_MS / 1000, { perQuestion: true })}.
+            Thời gian ước tính hoặc thiếu không đổi nhánh.
           </li>
           <li>Điểm &lt; ngưỡng → lượt 2 <strong>Dễ</strong>.</li>
           <li>
@@ -155,9 +162,16 @@ export function AdaptiveSummaryClient({
                       {s.round2DecisionSummary ? (
                         <>
                           <p>{s.round2DecisionSummary}</p>
-                          {s.medianRound1ResponseMs != null && (
-                            <p className="mt-1 font-mono text-[10px] opacity-80">
-                              median TG/câu: {s.medianRound1ResponseMs} ms
+                          <p className="mt-1">
+                            Thời gian/câu:{' '}
+                            {s.timingQuality === 'measured' && s.medianRound1ResponseMs != null
+                              ? formatDurationMs(s.medianRound1ResponseMs, { perQuestion: true })
+                              : 'Chưa đủ dữ liệu'}
+                            {s.timingQuality ? ` · ${TIMING_LABEL[s.timingQuality]}` : ''}
+                          </p>
+                          {s.round2Difficulty && (
+                            <p className="mt-1">
+                              Đã giao: {difficultyLabel(s.round2Difficulty)}
                             </p>
                           )}
                         </>

@@ -178,12 +178,12 @@ export async function runPostSubmissionAIPipeline(
 
     // ── 4. Cognitive signals (auto-scored items only — ESSAY is unscored) ─────
     const scoredDetails = details.filter((d) => contributesToMasteryUpdate(d.type))
-    const allTimes = scoredDetails.map((d) => d.timeSpentSeconds)
+    const timed = scoredDetails.filter((d) => d.timeSpentSeconds > 0)
     const avgSpeed =
-      allTimes.length > 0 ? allTimes.reduce((a, b) => a + b, 0) / allTimes.length : 30
+      timed.length > 0 ? timed.reduce((a, d) => a + d.timeSpentSeconds, 0) / timed.length : 30
 
-    const fastWrong = scoredDetails.filter((d) => !d.isCorrect && d.timeSpentSeconds < 15).length
-    const carelessRate = scoredDetails.length > 0 ? fastWrong / scoredDetails.length : 0
+    const fastWrong = timed.filter((d) => !d.isCorrect && d.timeSpentSeconds < 15).length
+    const carelessRate = timed.length > 0 ? fastWrong / timed.length : 0
 
     const allStates = await prisma.studentKnowledgeState.findMany({
       where: { studentId },

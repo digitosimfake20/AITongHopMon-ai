@@ -8,16 +8,11 @@ import { AIInsightsCard } from '@/components/quiz/result/ai-insights-card'
 import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'
 import { computeTopicMastery } from '@/lib/quiz/topic-mastery'
 import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
+import { formatDurationSeconds } from '@/lib/time/format-duration'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return m > 0 ? `${m}p ${s}s` : `${s}s`
-}
 
 function scoreGrade(score: number): { label: string; color: string; bg: string } {
   if (score >= 9) return { label: 'Xuất sắc', color: 'text-green-700', bg: 'bg-green-100 dark:bg-green-950/40' }
@@ -90,7 +85,7 @@ export default async function QuizResultPage({ params }: PageProps) {
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <StatBadge icon={<Clock className="size-4" />} label="Thời gian" value={formatTime(result.timeSpentSeconds)} />
+            <StatBadge icon={<Clock className="size-4" />} label="Thời gian" value={formatDurationSeconds(result.timeSpentSeconds)} />
             <StatBadge
               icon={<Target className="size-4" />}
               label="Đúng"

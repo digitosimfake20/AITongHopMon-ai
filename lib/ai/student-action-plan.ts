@@ -73,6 +73,7 @@ export function buildStudentActionPlan(
     sessionTotal += total
     sessionCorrect += correct
     for (const a of b.answers) {
+      if (a.timeSpentSeconds <= 0) continue
       if (!a.isCorrect && a.timeSpentSeconds < 15) carelessCount++
       if (!a.isCorrect && a.timeSpentSeconds > 120) stuckCount++
     }

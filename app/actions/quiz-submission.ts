@@ -6,7 +6,6 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
 import { findClassTestByTestId } from '@/lib/adaptive/find-class-test'
-import { medianResponseMsFromTimeSpentSeconds } from '@/lib/adaptive/adaptive-round2-decision'
 import {
   recordAdaptiveRound1Submit,
   recordAdaptiveRound2Submit,
@@ -18,6 +17,8 @@ import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
 import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
 import { scoreTrueFalseGroup } from '@/lib/quiz/score-true-false'
+import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
+import { assessQuestionTiming } from '@/lib/quiz/question-timing'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,6 +33,8 @@ export type QuestionAnswerInput =
 export interface SubmitQuizInput {
   testId: string
   totalTimeSpentSeconds: number
+  /** Client wall-clock start. Server recomputes elapsed and caps it at the time limit. */
+  clientStartedAtMs?: number | null
   answers: Array<{
     questionId: string
     questionType: QuestionAnswerInput['type']
@@ -112,7 +115,22 @@ export async function submitQuizAction(
     return { answer: a, q, scored }
   })
 
+  const timeLimitSeconds = test.timeLimitMinutes * 60
+  const elapsed = resolveElapsedSeconds({
+    startedAtMs: input.clientStartedAtMs ?? null,
+    nowMs: Date.now(),
+    timeLimitSeconds,
+    reportedSeconds: input.totalTimeSpentSeconds,
+  })
   const finalScore = Math.min(10, Math.round(totalScore * 100) / 100)
+
+  const timingPreview = assessQuestionTiming({
+    perQuestionSeconds: input.answers.map((a) => a.timeSpentSeconds),
+    totalSeconds: elapsed.seconds,
+    questionCount: questionIds.length,
+  })
+  const questionSeconds = (seconds: number) =>
+    timingPreview.quality === 'estimated' ? 0 : seconds
 
   const details: Prisma.SubmissionDetailCreateManySubmissionInput[] = scoredAnswers.map(
     ({ answer: a, scored }) => ({
@@ -125,7 +143,7 @@ export async function submitQuizAction(
           : (a.answer as Prisma.InputJsonValue),
       isCorrect: scored.isCorrect,
       pointsEarned: scored.pointsEarned,
-      timeSpentSeconds: a.timeSpentSeconds,
+      timeSpentSeconds: questionSeconds(a.timeSpentSeconds),
     }),
   )
 
@@ -137,7 +155,7 @@ export async function submitQuizAction(
       score: finalScore,
       totalQuestions: questionIds.length,
       correctCount,
-      timeSpentSeconds: input.totalTimeSpentSeconds,
+      timeSpentSeconds: elapsed.seconds,
       status: 'COMPLETED',
       details: { createMany: { data: details } },
     },
@@ -150,7 +168,7 @@ export async function submitQuizAction(
       subject: q?.subject ?? 'Toán',
       type: a.questionType,
       isCorrect: scored.isCorrect,
-      timeSpentSeconds: a.timeSpentSeconds,
+      timeSpentSeconds: questionSeconds(a.timeSpentSeconds),
     }),
   )
 
@@ -183,9 +201,11 @@ export async function submitQuizAction(
       if (!classTest?.isAdaptive) return
 
       if (testId === classTest.mediumTestId) {
-        const medianResponseMs = medianResponseMsFromTimeSpentSeconds(
-          input.answers.map((a) => a.timeSpentSeconds),
-        )
+        const timing = assessQuestionTiming({
+          perQuestionSeconds: input.answers.map((a) => a.timeSpentSeconds),
+          totalSeconds: elapsed.seconds,
+          questionCount: questionIds.length,
+        })
         await recordAdaptiveRound1Submit(
           classTest.id,
           user.id,
@@ -194,7 +214,7 @@ export async function submitQuizAction(
           classTest.passScoreThreshold,
           classTest.easyTestId!,
           classTest.hardTestId!,
-          { medianResponseMs },
+          { medianResponseMs: timing.medianMs, reliable: timing.reliable },
         )
       } else if (
         testId === classTest.easyTestId ||
