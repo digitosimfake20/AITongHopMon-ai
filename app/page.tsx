@@ -13,7 +13,7 @@ export default function HomePage() {
   return (
     <div className="min-h-dvh bg-background">
       <SiteHeader />
-      <main>
+      <main id="main-content">
         <HeroSection />
         <FeaturesSection />
         <WorkflowSection />

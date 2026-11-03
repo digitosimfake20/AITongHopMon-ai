@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Inter } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { Toaster } from 'sonner'
+import { SkipLink } from '@/components/a11y/skip-link'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import './globals.css'
 
@@ -65,6 +66,7 @@ export default function RootLayout({
     >
       <body className="bg-background font-sans antialiased">
         <ThemeProvider>
+          <SkipLink />
           {children}
           <Toaster richColors closeButton position="top-center" />
         </ThemeProvider>
