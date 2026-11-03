@@ -11,15 +11,20 @@ interface TeacherDashboardGridProps {
 
 export function TeacherDashboardGrid({ data }: TeacherDashboardGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
-      <AssignAdaptiveCard />
-      <ClassHealthCard
-        classAverage={data.classAverage}
-        weeklyCompletionRate={data.weeklyCompletionRate}
-      />
-      <ClassWeaknessCard weaknesses={data.classWeaknesses} />
-      <AtRiskStudentsCard students={data.atRiskStudents} />
-      <AssignedQuizzesTable quizzes={data.assignedQuizzes} />
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        Tổng quan lớp
+      </h1>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-5">
+        <AssignAdaptiveCard />
+        <ClassHealthCard
+          classAverage={data.classAverage}
+          weeklyCompletionRate={data.weeklyCompletionRate}
+        />
+        <ClassWeaknessCard weaknesses={data.classWeaknesses} />
+        <AtRiskStudentsCard students={data.atRiskStudents} />
+        <AssignedQuizzesTable quizzes={data.assignedQuizzes} />
+      </div>
     </div>
   )
 }

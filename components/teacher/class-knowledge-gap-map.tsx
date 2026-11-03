@@ -50,7 +50,7 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
   const [selectedGap, setSelectedGap] = useState<CriticalGap | null>(null)
   const [expandedTier, setExpandedTier] = useState<StudentTierGroup['id'] | null>(null)
 
-  const headerTitle = `Lỗ hổng kiến thức — Lớp ${data.className}`
+  const headerTitle = `Lỗ hổng kiến thức · Lớp ${data.className}`
 
   return (
     <div className="space-y-8 pb-8">
@@ -181,6 +181,7 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
           <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
+                <caption className="sr-only">Tỷ lệ câu đúng theo chủ đề của lớp</caption>
                 <thead>
                   <tr className="border-b bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/50">
                     <th className="px-4 py-3">Chủ đề / Dạng bài</th>
@@ -241,7 +242,7 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
         <SectionHeading
           icon={<AlertTriangle className="size-4 text-rose-500" />}
           title="Lỗ hổng cấp thiết"
-          subtitle="Theo từng câu hỏi — % là học sinh từng sai ≥1 lần"
+          subtitle="Theo từng câu hỏi. % là học sinh từng sai ≥1 lần."
         />
         {data.criticalGaps.length === 0 ? (
           <EmptyState message="Chưa có lỗ hổng cấp thiết trên dữ liệu hiện tại." />
@@ -508,11 +509,13 @@ function TierCard({
         <button
           type="button"
           onClick={onToggle}
-          className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-left text-xs font-medium hover:bg-background"
+          aria-expanded={expanded}
+          className="flex min-h-11 w-full items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-left text-xs font-medium hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Danh sách học sinh
           <ChevronRight
             className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
+            aria-hidden
           />
         </button>
 
@@ -546,32 +549,37 @@ function TierCard({
         {tier.id === 'needsSupport' ? (
           <Button
             size="sm"
-            className="w-full gap-1.5"
+            className="min-h-11 w-full gap-1.5"
             variant="destructive"
             onClick={handleZenoActivate}
             disabled={pending}
+            aria-busy={pending}
           >
             {pending ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
             ) : (
-              <Zap className="size-3.5" />
+              <Zap className="size-3.5" aria-hidden />
             )}
             {actionLabel}
           </Button>
         ) : (
           <Link
             href={actionHref!}
-            className={buttonVariants({ size: 'sm', className: 'w-full gap-1.5' })}
+            className={buttonVariants({ size: 'sm', className: 'min-h-11 w-full gap-1.5' })}
           >
             {actionLabel}
-            <ChevronRight className="size-3.5" />
+            <ChevronRight className="size-3.5" aria-hidden />
           </Link>
         )}
 
+        <div role="status" aria-live="polite" className="sr-only">
+          {pending ? 'Đang tạo gợi ý ôn tập' : aiResult ? 'Đã có gợi ý ôn tập' : ''}
+        </div>
+
         {aiResult && tier.id === 'needsSupport' && (
           <div className="rounded-lg border border-teal-200 bg-teal-50/80 p-3 text-xs dark:border-teal-900 dark:bg-teal-950/30">
-            <p className="font-semibold text-teal-700 dark:text-teal-300">Gợi ý Zeno AI</p>
-            <p className="mt-1 leading-relaxed text-slate-600 dark:text-slate-400">
+            <p className="font-semibold text-teal-700 dark:text-teal-300">Gợi ý ôn tập</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">
               {aiResult.summary}
             </p>
           </div>
@@ -586,7 +594,7 @@ function StudentListModal({ gap, onClose }: { gap: CriticalGap; onClose: () => v
     <AccessibleDialog
       open
       onClose={onClose}
-      title={`HS bị hổng — ${gap.topic}`}
+      title={`HS bị hổng: ${gap.topic}`}
       className="items-end sm:items-center"
       panelClassName="max-h-[85vh] max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-border"
     >

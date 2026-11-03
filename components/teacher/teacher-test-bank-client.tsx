@@ -107,7 +107,7 @@ export function TeacherTestBankClient({
   function handleConfirmAssign() {
     if (!assigning) return
     if (!classId) {
-      toast.error('Vui lòng chọn lớp học')
+      toast.error('Chọn lớp học trước khi giao')
       return
     }
 
@@ -132,7 +132,7 @@ export function TeacherTestBankClient({
   function handleConfirmAssignGroup() {
     if (!assigningGroup) return
     if (!classId) {
-      toast.error('Vui lòng chọn lớp học')
+      toast.error('Chọn lớp học trước khi giao')
       return
     }
 
@@ -151,7 +151,7 @@ export function TeacherTestBankClient({
       })
       toast.dismiss(toastId)
       if (result.success && result.data) {
-        toast.success(`Đã giao cụm đề "${assigningGroup.title}" — 2 lượt bắt buộc`)
+        toast.success(`Đã giao cụm đề "${assigningGroup.title}" (2 lượt bắt buộc)`)
         setAssigningGroup(null)
         window.location.href = withClassParam(
           `/teacher/adaptive/${result.data.classTestId}`,
@@ -208,37 +208,52 @@ export function TeacherTestBankClient({
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <Filter className="size-4 text-muted-foreground" />
-        <button
-          type="button"
-          onClick={() => setSubjectFilter('all')}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-            subjectFilter === 'all' ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'
-          }`}
-        >
-          Tất cả môn
-        </button>
-        {SYSTEM_SUBJECTS.map((s) => (
+        <Filter className="size-4 text-muted-foreground" aria-hidden />
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Lọc theo môn">
           <button
-            key={s}
             type="button"
-            onClick={() => setSubjectFilter(s)}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              subjectFilter === s ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'
+            onClick={() => setSubjectFilter('all')}
+            aria-pressed={subjectFilter === 'all'}
+            className={`min-h-11 rounded-lg px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              subjectFilter === 'all' ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'
             }`}
           >
-            {s}
+            Tất cả môn
           </button>
-        ))}
+          {SYSTEM_SUBJECTS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSubjectFilter(s)}
+              aria-pressed={subjectFilter === s}
+              className={`min-h-11 rounded-lg px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                subjectFilter === s ? 'bg-primary text-primary-foreground' : 'border border-border bg-card'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <label className="sr-only" htmlFor="test-bank-grade-filter">
+          Lọc theo khối
+        </label>
         <select
+          id="test-bank-grade-filter"
           value={gradeFilter}
           onChange={(e) => setGradeFilter(e.target.value)}
-          className="rounded-lg border border-input bg-background px-2 py-1.5 text-xs"
+          className="min-h-11 rounded-lg border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <option value="all">Tất cả khối</option>
-          {Array.from(new Set([...tests, ...groups].map((x) => 'grade' in x ? x.grade : ''))).filter(Boolean).sort().map((g) => (
-            <option key={g} value={g}>Khối {g}</option>
-          ))}
+          {Array.from(
+            new Set([...tests, ...groups].map((x) => ('grade' in x ? x.grade : ''))),
+          )
+            .filter(Boolean)
+            .sort()
+            .map((g) => (
+              <option key={g} value={g}>
+                Khối {g}
+              </option>
+            ))}
         </select>
       </div>
 
@@ -292,7 +307,7 @@ export function TeacherTestBankClient({
             <section key={subject} className="space-y-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 <Layers className="size-4" />
-                {subject} — Đề đơn
+                {subject}: đề đơn
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] normal-case">{list.length} đề</span>
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

@@ -25,6 +25,7 @@ export interface AtRiskStudent {
 export interface AssignedQuiz {
   id: string
   title: string
+  /** Display label for time limit (not a calendar due date). */
   deadline: string
   submitted: number
   total: number

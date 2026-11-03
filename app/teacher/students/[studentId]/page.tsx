@@ -94,8 +94,15 @@ export default async function StudentDetailPage({ params }: PageProps) {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" nativeButton={false} render={<Link href="/teacher/students" />}>
-            <ArrowLeft className="size-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="min-h-11 min-w-11"
+            aria-label="Quay lại danh sách học sinh"
+            nativeButton={false}
+            render={<Link href="/teacher/students" />}
+          >
+            <ArrowLeft className="size-4" aria-hidden />
           </Button>
           <div className="flex items-center gap-3">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
