@@ -260,15 +260,31 @@
   animation: caret-blink 1s steps(1) infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* High-contrast focus helper for primary/inverted controls (WCAG 1.4.11).
+   Prefer ring-offset against --background so the ring stays ≥3:1 on fills
+   where --ring matches the control color. */
+@utility focus-ring-contrast {
+  outline: none;
+  &:focus-visible {
+    border-color: var(--ring);
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 5px color-mix(in oklab, var(--ring) 85%, transparent);
   }
+}
+
+/* Decorative motion only — keep short UI state transitions intact.
+   Prefer motion-safe: / motion-reduce: on interactive components. */
+@media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .animate-marquee,
+  .animate-soft-float,
+  .animate-caret,
+  .animate-pop-in,
+  .animate-slide-up-fade {
+    animation: none !important;
   }
 }

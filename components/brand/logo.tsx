@@ -20,15 +20,20 @@ export function Logo({
   href = '/',
   size = 28,
 }: LogoProps) {
+  const homeLabel = `${SITE_NAME} — trang chủ`
+
   const inner = (
     <>
       {showWordmark ? (
-        <span className="font-display text-[1.35rem] leading-none tracking-tight text-foreground">
+        <span
+          className="font-display text-[1.35rem] leading-none tracking-tight text-foreground"
+          aria-hidden={href !== null ? true : undefined}
+        >
           {SITE_NAME}
         </span>
-      ) : (
+      ) : href === null ? (
         <span className="sr-only">{SITE_NAME}</span>
-      )}
+      ) : null}
       {showPartner ? (
         <>
           <span
@@ -37,7 +42,7 @@ export function Logo({
           />
           <Image
             src="/fpt.png"
-            alt="FPT"
+            alt=""
             width={size}
             height={size}
             className="h-auto w-auto max-h-7 rounded-sm object-contain opacity-75"
@@ -46,7 +51,6 @@ export function Logo({
           />
         </>
       ) : null}
-      <span className="sr-only">{SITE_NAME} home</span>
     </>
   )
 
@@ -54,6 +58,7 @@ export function Logo({
     return (
       <Link
         href={href ?? '/'}
+        aria-label={homeLabel}
         className={cn('inline-flex shrink-0 items-center gap-2.5', className)}
       >
         {inner}
