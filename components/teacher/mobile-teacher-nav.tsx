@@ -63,6 +63,7 @@ export function MobileTeacherNav({ className, classId }: MobileTeacherNavProps) 
                 key={item.id}
                 href={teacherNavHref(item, classId)}
                 onClick={() => setOpen(false)}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
                   active
@@ -70,7 +71,7 @@ export function MobileTeacherNav({ className, classId }: MobileTeacherNavProps) 
                     : 'text-muted-foreground hover:bg-secondary',
                 )}
               >
-                <Icon className="size-4" />
+                <Icon className="size-4" aria-hidden />
                 {item.label}
               </Link>
             )

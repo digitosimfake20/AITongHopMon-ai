@@ -51,6 +51,7 @@ export function TeacherSidebar({ className, classId }: TeacherSidebarProps) {
             <Link
               key={item.id}
               href={teacherNavHref(item, classId)}
+              aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active

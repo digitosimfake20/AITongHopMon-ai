@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Clock, BookOpen, Sparkles, X } from 'lucide-react'
+import { Clock, BookOpen, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import { addSavedPractice } from '@/lib/quiz/active-quiz-session'
 
 interface PracticePreTestModalProps {
@@ -27,8 +27,6 @@ export function PracticePreTestModal({
 }: PracticePreTestModalProps) {
   const router = useRouter()
 
-  if (!open) return null
-
   function handleStart() {
     onOpenChange(false)
     router.push(`/quiz/take/${testId}?start=1`)
@@ -48,51 +46,47 @@ export function PracticePreTestModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
-        <button
-          type="button"
-          aria-label="Đóng"
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-secondary"
-        >
-          <X className="size-4" />
-        </button>
+    <AccessibleDialog
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Sparkles className="size-5 text-primary" aria-hidden />
+          Sẵn sàng luyện tập
+        </span>
+      }
+      panelClassName="max-w-md rounded-2xl border-border bg-card"
+      className="backdrop-blur-sm"
+    >
+      <p className="mb-4 text-sm text-muted-foreground">
+        Câu hỏi lấy từ kho đề theo điểm yếu — không sinh đề mới.
+      </p>
 
-        <div className="mb-4 flex items-center gap-2">
-          <Sparkles className="size-5 text-primary" />
-          <h2 className="text-lg font-bold">Sẵn sàng luyện tập</h2>
+      <div className="mb-5 space-y-3 rounded-xl border bg-muted/40 p-4 text-sm">
+        <p className="font-medium text-foreground">{title}</p>
+        <div className="flex flex-wrap gap-3 text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="size-3.5" aria-hidden />
+            {timeLimitMinutes} phút
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <BookOpen className="size-3.5" aria-hidden />
+            {questionCount} câu hỏi
+          </span>
         </div>
-        <p className="mb-4 text-sm text-muted-foreground">
-          Câu hỏi lấy từ kho đề theo điểm yếu — không sinh đề mới.
+        <p>
+          Chủ đề ôn tập: <strong className="text-foreground">{topic}</strong>
         </p>
-
-        <div className="mb-5 space-y-3 rounded-xl border bg-muted/40 p-4 text-sm">
-          <p className="font-medium text-foreground">{title}</p>
-          <div className="flex flex-wrap gap-3 text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5" />
-              {timeLimitMinutes} phút
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <BookOpen className="size-3.5" />
-              {questionCount} câu hỏi
-            </span>
-          </div>
-          <p>
-            Chủ đề ôn tập: <strong className="text-foreground">{topic}</strong>
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Button className="w-full" onClick={handleStart}>
-            Bắt đầu làm bài
-          </Button>
-          <Button variant="outline" className="w-full" onClick={handleSaveLater}>
-            Lưu vào &quot;Làm sau&quot;
-          </Button>
-        </div>
       </div>
-    </div>
+
+      <div className="flex flex-col gap-2">
+        <Button className="w-full" onClick={handleStart} data-dialog-initial-focus>
+          Bắt đầu làm bài
+        </Button>
+        <Button variant="outline" className="w-full" onClick={handleSaveLater}>
+          Lưu vào &quot;Làm sau&quot;
+        </Button>
+      </div>
+    </AccessibleDialog>
   )
 }
