@@ -19,16 +19,17 @@ export function HeroSection() {
 
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold tracking-tight text-foreground sm:text-base">
+          <h1 className="font-display text-balance text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl">
             {SITE_NAME}
-          </p>
-
-          <h1 className="mt-4 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            Quiz Toán tự chấm. Biết ngay ai đang kẹt.
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Học sinh nộp bài là có điểm. Thầy cô nhận báo cáo lớp và tóm tắt AI trong vài giây.
+          <p className="mt-5 text-balance text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl md:text-3xl">
+            Quiz Toán tự chấm. Biết ngay ai đang kẹt.
+          </p>
+
+          <p className="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Học sinh nộp bài là có điểm. Thầy cô nhận báo cáo lớp và tóm tắt AI
+            trong vài giây.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

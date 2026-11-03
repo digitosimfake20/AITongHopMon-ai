@@ -44,7 +44,7 @@ interface BillingToggleProps {
 function BillingToggle({ period, onChange }: BillingToggleProps) {
   const options: { id: BillingPeriod; label: string }[] = [
     { id: 'monthly', label: 'Theo tháng' },
-    { id: 'yearly', label: 'Theo năm · Giảm 20%' },
+    { id: 'yearly', label: 'Theo năm' },
   ]
 
   return (
@@ -84,8 +84,19 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, period }: PlanCardProps) {
-  const price = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
-  const isNumericPrice = plan.id !== 'school'
+  const isYearly = period === 'yearly'
+  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice
+  const isNumericPrice = plan.id !== 'school' && plan.id !== 'starter'
+  // Yearly total must use /năm — never reuse the monthly unit string.
+  const unit = isNumericPrice
+    ? isYearly
+      ? 'VNĐ / giáo viên / năm'
+      : 'VNĐ / giáo viên / tháng'
+    : plan.unit
+  const monthlyEquivalent =
+    isNumericPrice && isYearly && plan.yearlyPrice > 0
+      ? Math.round(plan.yearlyPrice / 12)
+      : null
 
   return (
     <div
@@ -111,15 +122,23 @@ function PlanCard({ plan, period }: PlanCardProps) {
 
       <div className="mt-6">
         {isNumericPrice ? (
-          <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-bold tracking-tight text-foreground">
-              {price.toLocaleString('vi-VN')}
-            </span>
-            <span className="ml-1 text-xs text-muted-foreground">{plan.unit}</span>
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold tracking-tight text-foreground">
+                {price.toLocaleString('vi-VN')}
+              </span>
+              <span className="ml-1 text-xs text-muted-foreground">{unit}</span>
+            </div>
+            {monthlyEquivalent !== null ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Tương đương {monthlyEquivalent.toLocaleString('vi-VN')} VNĐ / giáo
+                viên / tháng khi trả theo năm
+              </p>
+            ) : null}
           </div>
         ) : (
           <span className="text-3xl font-semibold tracking-tight text-foreground">
-            {plan.unit}
+            {unit}
           </span>
         )}
       </div>
