@@ -418,8 +418,11 @@ export function AdminTestBankClient({
 
           <div className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Tiêu đề</label>
+              <label htmlFor="admin-group-title" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Tiêu đề
+              </label>
               <input
+                id="admin-group-title"
                 value={groupTitle}
                 onChange={(e) => setGroupTitle(e.target.value)}
                 className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
@@ -427,19 +430,26 @@ export function AdminTestBankClient({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Chủ đề</label>
+              <label htmlFor="admin-group-topic" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Chủ đề
+              </label>
               <input
+                id="admin-group-topic"
                 value={groupTopic}
                 onChange={(e) => setGroupTopic(e.target.value)}
                 className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <Clock className="size-3.5" />
+              <label
+                htmlFor="admin-group-duration"
+                className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+              >
+                <Clock className="size-3.5" aria-hidden />
                 Thời gian (phút, cả 3 mức)
               </label>
               <input
+                id="admin-group-duration"
                 type="number"
                 min={1}
                 value={groupDurationMinutes}
@@ -450,8 +460,11 @@ export function AdminTestBankClient({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Môn</label>
+              <label htmlFor="admin-group-subject" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Môn
+              </label>
               <select
+                id="admin-group-subject"
                 value={groupSubject}
                 onChange={(e) => setGroupSubject(e.target.value)}
                 className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
@@ -462,16 +475,22 @@ export function AdminTestBankClient({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Khối</label>
+              <label htmlFor="admin-group-grade" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Khối
+              </label>
               <input
+                id="admin-group-grade"
                 value={groupGrade}
                 onChange={(e) => setGroupGrade(e.target.value)}
                 className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Mô tả (tuỳ chọn)</label>
+              <label htmlFor="admin-group-description" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Mô tả (tuỳ chọn)
+              </label>
               <input
+                id="admin-group-description"
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"

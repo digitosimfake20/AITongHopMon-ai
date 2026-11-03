@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, useTransition } from 'react'
+import { useId, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import {
-  BookOpen, Clock, Layers, Loader2, Send, X, Filter, Sparkles, BarChart3,
+  BookOpen, Clock, Layers, Loader2, Send, Filter, Sparkles, BarChart3,
 } from 'lucide-react'
 import { assignClassTestAction } from '@/app/actions/system-test'
 import type { SystemTestSummary } from '@/app/actions/system-test'
@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/test-group'
 import { SYSTEM_SUBJECTS } from '@/lib/validations/system-test'
 import { Button } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import { withClassParam } from '@/lib/class/with-class-param'
 
 interface TeacherClassOption {
@@ -336,21 +337,22 @@ export function TeacherTestBankClient({
           onClose={() => setAssigning(null)}
           onConfirm={handleConfirmAssign}
           extra={
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Số lần được làm</label>
-              <div className="flex flex-wrap gap-2">
+            <fieldset>
+              <legend className="mb-1.5 block text-sm font-medium">Số lần được làm</legend>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Số lần được làm">
                 {[{ label: '1 lần', value: 1 }, { label: '3 lần', value: 3 }, { label: 'Không giới hạn', value: -1 }].map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setMaxAttempts(opt.value)}
-                    className={`rounded-lg border px-3 py-2 text-sm ${maxAttempts === opt.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}
+                    aria-pressed={maxAttempts === opt.value}
+                    className={`min-h-11 rounded-lg border px-3 py-2 text-sm ${maxAttempts === opt.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
-            </div>
+            </fieldset>
           }
         />
       )}
@@ -375,8 +377,11 @@ export function TeacherTestBankClient({
           extra={
             <div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium">Ngưỡng lên đề Khó (≥)</label>
+                <label htmlFor="assign-pass-threshold" className="mb-1.5 block text-sm font-medium">
+                  Ngưỡng lên đề Khó (≥)
+                </label>
                 <input
+                  id="assign-pass-threshold"
                   type="number"
                   step="0.5"
                   min={0}
@@ -430,51 +435,94 @@ function AssignModal({
   onConfirm: () => void
   extra?: React.ReactNode
 }) {
+  const fieldId = useId()
+  const classFieldId = `${fieldId}-class`
+  const startFieldId = `${fieldId}-start`
+  const endFieldId = `${fieldId}-end`
+  const reviewFieldId = `${fieldId}-review`
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-xl">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-semibold">{title}</h3>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted">
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Lớp học</label>
-            <select value={classId} onChange={(e) => setClassId(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm">
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-              ))}
-            </select>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Mở đề lúc</label>
-              <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm" />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Hạn nộp</label>
-              <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm" />
-            </div>
-          </div>
-          {extra}
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={allowReview} onChange={(e) => setAllowReview(e.target.checked)} className="size-4 rounded" />
-            Cho xem lời giải sau khi nộp
-          </label>
-        </div>
-        <div className="mt-6 flex gap-3">
-          <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={onClose}>Hủy</Button>
-          <Button type="button" className="min-h-11 flex-1 gap-2" disabled={isPending} onClick={onConfirm}>
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+    <AccessibleDialog
+      open
+      onClose={onClose}
+      title={title}
+      className="items-end bg-black/40 sm:items-center"
+      panelClassName="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={onClose}>
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            className="min-h-11 flex-1 gap-2"
+            disabled={isPending}
+            onClick={onConfirm}
+            data-dialog-initial-focus
+          >
+            {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
             Xác nhận giao
           </Button>
+        </>
+      }
+    >
+      {subtitle ? <p className="mb-4 -mt-2 text-sm text-muted-foreground">{subtitle}</p> : null}
+      <div className="space-y-4">
+        <div>
+          <label htmlFor={classFieldId} className="mb-1.5 block text-sm font-medium">
+            Lớp học
+          </label>
+          <select
+            id={classFieldId}
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="min-h-11 w-full rounded-lg border px-3 text-sm"
+          >
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.code})
+              </option>
+            ))}
+          </select>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor={startFieldId} className="mb-1.5 block text-sm font-medium">
+              Mở đề lúc
+            </label>
+            <input
+              id={startFieldId}
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="min-h-11 w-full rounded-lg border px-3 text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor={endFieldId} className="mb-1.5 block text-sm font-medium">
+              Hạn nộp
+            </label>
+            <input
+              id={endFieldId}
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="min-h-11 w-full rounded-lg border px-3 text-sm"
+            />
+          </div>
+        </div>
+        {extra}
+        <label htmlFor={reviewFieldId} className="flex items-center gap-2 text-sm">
+          <input
+            id={reviewFieldId}
+            type="checkbox"
+            checked={allowReview}
+            onChange={(e) => setAllowReview(e.target.checked)}
+            className="size-4 rounded"
+          />
+          Cho xem lời giải sau khi nộp
+        </label>
       </div>
-    </div>
+    </AccessibleDialog>
   )
 }

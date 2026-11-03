@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, Copy, Check, FileText, Loader2, X, HelpCircle, BarChart2 } from 'lucide-react'
+import { Brain, Copy, Check, FileText, Loader2, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import {
   generateStudentFeedbackAction,
   generatePersonalizedQuizAction,
@@ -18,41 +19,6 @@ interface StudentDetailActionsProps {
   avgScore: number
   weakTopics: string[]
   behaviorSignals: string[]
-}
-
-// ---------------------------------------------------------------------------
-// Modal shell
-// ---------------------------------------------------------------------------
-
-function Modal({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean
-  onClose: () => void
-  title: string
-  children: React.ReactNode
-}) {
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
-      <div className="relative mt-16 w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="font-semibold text-foreground">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1 text-muted-foreground hover:bg-secondary"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -284,10 +250,12 @@ export function StudentDetailActions({
         </Button>
       </div>
 
-      <Modal
+      <AccessibleDialog
         open={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
         title="Soạn nhận xét gửi Phụ huynh / Học sinh"
+        className="items-start overflow-y-auto backdrop-blur-sm"
+        panelClassName="mt-16 max-w-2xl rounded-2xl border-border bg-card shadow-2xl"
       >
         <FeedbackModalContent
           studentName={studentName}
@@ -295,15 +263,17 @@ export function StudentDetailActions({
           weakTopics={weakTopics}
           behaviorSignals={behaviorSignals}
         />
-      </Modal>
+      </AccessibleDialog>
 
-      <Modal
+      <AccessibleDialog
         open={quizOpen}
         onClose={() => setQuizOpen(false)}
         title="Bài tập phụ đạo"
+        className="items-start overflow-y-auto backdrop-blur-sm"
+        panelClassName="mt-16 max-w-2xl rounded-2xl border-border bg-card shadow-2xl"
       >
         <QuizModalContent studentName={studentName} weakTopics={weakTopics} />
-      </Modal>
+      </AccessibleDialog>
     </>
   )
 }
