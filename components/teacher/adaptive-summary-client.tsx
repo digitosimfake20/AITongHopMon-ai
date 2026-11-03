@@ -35,9 +35,9 @@ function formatDate(iso: string) {
 }
 
 const STATUS_LABELS = {
-  not_started: { label: 'Chưa làm', color: 'bg-slate-100 text-slate-700' },
-  round1_done: { label: 'Đang lượt 2', color: 'bg-cyan-950/50 text-cyan-400' },
-  completed: { label: 'Hoàn thành', color: 'bg-green-100 text-green-700' },
+  not_started: { label: 'Chưa làm', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  round1_done: { label: 'Đang lượt 2', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300' },
+  completed: { label: 'Hoàn thành', color: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300' },
 }
 
 export function AdaptiveSummaryClient({
@@ -111,7 +111,7 @@ export function AdaptiveSummaryClient({
               <th className="px-4 py-3 font-medium">Lượt 2</th>
               <th className="px-4 py-3 font-medium">Trạng thái</th>
               <th className="px-4 py-3 font-medium">Quyết định lượt 2</th>
-              <th className="px-4 py-3 font-medium">Đánh giá AI</th>
+              <th className="px-4 py-3 font-medium">Nhận xét</th>
             </tr>
           </thead>
           <tbody>
@@ -140,7 +140,7 @@ export function AdaptiveSummaryClient({
                     <td className="px-4 py-3">
                       {s.round2Difficulty ? (
                         <div>
-                          <span className="rounded-full bg-cyan-950/50 px-2 py-0.5 font-mono text-xs font-medium text-cyan-400">
+                          <span className="rounded-full bg-cyan-100 px-2 py-0.5 font-mono text-xs font-medium text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300">
                             {difficultyLabel(s.round2Difficulty)}
                           </span>
                           {s.round2Score != null && (

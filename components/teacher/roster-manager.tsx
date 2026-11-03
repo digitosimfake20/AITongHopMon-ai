@@ -242,7 +242,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
             ) : (
               <FileSpreadsheet className="size-3.5 text-emerald-600" />
             )}
-            {isUploading ? 'Đang đọc...' : 'Upload Excel'}
+            {isUploading ? 'Đang đọc...' : 'Tải Excel'}
             <input
               ref={fileRef}
               type="file"

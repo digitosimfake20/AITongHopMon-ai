@@ -48,31 +48,28 @@ export default async function AdaptivePage() {
     : null
 
   return (
-    <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex size-10 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-950">
-          <Zap className="size-5 text-teal-600" />
+          <Zap className="size-5 text-teal-600" aria-hidden />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200">
+          <h1 className="text-xl font-bold text-foreground">
             Luyện theo lỗ hổng
           </h1>
-          <p className="text-sm text-slate-500">
-            Trộn câu từ kho đề theo chủ đề BKT còn yếu — tách biệt với bài thích ứng 2 vòng của lớp
+          <p className="text-sm text-muted-foreground">
+            Câu hỏi từ kho đề theo chủ đề còn yếu, riêng với bài phân hóa 2 lượt của lớp
           </p>
         </div>
       </div>
 
-      {/* AI Profile Card — generates personalized quiz */}
       <AiProfileCard profile={cognitiveProfile} />
 
-      {/* Weak topics breakdown */}
       {knowledgeStates.length > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
-            <TrendingDown className="size-4" />
-            Phân tích Chủ đề ({knowledgeStates.length} chủ đề đã theo dõi)
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <TrendingDown className="size-4" aria-hidden />
+            Chủ đề đang theo dõi ({knowledgeStates.length})
           </h2>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {knowledgeStates.map((state) => {
@@ -99,20 +96,27 @@ export default async function AdaptivePage() {
                   className={`rounded-xl border p-3 ${colorClass}`}
                 >
                   <div className="mb-2 flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <p className="text-sm font-medium text-foreground">
                       {state.node.title}
                     </p>
-                    <span className="shrink-0 text-xs font-semibold text-slate-500">
+                    <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">
                       {mastery}%
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className="h-1.5 w-full rounded-full bg-secondary"
+                    role="progressbar"
+                    aria-valuenow={mastery}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${state.node.title}: ${label}`}
+                  >
                     <div
-                      className={`h-1.5 rounded-full ${barColor} transition-all`}
+                      className={`h-1.5 rounded-full ${barColor}`}
                       style={{ width: `${mastery}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 text-[10px] text-slate-400">{label}</p>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">{label}</p>
                 </div>
               )
             })}
@@ -121,28 +125,27 @@ export default async function AdaptivePage() {
       )}
 
       {knowledgeStates.length === 0 && !profile && (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center dark:border-slate-700">
-          <Brain className="mx-auto size-10 text-slate-300 dark:text-slate-600" />
-          <p className="mt-3 font-medium text-slate-500">Chưa có dữ liệu học tập</p>
-          <p className="mt-1 text-sm text-slate-400">
-            Hoàn thành bài kiểm tra đầu tiên để Zeno bắt đầu cá nhân hóa lộ trình của bạn.
+        <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+          <Brain className="mx-auto size-10 text-muted-foreground/40" aria-hidden />
+          <p className="mt-3 font-medium text-muted-foreground">Chưa có dữ liệu học tập</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Làm bài kiểm tra đầu tiên để Zeno lập hồ sơ kiến thức của bạn.
           </p>
           <Link
             href="/quizzes"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
           >
-            <BookOpen className="size-4" />
+            <BookOpen className="size-4" aria-hidden />
             Xem đề kiểm tra
           </Link>
         </div>
       )}
 
-      {/* Recent personalized tests */}
       {personalizedTests.length > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400">
-            <BookOpen className="size-4" />
-            Bài luyện cá nhân hóa gần đây
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <BookOpen className="size-4" aria-hidden />
+            Bài luyện gần đây
           </h2>
           <div className="space-y-2">
             {personalizedTests.map((test) => {
@@ -150,27 +153,27 @@ export default async function AdaptivePage() {
               return (
                 <div
                   key={test.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/50"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">
                       {test.title}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       {(test.questionIds as string[]).length} câu · {test.timeLimitMinutes} phút
                     </p>
                   </div>
                   {latest ? (
                     <Link
                       href={`/quiz/result/${latest.id}`}
-                      className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300"
+                      className="rounded-lg bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300"
                     >
-                      {Number(latest.score).toFixed(1)}/10 — Xem kết quả
+                      {Number(latest.score).toFixed(1)}/10 · Xem kết quả
                     </Link>
                   ) : (
                     <Link
                       href={`/quiz/take/${test.id}`}
-                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+                      className="rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700"
                     >
                       Làm bài
                     </Link>
@@ -181,6 +184,6 @@ export default async function AdaptivePage() {
           </div>
         </section>
       )}
-    </main>
+    </div>
   )
 }

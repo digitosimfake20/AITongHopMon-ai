@@ -7,9 +7,8 @@ export function WorkflowSection() {
   return (
     <Section
       id="how-it-works"
-      eyebrow="Cách hoạt động"
-      title="3 bước đơn giản trong một tiết học"
-      description="Không cần tập huấn. Hầu hết giáo viên chạy bài kiểm tra đầu tiên chỉ trong mười phút sau khi đăng ký."
+      title="Ba bước trong một tiết"
+      description="Không cần tập huấn. Hầu hết giáo viên chạy quiz đầu trong khoảng mười phút sau khi đăng ký."
     >
       <ol className="grid gap-4 md:grid-cols-3">
         {WORKFLOW_STEPS.map((step) => (
@@ -30,13 +29,13 @@ function StepCard({ step }: StepCardProps) {
   const Icon = step.icon
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 transition-colors duration-300 hover:border-accent/30">
+    <div className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 transition-colors duration-200 hover:border-foreground/20">
       <div className="flex items-center justify-between">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+        <span className="flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
           <Icon className="size-4.5" aria-hidden="true" />
         </span>
-        <span className="font-mono text-xs font-medium text-muted-foreground">
-          0{step.step}
+        <span className="font-mono text-xs font-medium tabular-nums text-muted-foreground">
+          {step.step}/3
         </span>
       </div>
       <h3 className="mt-5 text-base font-semibold text-card-foreground">
@@ -49,7 +48,7 @@ function StepCard({ step }: StepCardProps) {
         {step.bullets.map((bullet) => (
           <li key={bullet} className="flex items-start gap-2.5">
             <Check
-              className="mt-0.5 size-3.5 shrink-0 text-accent"
+              className="mt-0.5 size-3.5 shrink-0 text-foreground/70"
               aria-hidden="true"
             />
             <span className="text-[13px] leading-relaxed text-muted-foreground">

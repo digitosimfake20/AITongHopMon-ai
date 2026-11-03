@@ -14,18 +14,18 @@ export default async function QuizzesPage({ searchParams }: PageProps) {
   const defaultTab = tab === 'later' ? 'later' : 'all'
 
   return (
-    <main className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="flex items-center gap-2">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
         <BookOpen className="size-5 text-primary" aria-hidden />
         <h1 className="text-xl font-bold text-foreground">Ngân hàng đề kiểm tra</h1>
         {quizzes.length > 0 && (
-          <span className="ml-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {quizzes.length} đề
           </span>
         )}
       </div>
 
       <QuizzesListClient quizzes={quizzes} defaultTab={defaultTab} />
-    </main>
+    </div>
   )
 }

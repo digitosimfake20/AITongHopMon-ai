@@ -32,7 +32,7 @@ export function DashboardHeader({
           {getGreeting()}, {studentName}!
         </h1>
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-          Sẵn sàng nâng làm bài kiểm tra của mình hôm nay chưa?
+          Hôm nay làm bài kiểm tra nào trước?
         </p>
       </div>
 

@@ -5,11 +5,11 @@ export function TrustedBy() {
 
   return (
     <section
-      aria-label="Schools using Mathz"
+      aria-label="Trường đang dùng Mathz"
       className="border-y border-border bg-card/40 py-8"
     >
-      <p className="text-center text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-        Used in classrooms at
+      <p className="text-center text-xs font-medium tracking-wide text-muted-foreground">
+        Đang dùng trong lớp tại
       </p>
       <div className="relative mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
         <ul className="animate-marquee flex w-max items-center gap-12 pr-12">

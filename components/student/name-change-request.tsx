@@ -61,8 +61,13 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950/30">
       <div className="mb-4 flex items-center justify-between">
         <h4 className="font-semibold text-amber-900 dark:text-amber-300">Yêu cầu đổi tên</h4>
-        <button onClick={() => setOpen(false)} className="rounded p-1 hover:bg-amber-100">
-          <X className="size-4 text-amber-700" />
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded p-1.5 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          aria-label="Đóng yêu cầu đổi tên"
+        >
+          <X className="size-4 text-amber-700" aria-hidden />
         </button>
       </div>
 

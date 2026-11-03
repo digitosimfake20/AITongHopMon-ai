@@ -58,7 +58,7 @@ export function QuizView({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
           <span>
-            Question {questionIndex + 1} of {totalQuestions}
+            Câu {questionIndex + 1}/{totalQuestions}
           </span>
           <span className="font-mono">{Math.round(progress)}%</span>
         </div>

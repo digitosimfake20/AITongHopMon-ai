@@ -23,51 +23,51 @@ export const SITE_NAME = 'Mathz'
 export const NAV_LINKS: NavLink[] = [
   { label: 'Tính năng', href: '#features' },
   { label: 'Cách hoạt động', href: '#how-it-works' },
-  { label: 'Dành cho Giáo viên', href: '#insights' },
+  { label: 'Bảng giá', href: '#pricing' },
   { label: 'FAQ', href: '#faq' },
 ]
 
 export const FEATURES: Feature[] = [
   {
     id: 'authoring',
-    title: 'Tạo đề thi bằng AI trong 1 phút',
+    title: 'Soạn đề AI trong một phút',
     description:
-      'Tải lên bài giảng PDF hoặc chủ đề Toán 8, AI tự động soạn câu hỏi trắc nghiệm chuẩn. Thầy cô giữ lại câu hỏi thích hợp.',
+      'Tải PDF bài giảng hoặc nêu chủ đề Toán 8. Mathz gợi ý câu trắc nghiệm; thầy cô giữ câu hợp, bỏ câu thừa.',
     icon: Sparkles,
   },
   {
     id: 'grading',
-    title: 'Chấm điểm tức thì (1.8 giây)',
+    title: 'Chấm xong trong khoảng 2 giây',
     description:
-      'Chấm tự động trắc nghiệm và câu hỏi tự luận ngắn theo đúng đáp án chuẩn. Mỗi câu trả lời được hiển thị rõ ràng với điểm và giải thích.',
+      'Trắc nghiệm và tự luận ngắn theo đáp án thầy cô đặt. Mỗi câu hiện điểm kèm giải thích ngắn.',
     icon: Zap,
   },
   {
     id: 'summaries',
-    title: 'Báo cáo AI bằng tiếng Việt dễ hiểu',
+    title: 'Báo cáo AI bằng tiếng Việt',
     description:
-      'Tóm tắt 1 đoạn văn ngắn sau mỗi bài quiz: Lớp đã hiểu gì, hổng chỗ nào và cần dạy lại gì đầu tiên.',
+      'Một đoạn sau mỗi quiz: lớp nắm gì, hổng chỗ nào, nên dạy lại gì trước.',
     icon: BrainCircuit,
   },
   {
     id: 'mastery',
-    title: 'Theo dõi % Độ vững Tri thức',
+    title: 'Theo dõi độ vững theo chủ đề',
     description:
-      'Theo dõi từng học sinh qua từng học kỳ để biết chủ đề nào đã vững, chủ đề nào cần củng cố.',
+      'Xem từng học sinh qua học kỳ: chủ đề đã vững và chủ đề còn yếu.',
     icon: TrendingUp,
   },
   {
     id: 'groups',
-    title: 'Chia sẻ Ngân hàng đề trong Tổ chuyên môn',
+    title: 'Ngân hàng đề chung tổ Toán',
     description:
-      'Giáo viên cùng bộ môn Toán chia sẻ ngân hàng câu hỏi và so sánh kết quả giữa các lớp.',
+      'Giáo viên cùng bộ môn chia sẻ câu hỏi và so sánh kết quả giữa các lớp.',
     icon: Users,
   },
   {
     id: 'privacy',
-    title: 'Bảo mật dữ liệu học đường',
+    title: 'Dữ liệu học đường tách biệt',
     description:
-      'Dữ liệu học sinh được lưu trữ riêng biệt, không dùng để huấn luyện mô hình AI công khai.',
+      'Điểm và hồ sơ học sinh không dùng để huấn luyện mô hình AI công khai.',
     icon: ShieldCheck,
   },
 ]
@@ -78,12 +78,12 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     step: 1,
     title: 'Tạo bài kiểm tra',
     description:
-      'Dùng tài liệu môn học của thầy cô hoặc để AI gợi ý bộ đề Toán 8 trong 30 giây.',
+      'Dùng tài liệu của thầy cô, hoặc để Mathz gợi ý bộ đề Toán 8 trong khoảng 30 giây.',
     icon: BookOpenCheck,
     bullets: [
-      'Tải lên PDF hoặc nhập chủ đề Toán',
-      'Chọn mức độ khó và số lượng câu hỏi',
-      'Chỉnh sửa bất kỳ câu nào trước khi giao',
+      'Tải PDF hoặc nhập chủ đề Toán',
+      'Chọn độ khó và số câu',
+      'Sửa câu trước khi giao',
     ],
   },
   {
@@ -91,25 +91,25 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     step: 2,
     title: 'Học sinh làm bài',
     description:
-      'Giao diện tối giản trên mọi thiết bị (Laptop/Máy tính bảng). Học sinh vào bằng Mã Lớp, tự động lưu bài.',
+      'Giao diện gọn trên laptop và máy tính bảng. Vào bằng mã lớp; mỗi câu được lưu khi trả lời.',
     icon: Users,
     bullets: [
-      'Vào bằng Mã Lớp (không cần tài khoản)',
-      'Tự động lưu mỗi câu trả lời',
-      'Nhận phản hồi ngay khi nộp bài',
+      'Vào bằng mã lớp',
+      'Tự lưu mỗi câu trả lời',
+      'Có phản hồi ngay khi nộp',
     ],
   },
   {
     id: 'review',
     step: 3,
-    title: 'Nắm bắt tình hình lớp',
+    title: 'Đọc tình hình lớp',
     description:
-      'Điểm số, biểu đồ lỗ hổng kiến thức và Tóm tắt AI gửi trực tiếp về Dashboard trước khi tiếng chuông tan học.',
+      'Điểm, biểu đồ lỗ hổng và tóm tắt AI hiện trên dashboard trước khi hết tiết.',
     icon: TrendingUp,
     bullets: [
-      'Danh sách dạy lại theo độ ưu tiên',
-      'Cảnh báo cho học sinh cần hỗ trợ',
-      'Xuất dữ liệu sang bảng tính',
+      'Danh sách dạy lại theo ưu tiên',
+      'Cảnh báo học sinh cần hỗ trợ',
+      'Xuất sang bảng tính',
     ],
   },
 ]
@@ -117,31 +117,30 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
 export const METRICS: Metric[] = [
   {
     id: 'time',
-    value: '6 Giờ',
-    label: 'tiết kiệm cho mỗi giáo viên hàng tuần',
-    description:
-      'Đo lường từ các trường sau một kỳ học sử dụng Mathz để kiểm tra định kỳ.',
+    value: '6 giờ',
+    label: 'tiết kiệm mỗi giáo viên mỗi tuần',
+    description: 'Ước lượng từ các trường dùng Mathz cho kiểm tra định kỳ trong một kỳ.',
   },
   {
     id: 'grading',
-    value: '< 2 Giây',
-    label: 'để chấm xong toàn bộ bài làm của cả lớp',
-    description:
-      'Bài làm được chấm ngay khi học sinh cuối cùng nộp bài.',
+    value: '< 2 giây',
+    label: 'chấm xong bài của cả lớp',
+    description: 'Chấm khi học sinh cuối nộp bài.',
   },
   {
-    id: 'anti_cheat', 
-    value: 'anti_cheat',
-    label: 'Giam sát & Chống gian lận',
-    description: 'Cảnh báo và tự động hủy kết quả nếu học sinh cố tình chuyển tab hoặc thoát màn hình làm bài hoặc công cụ khác.',
-  }
+    id: 'anti_cheat',
+    value: 'Khóa tab',
+    label: 'cảnh báo chuyển tab khi làm bài',
+    description:
+      'Cảnh báo hoặc hủy kết quả nếu học sinh thoát màn hình làm bài.',
+  },
 ]
 
 export const TESTIMONIALS: Testimonial[] = [
   {
     id: 't1',
     quote:
-      'Trước kia tôi phải chấm bài vào chiều chủ nhật. Bây giờ tôi đọc bản tóm tắt AI vào chiều thứ sáu và biết rõ thứ hai cần dạy gì.',
+      'Trước đây tôi chấm vào chiều chủ nhật. Giờ tôi đọc tóm tắt AI chiều thứ sáu và biết thứ hai cần dạy gì.',
     name: 'Cô Mai Anh',
     role: 'Giáo viên Toán lớp 8',
     school: 'FPT School Hà Nội',
@@ -150,7 +149,7 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: 't2',
     quote:
-      'Biểu đồ phân tích đã phát hiện ra gap trong phần Hằng đẳng thức mà bài kiểm tra cuối kỳ sẽ bỏ sót hoàn toàn.',
+      'Biểu đồ chỉ ra lỗ hổng Hằng đẳng thức mà kiểm tra cuối kỳ sẽ bỏ sót.',
     name: 'Thầy Hùng',
     role: 'Trưởng bộ môn Toán',
     school: 'FPT School Bắc Ninh',
@@ -159,7 +158,7 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: 't3',
     quote:
-      'Học sinh rất thích. Họ thấy điểm ngay lập tức và phản hồi chi tiết thay vì chỉ là một dấu X đỏ.',
+      'Học sinh thấy điểm và phản hồi ngay, không chỉ một dấu X đỏ.',
     name: 'Cô Linh',
     role: 'Phó Hiệu trưởng Chất lượng',
     school: 'FPT School Đà Nẵng',
@@ -170,48 +169,48 @@ export const TESTIMONIALS: Testimonial[] = [
 export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'starter',
-    name: 'Gói Lớp Học',
-    description: 'Dành cho 1 giáo viên bắt đầu sử dụng kiểm tra định kỳ.',
+    name: 'Gói Lớp học',
+    description: 'Một giáo viên chạy kiểm tra định kỳ.',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    unit: 'Vĩnh viễn',
+    unit: 'Miễn phí',
     ctaLabel: 'Dùng thử miễn phí',
     features: [
-      '1 Giáo viên, tối đa 3 lớp',
-      '20 bài Quiz AI/tháng',
+      '1 giáo viên, 1 lớp',
+      '20 quiz AI / tháng',
       'Chấm điểm tức thì',
       'Phân tích chủ đề cơ bản',
     ],
   },
   {
     id: 'pro',
-    name: 'Gói Tổ Bộ Môn',
-    description: 'Dành cho các giáo viên chia sẻ ngân hàng đề và so sánh kết quả.',
+    name: 'Gói Tổ bộ môn',
+    description: 'Chia sẻ ngân hàng đề và so sánh kết quả giữa lớp.',
     monthlyPrice: 190000,
     yearlyPrice: 2280000,
-    unit: 'VNĐ / Giáo viên / Tháng',
+    unit: 'VNĐ / giáo viên / tháng',
     highlighted: true,
     ctaLabel: 'Bắt đầu dùng thử',
     features: [
-      'Không giới hạn lớp & quiz',
+      'Không giới hạn lớp và quiz',
       'Báo cáo AI chi tiết',
-      'Ngân hàng đề dùng chung tổ Toán',
+      'Ngân hàng đề chung tổ Toán',
       'Theo dõi tiến độ học sinh',
       'Xuất CSV sang Excel',
     ],
   },
   {
     id: 'school',
-    name: 'Gói Toàn Trường',
-    description: 'Dành cho trường học cần quản lý và báo cáo toàn diện.',
+    name: 'Gói Toàn trường',
+    description: 'Quản trị và báo cáo cấp trường.',
     monthlyPrice: 0,
     yearlyPrice: 0,
     unit: 'Liên hệ',
     ctaLabel: 'Liên hệ',
     features: [
-      'Tất cả tính năng Tổ Bộ Môn',
-      'Tích hợp SSO tài khoản nhà trường',
-      'Quản trị viên & phân quyền',
+      'Toàn bộ tính năng Tổ bộ môn',
+      'Tài khoản email nhà trường',
+      'Quản trị viên và phân quyền',
       'Báo cáo cho ban giám hiệu',
       'Hỗ trợ tập huấn giáo viên',
     ],
@@ -223,33 +222,32 @@ export const FAQS: FaqItem[] = [
     id: 'f1',
     question: 'Học sinh có cần tạo tài khoản không?',
     answer:
-      'Không, chỉ cần nhập Mã Lớp và tên. Nếu nhà trường sử dụng Google Workspace hoặc Microsoft 365, thầy cô có thể bật đăng nhập SSO để danh sách lớp tự động đồng bộ.',
+      'Có. Học sinh tạo tài khoản tại trang đăng ký học sinh, rồi vào onboarding và nhập mã lớp 8 ký tự từ thầy cô để tham gia.',
   },
   {
     id: 'f2',
-    question: 'AI chấm bài tự luận Toán/Văn có chính xác không?',
+    question: 'AI chấm tự luận Toán có chính xác không?',
     answer:
-      'Bài tự luận ngắn được chấm theo rubric do thầy cô đặt, mỗi điểm đều có giải thích. Thầy cô có thể xem, chỉnh sửa, hoặc ghi đè bất kỳ điểm nào — và Mathz đánh dấu những câu trả lời không chắc chắn để kiểm tra trước.',
+      'Tự luận ngắn theo rubric thầy cô đặt; mỗi điểm kèm giải thích. Thầy cô xem, sửa hoặc ghi đè. Mathz đánh dấu câu chưa chắc để kiểm lại trước.',
   },
   {
     id: 'f3',
-    question: 'Dữ liệu điểm số học sinh FPT có được bảo mật không?',
+    question: 'Dữ liệu điểm học sinh có được bảo mật không?',
     answer:
-      'Không bao giờ. Dữ liệu học sinh chỉ được xử lý để tạo ra kết quả và báo cáo cho nhà trường. Nó được lưu trữ ở khu vực do nhà trường chọn và không được dùng để huấn luyện mô hình AI.',
+      'Điểm, hồ sơ và bài làm lưu trên hạ tầng Mathz (Supabase/Postgres) để chấm và báo cáo cho nhà trường. Không dùng dữ liệu học sinh để huấn luyện mô hình AI công khai.',
   },
   {
     id: 'f4',
-    question: 'Có thể sử dụng câu hỏi riêng của giáo viên không?',
+    question: 'Có dùng câu hỏi riêng của giáo viên được không?',
     answer:
-      'Có. Thầy cô có thể viết thủ công, nhập ngân hàng câu hỏi hiện có, hoặc để Mathz soạn bộ đề sau đó chỉnh sửa. Hầu hết giáo viên sử dụng cả ba cách.',
+      'Được. Viết tay, nhập ngân hàng sẵn có, hoặc để Mathz soạn rồi chỉnh. Nhiều giáo viên kết hợp cả ba.',
   },
   {
     id: 'f5',
-    question: 'Có hoạt động trên máy tính của trường không?',
+    question: 'Chạy được trên máy của trường không?',
     answer:
-      'Mathz chạy trên trình duyệt trên Chromebook, iPad, laptop Windows và điện thoại. Không cần cài đặt gì cả và hoạt động ổn định ngay cả khi kết nối chậm.',
+      'Chạy trên trình duyệt: Chromebook, iPad, laptop Windows và điện thoại. Không cần cài đặt; ổn định trên mạng chậm.',
   },
-
 ]
 
 export const DEMO_QUESTIONS: QuizQuestion[] = [

@@ -27,7 +27,7 @@ export function MobileDashboardNav({
       <div className="flex min-h-14 items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-2">
           <Logo showWordmark={false} href="/dashboard" size={32} />
-          <span className="font-semibold text-foreground">Edtech Platform</span>
+          <span className="font-semibold text-foreground">Lớp học đảo ngược</span>
           <Badge variant="secondary">{classLabel}</Badge>
         </div>
         <button
@@ -43,7 +43,7 @@ export function MobileDashboardNav({
 
       {open ? (
         <div className="space-y-3 border-t border-border px-3 py-3">
-          <nav aria-label="Dashboard mobile" className="space-y-1">
+          <nav aria-label="Điều hướng học sinh" className="space-y-1">
             {DASHBOARD_NAV.map((item) => {
               const active =
                 item.href === '/dashboard'

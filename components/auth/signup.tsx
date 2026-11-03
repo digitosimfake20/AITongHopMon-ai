@@ -75,10 +75,10 @@ export function Signup({ role, onSwitchToLogin, onBack }: SignupProps) {
               </h1>
               <p className="mt-2 text-sm text-muted-foreground sm:text-base">
                 {step === 1
-                  ? 'Nhập email và mật khẩu'
+                  ? 'Nhập email và mật khẩu.'
                   : role === 'student'
-                    ? 'Nhập mã lớp của thầy cô'
-                    : 'Thầy cô sẽ xác nhận'}
+                    ? 'Nhập mã lớp thầy cô đưa.'
+                    : 'Quản trị viên trường sẽ xác nhận tài khoản.'}
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export function Signup({ role, onSwitchToLogin, onBack }: SignupProps) {
                       className="min-h-11 w-full rounded-lg border border-input bg-background px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Thầy cô của bạn sẽ cung cấp mã lớp
+                      Lấy mã 8 ký tự từ thầy cô.
                     </p>
                   </div>
                 )}
@@ -172,8 +172,7 @@ export function Signup({ role, onSwitchToLogin, onBack }: SignupProps) {
                 {role === 'teacher' && (
                   <div className="rounded-lg border border-border bg-card p-5">
                     <p className="text-sm text-muted-foreground sm:text-base">
-                      Tài khoản giáo viên của bạn sẽ được xác nhận bởi quản trị viên trường.
-                      Vui lòng chờ xác nhận qua email.
+                      Quản trị viên trường xác nhận tài khoản giáo viên. Kiểm tra email khi được duyệt.
                     </p>
                   </div>
                 )}

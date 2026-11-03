@@ -1,4 +1,4 @@
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,7 +42,12 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
                   <p className="mt-0.5 text-xs text-muted-foreground">{item.subtitle}</p>
                 ) : null}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  {item.deadline ? <span>⏱ {item.deadline}</span> : null}
+                  {item.deadline ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3.5" aria-hidden />
+                      {item.deadline}
+                    </span>
+                  ) : null}
                   {item.statusHint ? <span>· {item.statusHint}</span> : null}
                 </div>
               </div>
@@ -63,7 +68,7 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
                 ) : (
                   <>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                      {item.kind === 'adaptive' ? `Hoàn thành — ${item.score ?? ''}` : `Đã nộp — ${item.score}`}
+                      {item.kind === 'adaptive' ? `Hoàn thành · ${item.score ?? ''}` : `Đã nộp · ${item.score}`}
                     </Badge>
                     {item.submissionId ? (
                       <Button
@@ -72,7 +77,7 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
                         nativeButton={false}
                         render={<Link href={`/quiz/result/${item.submissionId}`} />}
                       >
-                        Xem kết quả & AI Phân tích
+                        Xem kết quả
                       </Button>
                     ) : (
                       <Button

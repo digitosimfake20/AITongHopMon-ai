@@ -32,15 +32,15 @@ export function InsightPanel() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-card-foreground">
-            Class insight
+            Tình hình lớp
           </p>
           <p className="text-xs text-muted-foreground">
-            Toán 9 · 29 học sinh · Kì I
+            Toán 9 · 29 học sinh · Kỳ I
           </p>
         </div>
-        <span className="flex items-center gap-1.5 rounded-md bg-accent px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-accent-foreground">
+        <span className="flex items-center gap-1.5 rounded-md bg-foreground px-2 py-1 text-[10px] font-medium tracking-wide text-background">
           <Sparkles className="size-3" aria-hidden="true" />
-          Auto
+          AI
         </span>
       </div>
 
@@ -82,12 +82,12 @@ export function InsightPanel() {
         ))}
       </ul>
 
-      <div className="mt-6 rounded-xl border border-primary/25 bg-accent/60 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-foreground">
-          Bài học tiếp theo được đề xuất
+      <div className="mt-6 rounded-xl border border-border bg-secondary/60 p-4">
+        <p className="text-[11px] font-semibold tracking-wide text-foreground">
+          Gợi ý tiết sau
         </p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-card-foreground">
-          Hãy ôn lại kiến ​​thức về hằng đẳng thức và hệ phương trình bậc nhất qua một ví dụ minh họa cụ thể, sau đó kiểm tra lại bốn học sinh đã được đánh dấu. Mọi khâu khác đã sẵn sàng để chuyển sang phần tiếp theo.
+          Ôn hằng đẳng thức và hệ phương trình bậc nhất bằng một ví dụ cụ thể, rồi kiểm lại bốn học sinh đã đánh dấu.
         </p>
       </div>
     </div>

@@ -135,6 +135,14 @@
   html {
     scroll-behavior: smooth;
   }
+  ::selection {
+    background: color-mix(in oklab, var(--foreground) 18%, transparent);
+    color: var(--foreground);
+  }
+  input,
+  textarea {
+    caret-color: var(--foreground);
+  }
 }
 
 @layer utilities {

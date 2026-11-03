@@ -164,8 +164,8 @@ export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListCl
 
       <TabsContent value="later">
         {allPractice.length === 0 ? (
-          <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Chưa có bài luyện thêm. Hãy thử gợi ý từ Zeno trên Dashboard!
+          <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            Chưa có bài luyện thêm. Mở Tổng quan để nhận gợi ý từ Zeno.
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

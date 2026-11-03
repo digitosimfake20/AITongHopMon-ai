@@ -61,14 +61,14 @@ function MessageBubble({ msg }: { msg: ChatMessageDisplay }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
         <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
-          <Bot className="size-4" />
+          <Bot className="size-4" aria-hidden />
         </div>
       )}
       <div
         className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
           isUser
             ? 'rounded-tr-sm bg-teal-600 text-white'
-            : 'rounded-tl-sm bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
+            : 'rounded-tl-sm bg-secondary text-foreground'
         }`}
       >
         <MathText text={msg.content} />
@@ -112,10 +112,17 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Focus input when modal opens
+  // Focus input when modal opens; Escape closes
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100)
+    if (!open) return
+    const t = setTimeout(() => inputRef.current?.focus(), 100)
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('keydown', onKeyDown)
     }
   }, [open])
 
@@ -169,90 +176,96 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
 
   return (
     <>
-      {/* Floating trigger button */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Mở chat Zeno"
-        className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-      >
-        <Bot className="size-6" />
-        {/* Pulse indicator */}
-        <span className="absolute -right-0.5 -top-0.5 flex size-3.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
-          <span className="relative inline-flex size-3.5 rounded-full bg-teal-500" />
-        </span>
-      </button>
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Mở chat Zeno"
+          className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        >
+          <Bot className="size-6" aria-hidden />
+          <span className="absolute -right-0.5 -top-0.5 flex size-3.5" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
+            <span className="relative inline-flex size-3.5 rounded-full bg-teal-500" />
+          </span>
+        </button>
+      ) : null}
 
-      {/* Modal overlay */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             onClick={() => setOpen(false)}
+            aria-hidden
           />
 
-          {/* Chat panel */}
-          <div className="relative flex w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900 sm:h-[600px]">
-            {/* Header */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="zeno-chat-title"
+            className="relative flex h-[min(600px,85dvh)] w-full max-w-md flex-col rounded-2xl bg-card shadow-2xl"
+          >
             <div className="flex items-center gap-3 rounded-t-2xl bg-teal-600 px-4 py-3 text-white">
               <div className="flex size-9 items-center justify-center rounded-full bg-white/20">
-                <Bot className="size-5" />
+                <Bot className="size-5" aria-hidden />
               </div>
               <div className="flex-1">
-                <p className="font-semibold leading-tight">Zeno AI</p>
-                <p className="text-xs text-teal-200">Gia sư Toán thông minh · Luôn sẵn sàng giúp đỡ</p>
+                <p id="zeno-chat-title" className="font-semibold leading-tight">
+                  Zeno
+                </p>
+                <p className="text-xs text-teal-100">Gia sư Toán</p>
               </div>
               <button
+                type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full p-1 hover:bg-white/20"
-                aria-label="Đóng"
+                className="rounded-full p-1.5 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                aria-label="Đóng chat"
               >
-                <X className="size-5" />
+                <X className="size-5" aria-hidden />
               </button>
             </div>
 
-            {/* Messages area */}
             <div className="flex-1 overflow-y-auto p-4">
               {isLoadingHistory ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="size-6 animate-spin text-teal-500" />
+                  <Loader2 className="size-6 animate-spin text-teal-500" aria-label="Đang tải" />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-slate-400">
-                  <MessageSquare className="size-10 opacity-40" />
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-muted-foreground">
+                  <MessageSquare className="size-10 opacity-40" aria-hidden />
                   <p className="text-sm">
-                    Xin chào! Mình là <strong className="text-teal-600">Zeno</strong>.<br />
-                    Hỏi mình bất cứ điều gì về Toán nhé!
+                    Mình là <strong className="text-teal-600">Zeno</strong>.
+                    <br />
+                    Hỏi mình về Toán.
                   </p>
                 </div>
               ) : (
                 messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)
               )}
               {isLoading && (
-                <div className="flex justify-start mb-3">
+                <div className="mb-3 flex justify-start">
                   <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white">
-                    <Bot className="size-4" />
+                    <Bot className="size-4" aria-hidden />
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2.5 dark:bg-slate-800">
-                    <Loader2 className="size-4 animate-spin text-teal-500" />
+                  <div className="rounded-2xl rounded-tl-sm bg-secondary px-3.5 py-2.5">
+                    <Loader2 className="size-4 animate-spin text-teal-500" aria-label="Zeno đang trả lời" />
                   </div>
                 </div>
               )}
               <div ref={bottomRef} />
             </div>
 
-            {/* Input area */}
-            <div className="border-t border-slate-200 p-3 dark:border-slate-700">
-              <div className="flex items-end gap-2 rounded-xl bg-slate-100 px-3 py-2 dark:bg-slate-800">
+            <div className="border-t border-border p-3">
+              <div className="flex items-end gap-2 rounded-xl bg-secondary px-3 py-2">
                 <textarea
                   ref={inputRef}
                   rows={1}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Hỏi Zeno về Toán... (Enter để gửi)"
-                  className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+                  placeholder="Hỏi Zeno về Toán…"
+                  aria-label="Tin nhắn gửi Zeno"
+                  className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   style={{ maxHeight: '120px' }}
                   onInput={(e) => {
                     const el = e.currentTarget
@@ -261,16 +274,17 @@ export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProp
                   }}
                 />
                 <button
+                  type="button"
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-colors hover:bg-teal-700 disabled:opacity-40"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-colors hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 disabled:opacity-40"
                   aria-label="Gửi"
                 >
-                  <Send className="size-4" />
+                  <Send className="size-4" aria-hidden />
                 </button>
               </div>
-              <p className="mt-1.5 text-center text-[10px] text-slate-400">
-                {'Shift+Enter xuống dòng · LaTeX: $x^2$ hoặc $$\\frac{a}{b}$$'}
+              <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
+                Enter gửi · Shift+Enter xuống dòng · LaTeX: $x^2$
               </p>
             </div>
           </div>

@@ -60,12 +60,12 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
 
   const statusBanner = status.showNotStartedBanner ? (
     <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-      <Clock className="size-3.5 shrink-0" />
+      <Clock className="size-3.5 shrink-0" aria-hidden />
       Đề thi mở lúc {quiz.startTime && formatDeadline(quiz.startTime)}
     </div>
   ) : status.showOverdueBanner ? (
     <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-300">
-      <AlertCircle className="size-3.5 shrink-0" />
+      <AlertCircle className="size-3.5 shrink-0" aria-hidden />
       Quá hạn
       {quiz.endTime && (
         <span className="opacity-80">· Hết hạn {formatDeadline(quiz.endTime)}</span>
@@ -73,13 +73,13 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
     </div>
   ) : status.showMaxAttemptsBanner ? (
     <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-      <Lock className="size-3.5 shrink-0" />
+      <Lock className="size-3.5 shrink-0" aria-hidden />
       Đã hoàn thành 2 lượt bắt buộc
     </div>
   ) : status.showCompletedBanner && status.progressLine ? (
     <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-      <CheckCircle2 className="size-3.5 shrink-0" />
-      Đã hoàn thành — {status.progressLine}
+      <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+      Đã hoàn thành · {status.progressLine}
     </div>
   ) : null
 
@@ -137,7 +137,7 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
               {score != null && (
                 <>
                   {' '}
-                  — <span className="font-semibold text-foreground">{score.toFixed(1)}/10</span>
+                  · <span className="font-semibold text-foreground">{score.toFixed(1)}/10</span>
                   {attemptNum > 0 && ` (lượt ${attemptNum})`}
                 </>
               )}
@@ -190,23 +190,23 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
 
   const statusBanner = status.showNotStartedBanner ? (
     <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-      <Clock className="size-3.5 shrink-0" />
+      <Clock className="size-3.5 shrink-0" aria-hidden />
       Đề thi mở lúc {quiz.startTime && formatDeadline(quiz.startTime)}
     </div>
   ) : status.showOverdueBanner ? (
     <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:bg-rose-950/30 dark:text-rose-300">
-      <AlertCircle className="size-3.5 shrink-0" />
+      <AlertCircle className="size-3.5 shrink-0" aria-hidden />
       Quá hạn
     </div>
   ) : status.progressLine ? (
     <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-      <CheckCircle2 className="size-3.5 shrink-0" />
+      <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
       {status.isDone ? 'Hoàn thành 2 lượt' : 'Tiến trình'}: {status.progressLine}
     </div>
   ) : progress.status === 'round2_pending' ? (
     <div className="flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:bg-sky-950/30 dark:text-sky-300">
-      <Sparkles className="size-3.5 shrink-0" />
-      AI gợi ý lượt 2:{' '}
+      <Sparkles className="size-3.5 shrink-0" aria-hidden />
+      Gợi ý lượt 2:{' '}
       <strong>
         {progress.round2Difficulty ? difficultyLabel(progress.round2Difficulty) : '…'}
       </strong>
@@ -227,8 +227,8 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           <Sparkles className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
           <h3 className="font-semibold leading-snug text-foreground">{quiz.title}</h3>
         </div>
-        <span className="rounded-full bg-teal-100 px-2 py-0.5 font-mono text-[11px] font-medium text-teal-700 dark:bg-teal-950/50 dark:text-teal-400">
-          adaptive×2
+        <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:bg-teal-950/50 dark:text-teal-400">
+          Phân hóa 2 lượt
         </span>
       </div>
 
@@ -245,7 +245,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
               : 'border-dashed border-border'
           }`}
         >
-          <p className="font-medium text-foreground">Lượt 1 — Trung bình</p>
+          <p className="font-medium text-foreground">Lượt 1 · Trung bình</p>
           {progress.round1Score != null ? (
             <p className="mt-0.5 text-muted-foreground">{progress.round1Score.toFixed(1)}/10</p>
           ) : (
@@ -262,7 +262,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           }`}
         >
           <p className="font-medium text-foreground">
-            Lượt 2 —{' '}
+            Lượt 2 ·{' '}
             {progress.round2Difficulty
               ? difficultyLabel(progress.round2Difficulty)
               : 'Chờ lượt 1'}
@@ -272,7 +272,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           ) : progress.round2Difficulty ? (
             <p className="mt-0.5 text-muted-foreground">Sẵn sàng</p>
           ) : (
-            <p className="mt-0.5 text-muted-foreground">—</p>
+            <p className="mt-0.5 text-muted-foreground">Chưa mở</p>
           )}
         </div>
       </div>

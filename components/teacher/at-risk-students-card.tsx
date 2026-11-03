@@ -14,7 +14,7 @@ export function AtRiskStudentsCard({ students }: AtRiskStudentsCardProps) {
       <div className="flex items-center gap-2">
         <UserRound className="size-4 text-destructive" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">
-          Học sinh Cần chú ý
+          Học sinh cần chú ý
         </h2>
       </div>
 

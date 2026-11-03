@@ -4,32 +4,31 @@ import { SITE_NAME } from '@/lib/content'
 const FOOTER_GROUPS = [
   {
     id: 'product',
-    title: 'Product',
+    title: 'Sản phẩm',
     links: [
-      { label: 'Features', href: '#features' },
-      { label: 'How it works', href: '#how-it-works' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'Changelog', href: '#top' },
+      { label: 'Tính năng', href: '#features' },
+      { label: 'Cách hoạt động', href: '#how-it-works' },
+      { label: 'Bảng giá', href: '#pricing' },
+      { label: 'FAQ', href: '#faq' },
     ],
   },
   {
     id: 'schools',
-    title: 'Schools',
+    title: 'Nhà trường',
     links: [
-      { label: 'For teachers', href: '#insights' },
-      { label: 'For leadership', href: '#insights' },
-      { label: 'Onboarding', href: '#faq' },
-      { label: 'Book a walkthrough', href: '#cta' },
+      { label: 'Đăng ký giáo viên', href: '/signup/teacher' },
+      { label: 'Đăng ký học sinh', href: '/signup/student' },
+      { label: 'Đăng nhập', href: '/login' },
+      { label: 'Bắt đầu miễn phí', href: '#cta' },
     ],
   },
   {
     id: 'company',
-    title: 'Company',
+    title: 'Liên hệ',
     links: [
-      { label: 'About', href: '#top' },
-      { label: 'Privacy', href: '#faq' },
-      { label: 'Security', href: '#faq' },
-      { label: 'Contact', href: '#cta' },
+      { label: 'Về Mathz', href: '#top' },
+      { label: 'Bảo mật dữ liệu', href: '#faq' },
+      { label: 'Hỗ trợ', href: '#cta' },
     ],
   },
 ]
@@ -42,8 +41,7 @@ export function SiteFooter() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-              AI-assisted quizzes, instant grading and honest class insight for
-              teachers who would rather be teaching.
+              Quiz Toán có AI, chấm tức thì và báo cáo lớp rõ ràng cho giáo viên.
             </p>
           </div>
 
@@ -70,10 +68,10 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+            © {new Date().getFullYear()} {SITE_NAME}. Bảo lưu mọi quyền.
           </p>
           <p className="text-xs text-muted-foreground">
-            Built for classrooms, not conference rooms.
+            Làm cho lớp học Toán FPT.
           </p>
         </div>
       </div>

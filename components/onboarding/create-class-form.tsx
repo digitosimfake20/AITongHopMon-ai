@@ -4,8 +4,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { createClassAction } from '@/lib/class/actions'
-import { ChevronDown, ChevronUp } from 'lucide-react'
-
 export function CreateClassForm() {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -94,7 +92,7 @@ export function CreateClassForm() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Hệ thống tự sinh mã lớp 8 ký tự sau khi tạo. Bạn có thể thêm danh sách học sinh từ Excel sau khi tạo lớp.
+        Mathz tạo mã lớp 8 ký tự sau khi lưu. Bạn thêm danh sách học sinh từ Excel sau.
       </p>
 
       <div className="flex gap-3">

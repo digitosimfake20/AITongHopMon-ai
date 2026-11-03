@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const SUMMARY =
-  'Cả lớp nắm khá vững kiến ​​thức về quang hợp (92%) nhưng lại chưa chắc chắn về hô hấp — có 11 trong số 28 học sinh nhầm lẫn giữa quá trình hô hấp hiếu khí và kỵ khí. Cần giảng lại bài về hô hấp trước, sau đó kiểm tra lại bốn học sinh đang gặp khó khăn này.'
+  'Lớp nắm khá vững hằng đẳng thức (92%) nhưng còn yếu hệ phương trình: 11/28 học sinh nhầm dạng. Nên ôn hệ phương trình trước, rồi kiểm lại bốn học sinh đã đánh dấu.'
 
 const ROWS = [
   { id: 'r1', name: 'Nguyễn Văn A', score: 80, tone: 'good' as const },
@@ -41,20 +41,20 @@ export function TeacherView() {
           </p>
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Users className="size-3.5" aria-hidden="true" />
-            28 of 28 submitted · class average 78%
+            28/28 đã nộp · trung bình lớp 78%
           </p>
         </div>
-        <span className="shrink-0 rounded-md bg-success/12 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-success">
-          Graded
+        <span className="shrink-0 rounded-md bg-success/12 px-2 py-1 text-[10px] font-medium tracking-wide text-success">
+          Đã chấm
         </span>
       </header>
 
-      <div className="animate-slide-up-fade rounded-xl border border-primary/25 bg-accent/60 p-4">
+      <div className="animate-slide-up-fade rounded-xl border border-border bg-secondary/60 p-4">
         <div className="mb-2 flex items-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-background">
             <Sparkles className="size-3.5" aria-hidden="true" />
           </span>
-          <span className="text-xs font-semibold text-accent-foreground">
+          <span className="text-xs font-semibold text-foreground">
             AI tóm tắt
           </span>
         </div>
@@ -70,7 +70,7 @@ export function TeacherView() {
         </p>
       </div>
 
-      <ul className="flex flex-col gap-1.5" aria-label="Student results">
+      <ul className="flex flex-col gap-1.5" aria-label="Kết quả học sinh">
         {ROWS.map((row, index) => (
           <li
             key={row.id}

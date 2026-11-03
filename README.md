@@ -1,11 +1,4 @@
-# Mathz — Nền tảng học có AI (Zeno)
-
-
-
-
-
----
-
+# Mathz | Nền tảng học có AI (Zeno)
 
 | Ai | Làm được gì |
 |---|---|
@@ -17,18 +10,17 @@
 
 ---
 
-
 ### Cần có sẵn
 
-- **Node.js 20+** ([nodejs.org](https://nodejs.org)) — gõ `node -v` thấy số là ok
-- **pnpm** — `npm install -g pnpm`
+- **Node.js 20+** ([nodejs.org](https://nodejs.org)): gõ `node -v` thấy số phiên bản
+- **pnpm**: `npm install -g pnpm`
 - Máy có mạng lần đầu (cài package + gọi Supabase/OpenAI)
-- File **`.env`** (copy từ `.env.example`, điền key thật — **đừng commit lên git**)
+- File **`.env`** (copy từ `.env.example`, điền key thật; **đừng commit lên git**)
 
-### 5 bước không drama
+### Chạy local
 
 ```bash
-# 1. Vào folder project (trên USB hoặc copy ra ổ C cho nhanh)
+# 1. Vào folder project (trên USB hoặc copy ra ổ C)
 cd AITongHopMon-ai
 
 # 2. Cài dependency
@@ -43,9 +35,9 @@ pnpm dev
 
 Mở trình duyệt: **http://localhost:3000**
 
-> **Pro tip:** Copy project từ USB ra `C:\Projects\...` rồi chạy — USB 2.0 + `node_modules` = lag muốn khóc.
+Nếu project nằm trên USB 2.0, copy sang ổ nội bộ (ví dụ `C:\Projects\...`) trước khi `pnpm install` để tránh chậm vì `node_modules`.
 
-### Build bản production (nếu BGK cần)
+### Build production
 
 ```bash
 pnpm build
@@ -54,7 +46,7 @@ pnpm start
 
 ---
 
-## `.env` — điền cái gì?
+## `.env`: điền gì?
 
 Copy `.env.example` → `.env`, rồi điền:
 
@@ -62,26 +54,26 @@ Copy `.env.example` → `.env`, rồi điền:
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (public ok) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Key server — **giữ kín** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Key server; **giữ kín** |
 | `DATABASE_URL` | Postgres pooler port **6543** + `?pgbouncer=true` |
 | `DIRECT_URL` | Postgres session port **5432** (migrate / db push) |
 | `OPENAI_API_KEY` | Key OpenAI cho Zeno + phân tích |
 | `CHAT_ENCRYPTION_KEY` | Random string dài (mã hóa chat) |
 
-Thiếu `OPENAI_API_KEY` → app vẫn chạy, mấy chức AI sẽ “tạm nghỉ”.
+Thiếu `OPENAI_API_KEY`: app vẫn chạy; chức năng AI tạm tắt.
 
 ---
 
-## Luồng demo gợi ý (5–7 phút)
+## Luồng demo (5–7 phút)
 
-1. **Landing** `/` — giới thiệu nhanh  
-2. **Đăng ký / đăng nhập** `/signup` · `/login`  
-3. **Onboarding** — GV tạo lớp · HS join bằng mã  
-4. **HS Dashboard** `/dashboard` — card Zeno chào + streak + gợi ý luyện 10p  
-5. **Ngân hàng đề** `/quizzes` — tab Theo môn / Trạng thái / Làm sau  
-6. **Làm bài** — pre-test “Sẵn sàng chưa?” → timer chạy nền → nộp → `/quiz/result/...`  
-7. **GV** `/teacher` — giao adaptive, xem `/teacher/classes/[id]/gaps`  
-8. **Admin** `/admin/test-bank` — kho đề hệ thống  
+1. **Landing** `/`: giới thiệu nhanh
+2. **Đăng ký / đăng nhập** `/signup` · `/login`
+3. **Onboarding**: GV tạo lớp · HS join bằng mã
+4. **HS Dashboard** `/dashboard`: card Zeno chào + streak + gợi ý luyện 10p
+5. **Ngân hàng đề** `/quizzes`: tab Theo môn / Trạng thái / Làm sau
+6. **Làm bài**: pre-test “Sẵn sàng chưa?” → timer chạy nền → nộp → `/quiz/result/...`
+7. **GV** `/teacher`: giao adaptive, xem `/teacher/classes/[id]/gaps`
+8. **Admin** `/admin/test-bank`: kho đề hệ thống
 
 ---
 
@@ -117,13 +109,13 @@ Thiếu `OPENAI_API_KEY` → app vẫn chạy, mấy chức AI sẽ “tạm ngh
 
 ---
 
-## Tech stack ()
+## Tech stack
 
-- **Next.js 16** + TypeScript + Tailwind + Shadcn  
-- **Supabase** — Auth + PostgreSQL  
-- **Prisma** — ORM (schema `core` + `ai`)  
-- **OpenAI** — Zeno chat, phân tích bài làm, canonicalize topic  
-- **BKT** — cập nhật mastery theo chủ đề  
+- **Next.js 16** + TypeScript + Tailwind + Shadcn
+- **Supabase**: Auth + PostgreSQL
+- **Prisma**: ORM (schema `core` + `ai`)
+- **OpenAI**: Zeno chat, phân tích bài làm, canonicalize topic
+- **BKT**: cập nhật mastery theo chủ đề
 
 ---
 
@@ -139,13 +131,13 @@ pnpm lint         # check code
 
 ---
 
-## Lỗi quen thuộc & cách xử
+## Lỗi quen thuộc
 
 | Triệu chứng | Thử |
 |---|---|
 | `fail to open trans in time` | Check `DIRECT_URL` port 5432, restart `pnpm dev` |
 | Trang trắng / hydration error | Hard refresh `Ctrl+Shift+R` |
-| Nộp bài lâu | Bình thường lần đầu compile; lần sau nhanh hơn (AI chạy nền) |
+| Nộp bài lâu | Lần đầu compile chậm; lần sau nhanh hơn (AI chạy nền) |
 | Không login được | Check Supabase URL + anon key trong `.env` |
 | `pnpm` không có | `npm install -g pnpm` |
 
@@ -155,20 +147,17 @@ pnpm lint         # check code
 
 **Nên có trong USB:**
 
-- Toàn bộ source (trừ `node_modules`, `.next` — có thể cài lại)
+- Toàn bộ source (trừ `node_modules`, `.next`; cài lại được)
 - File **`.env.example`** (mẫu)
-- File **`.env`** riêng (USB nộp BGK — **không public**)
+- File **`.env`** riêng (USB nộp BGK; **không public**)
 - **`README.md`** này
 
-**Không cần copy:** `node_modules/`, `.next/` — nặng vô lý, BGK `pnpm install` là xong.
+**Không cần copy:** `node_modules/`, `.next/` (nặng; BGK chạy `pnpm install`).
 
 ---
 
 ## Team / ghi chú
 
-- Logo: `public/fpt.png`  
-- Tên app: **Mathz** (site) · repo: **AITongHopMon-ai**  
-- Adaptive 2 lượt: L1 luôn TB · L2 &lt; 8.0 → Dễ · ≥ 8.0 → Khó  
-
----
-Cảm ơn cá quý thầy, cô đã đọc hết của nhóm chúng em ạ.
+- Logo: `public/fpt.png`
+- Tên app: **Mathz** (site) · repo: **AITongHopMon-ai**
+- Adaptive 2 lượt: L1 luôn TB · L2 &lt; 8.0 → Dễ · ≥ 8.0 → Khó

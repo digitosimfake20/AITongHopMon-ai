@@ -19,9 +19,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Mathz — Bài kiểm tra AI và phân tích lớp học tức thì',
+  title: 'Mathz | Quiz Toán AI và báo cáo lớp tức thì',
   description:
-    'Mathz giúp giáo viên soạn bài kiểm tra Toán trong vài phút, chấm điểm tự động, và tạo báo cáo AI về những gì lớp thực sự hiểu.',
+    'Mathz giúp giáo viên soạn quiz Toán nhanh, chấm tự động, và đọc báo cáo AI về chỗ lớp còn hổng.',
   keywords: [
     'AI quiz platform',
     'formative assessment',
@@ -30,11 +30,10 @@ export const metadata: Metadata = {
     'school software',
     'teacher tools',
   ],
-  generator: 'v0.app',
   openGraph: {
-    title: 'Mathz — Bài kiểm tra AI và phân tích lớp học tức thì',
+    title: 'Mathz | Quiz Toán AI và báo cáo lớp tức thì',
     description:
-      'Soạn bài kiểm tra Toán trong vài phút, chấm điểm tự động, và nhận báo cáo AI về lớp học.',
+      'Soạn quiz Toán nhanh, chấm tự động, nhận báo cáo AI về lớp học.',
     type: 'website',
   },
   icons: {
@@ -50,8 +49,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fbfcfd' },
-    { media: '(prefers-color-scheme: dark)', color: '#101318' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 }
 
@@ -60,7 +59,7 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       suppressHydrationWarning
       className={`${inter.variable} ${geistMono.variable} bg-background`}
     >

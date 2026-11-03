@@ -61,10 +61,10 @@ export function PracticePreTestModal({
 
         <div className="mb-4 flex items-center gap-2">
           <Sparkles className="size-5 text-primary" />
-          <h2 className="text-lg font-bold">Bạn đã sẵn sàng chưa?</h2>
+          <h2 className="text-lg font-bold">Sẵn sàng luyện tập</h2>
         </div>
         <p className="mb-4 text-sm text-muted-foreground">
-          Hệ thống trộn câu hỏi từ kho đề theo điểm yếu của bạn (không sinh đề bằng AI).
+          Câu hỏi lấy từ kho đề theo điểm yếu — không sinh đề mới.
         </p>
 
         <div className="mb-5 space-y-3 rounded-xl border bg-muted/40 p-4 text-sm">

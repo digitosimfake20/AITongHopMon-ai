@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Sparkles } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface AdaptivityHeroCardProps {
@@ -10,13 +9,9 @@ interface AdaptivityHeroCardProps {
 
 export function AdaptivityHeroCard({ title, description }: AdaptivityHeroCardProps) {
   return (
-    <article className="col-span-1 flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-accent/30 lg:col-span-2">
+    <article className="col-span-1 flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.18)] transition-colors hover:border-accent/30 lg:col-span-2">
       <div>
-        <Badge variant="outline" className="gap-1.5">
-          <Sparkles className="size-3 text-primary" aria-hidden="true" />
-          Luyện theo lỗ hổng kiến thức
-        </Badge>
-        <h2 className="mt-4 text-xl font-semibold tracking-tight text-card-foreground sm:text-2xl">
+        <h2 className="text-xl font-semibold tracking-tight text-card-foreground sm:text-2xl">
           {title}
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
@@ -28,7 +23,7 @@ export function AdaptivityHeroCard({ title, description }: AdaptivityHeroCardPro
         nativeButton={false}
         render={<Link href="/adaptive" />}
       >
-        Vào học ngay
+        Luyện ngay
         <ArrowRight className="size-4" aria-hidden="true" />
       </Button>
     </article>

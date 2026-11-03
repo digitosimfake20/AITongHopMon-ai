@@ -99,15 +99,15 @@ export function KnowledgeRoadmap({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950">
-              <MapIcon className="size-5 text-sky-600" />
+              <MapIcon className="size-5 text-sky-600" aria-hidden />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                Bản đồ Tri thức
+              <h1 className="text-xl font-bold text-foreground">
+                Bản đồ tri thức
               </h1>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 {states.length} chủ đề · Thành thạo tổng thể{' '}
-                <span className="font-semibold text-sky-600">{overallMastery}%</span>
+                <span className="font-semibold tabular-nums text-sky-600">{overallMastery}%</span>
               </p>
             </div>
           </div>
@@ -122,9 +122,16 @@ export function KnowledgeRoadmap({
             <span>Tiến độ tổng thể</span>
             <span>{overallMastery}%</span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-sky-100 dark:bg-sky-900">
+          <div
+            className="h-2.5 overflow-hidden rounded-full bg-sky-100 dark:bg-sky-900"
+            role="progressbar"
+            aria-valuenow={overallMastery}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Tiến độ tổng thể"
+          >
             <div
-              className="h-full rounded-full bg-sky-500 transition-all"
+              className="h-full rounded-full bg-sky-500"
               style={{ width: `${overallMastery}%` }}
             />
           </div>
@@ -135,7 +142,7 @@ export function KnowledgeRoadmap({
       {topStrengths.length > 0 && (
         <section className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
           <div className="mb-3 flex items-center gap-2">
-            <Award className="size-4 text-emerald-600" />
+            <Award className="size-4 text-emerald-600" aria-hidden />
             <h2 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
               Điểm mạnh của bạn
             </h2>
@@ -237,7 +244,7 @@ export function KnowledgeRoadmap({
                 <TrendingUp className="size-4 text-amber-600" />
                 Đang tiến bộ
               </CardTitle>
-              <CardDescription>Bạn đã nắm phần nền — luyện thêm để thành thạo</CardDescription>
+              <CardDescription>Đã nắm phần nền; luyện thêm để thành thạo</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {progressing.slice(0, 3).map((s) => (
@@ -253,7 +260,7 @@ export function KnowledgeRoadmap({
                   <AlertCircle className="size-4 text-rose-600" />
                   Ưu tiên ôn tập
                 </CardTitle>
-                <CardDescription>Zeno sẽ gợi ý bài phù hợp — không sao cả, mọi người đều cần ôn!</CardDescription>
+                <CardDescription>Ưu tiên các chủ đề này trước khi làm bài mới</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {weak.slice(0, 3).map((s) => (
@@ -348,11 +355,11 @@ function SummaryPill({
 
 function EmptyRoadmap() {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center dark:border-slate-700">
-      <MapIcon className="mx-auto size-12 text-slate-300 dark:text-slate-600" />
-      <p className="mt-4 font-medium text-slate-500">Bản đồ tri thức chưa có dữ liệu</p>
-      <p className="mt-1 text-sm text-slate-400">
-        Hoàn thành ít nhất một bài kiểm tra để Zeno bắt đầu lập bản đồ kiến thức của bạn.
+    <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+      <MapIcon className="mx-auto size-12 text-muted-foreground/40" aria-hidden />
+      <p className="mt-4 font-medium text-muted-foreground">Bản đồ tri thức chưa có dữ liệu</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Làm ít nhất một bài kiểm tra để Zeno lập bản đồ kiến thức của bạn.
       </p>
     </div>
   )

@@ -206,7 +206,7 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
             {analysis.knowledgeGaps.length === 0 &&
               !analysis.topicMastery?.some((t) => t.status !== 'MASTERED') && (
                 <p className="text-sm text-green-700 dark:text-green-400">
-                  Không phát hiện lỗ hổng kiến thức nghiêm trọng. Tiếp tục duy trì nhé!
+                  Không có lỗ hổng kiến thức đáng chú ý trên bài này.
                 </p>
               )}
           </div>

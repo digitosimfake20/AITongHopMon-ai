@@ -167,16 +167,16 @@ export function TeacherTestBankClient({
       <div>
         <h1 className="text-xl font-bold">Ngân hàng đề hệ thống</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Giao đề đơn hoặc cụm đề phân hóa 3 cấp (2 lượt: TB → Dễ/Khó theo điểm).
+          Giao đề đơn hoặc cụm phân hóa 3 cấp (2 lượt: Lượt 1 Trung bình → Lượt 2 Dễ/Khó theo điểm).
         </p>
       </div>
 
       {/* Active adaptive assignments */}
       {adaptiveAssignments.length > 0 && (
-        <section className="space-y-3 rounded-2xl border border-slate-700/40 bg-slate-900/30 p-5 dark:bg-slate-950/40">
-          <h2 className="flex items-center gap-2 font-mono text-sm font-semibold">
-            <BarChart3 className="size-4 text-cyan-500" />
-            // adaptive.assignments
+        <section className="space-y-3 rounded-2xl border border-border bg-muted/30 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <BarChart3 className="size-4 text-cyan-600 dark:text-cyan-400" />
+            Bài phân hóa đang giao
           </h2>
           <ul className="space-y-2">
             {adaptiveAssignments.map((a) => (
@@ -244,26 +244,26 @@ export function TeacherTestBankClient({
       {/* Adaptive groups */}
       {filteredGroups.length > 0 && (
         <section className="space-y-3">
-          <h2 className="flex items-center gap-2 font-mono text-sm font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
             <Sparkles className="size-4" />
-            adaptive.groups
-            <span className="rounded-full bg-emerald-950/50 px-2 py-0.5 font-mono text-[11px] normal-case text-emerald-400">
-              [{filteredGroups.length}]
+            Cụm đề phân hóa
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+              {filteredGroups.length}
             </span>
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filteredGroups.map((g) => (
-              <article key={g.id} className="flex flex-col gap-3 rounded-2xl border border-slate-700/40 bg-slate-900/30 p-5">
-                <h3 className="font-semibold">{g.title}</h3>
-                <p className="font-mono text-xs text-muted-foreground">
-                  {g.subject} · grade {g.grade}
+              <article key={g.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <h3 className="font-semibold text-card-foreground">{g.title}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {g.subject} · Khối {g.grade}
                   {g.topic && ` · ${g.topic}`}
                 </p>
-                <p className="font-mono text-xs text-cyan-500/90">
-                  EASY {g.easyQuestionCount} · MEDIUM {g.mediumQuestionCount} · HARD {g.hardQuestionCount}
+                <p className="font-mono text-xs tabular-nums text-cyan-700 dark:text-cyan-400">
+                  Dễ {g.easyQuestionCount} · Trung bình {g.mediumQuestionCount} · Khó {g.hardQuestionCount}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  2 rounds: L1 MEDIUM → L2 EASY (&lt;8) or HARD (≥8)
+                  2 lượt: Lượt 1 Trung bình → Lượt 2 Dễ (&lt;8.0) hoặc Khó (≥8.0)
                 </p>
                 <Button
                   type="button"
@@ -359,7 +359,7 @@ export function TeacherTestBankClient({
       {assigningGroup && (
         <AssignModal
           title={`Giao cụm đề: ${assigningGroup.title}`}
-          subtitle="Học sinh bắt buộc làm 2 lượt (TB → Dễ/Khó)"
+          subtitle="Học sinh bắt buộc làm 2 lượt (Lượt 1 Trung bình → Lượt 2 Dễ/Khó)"
           classId={classId}
           setClassId={setClassId}
           classes={classes}
@@ -457,7 +457,7 @@ function AssignModal({
               <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm" />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium">Deadline</label>
+              <label className="mb-1.5 block text-sm font-medium">Hạn nộp</label>
               <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm" />
             </div>
           </div>
