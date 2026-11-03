@@ -12,7 +12,7 @@ import { formatDurationMs, formatDurationSeconds } from '@/lib/time/format-durat
 
 const TIMING_LABEL = {
   measured: 'Đo được',
-  estimated: 'Ước tính — không dùng để phân hóa',
+  estimated: 'Ước tính (không dùng để phân hóa)',
   insufficient: 'Không đủ dữ liệu',
 } as const
 import { Button } from '@/components/ui/button'
@@ -53,11 +53,12 @@ export function AdaptiveSummaryClient({
         <Button
           type="button"
           variant="outline"
-          className="min-h-9 gap-1.5"
+          className="min-h-11 gap-1.5"
+          aria-label="Quay lại danh sách bài phân hóa"
           nativeButton={false}
           render={<Link href={withClassParam('/teacher/adaptive', classId)} />}
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-4" aria-hidden />
           Danh sách
         </Button>
         <div className="flex-1">
@@ -68,9 +69,9 @@ export function AdaptiveSummaryClient({
           <p className="mt-1 text-sm text-muted-foreground">
             {assignment.subject}
             {assignment.topic && ` · ${assignment.topic}`}
-            · Mở {formatDate(assignment.startTime)} — Hết hạn {formatDate(assignment.endTime)}
+            · Mở {formatDate(assignment.startTime)} · Hết hạn {formatDate(assignment.endTime)}
           </p>
-          <p className="mt-1 font-mono text-xs text-cyan-500/90">
+          <p className="mt-1 font-mono text-xs text-cyan-700 dark:text-cyan-400">
             Ngưỡng Khó ≥ {assignment.passScoreThreshold} · 2 lượt bắt buộc ·{' '}
             {completed}/{assignment.studentTotalCount} HS hoàn thành
           </p>
@@ -83,11 +84,11 @@ export function AdaptiveSummaryClient({
         </summary>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>
-            <strong className="text-foreground">Biến 1 — Điểm lượt 1 (TB):</strong> so với ngưỡng{' '}
+            <strong className="text-foreground">Biến 1: điểm lượt 1 (TB)</strong> so với ngưỡng{' '}
             {assignment.passScoreThreshold}/10.
           </li>
           <li>
-            <strong className="text-foreground">Biến 2 — Median thời gian/câu:</strong> chỉ khi đo được
+            <strong className="text-foreground">Biến 2: median thời gian/câu</strong> chỉ khi đo được
             từng câu; ngưỡng chậm = {formatDurationSeconds(ROUND2_SLOW_MEDIAN_MS / 1000, { perQuestion: true })}.
             Thời gian ước tính hoặc thiếu không đổi nhánh.
           </li>
@@ -104,6 +105,7 @@ export function AdaptiveSummaryClient({
 
       <div className="overflow-x-auto rounded-2xl border border-border">
         <table className="w-full min-w-[720px] text-sm">
+          <caption className="sr-only">Tiến trình làm bài phân hóa theo học sinh</caption>
           <thead>
             <tr className="border-b bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-3 font-medium">Học sinh</th>

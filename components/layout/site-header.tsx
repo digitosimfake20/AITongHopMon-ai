@@ -1,7 +1,7 @@
 'use client'
 
 import { Menu, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Logo } from '@/components/brand/logo'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { LinkButton } from '@/components/ui/link-button'
@@ -11,6 +11,9 @@ import { cn } from '@/lib/utils'
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const menuId = useId()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const firstLinkRef = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -18,6 +21,21 @@ export function SiteHeader() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    firstLinkRef.current?.focus()
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   return (
     <header
@@ -62,9 +80,11 @@ export function SiteHeader() {
             Đăng ký
           </LinkButton>
           <button
+            ref={menuButtonRef}
             type="button"
             aria-label={open ? 'Đóng menu' : 'Mở menu'}
             aria-expanded={open}
+            aria-controls={menuId}
             onClick={() => setOpen((value) => !value)}
             className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 md:hidden"
           >
@@ -78,15 +98,19 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <div className="animate-slide-up-fade border-t border-border bg-background px-4 pb-5 pt-3 md:hidden">
+        <div
+          id={menuId}
+          className="animate-slide-up-fade border-t border-border bg-background px-4 pb-5 pt-3 md:hidden"
+        >
           <nav aria-label="Mobile">
             <ul className="flex flex-col">
-              {NAV_LINKS.map((link) => (
+              {NAV_LINKS.map((link, index) => (
                 <li key={link.href}>
                   <a
+                    ref={index === 0 ? firstLinkRef : undefined}
                     href={link.href}
                     onClick={() => setOpen(false)}
-                    className="block rounded-lg px-2 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    className="block rounded-lg px-2 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {link.label}
                   </a>

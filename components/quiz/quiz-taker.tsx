@@ -392,7 +392,7 @@ function SubmittingOverlay() {
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
       <div className="text-center">
         <p className="text-lg font-semibold text-foreground">Đang chấm và nộp bài...</p>
-        <p className="mt-1 text-sm text-muted-foreground">Vui lòng không đóng trang</p>
+        <p className="mt-1 text-sm text-muted-foreground">Đừng đóng trang này</p>
       </div>
     </div>
   )
@@ -506,6 +506,28 @@ export function QuizTaker({ data }: QuizTakerProps) {
     handleExpire,
   )
 
+  const [timerAnnounce, setTimerAnnounce] = useState('')
+  const timerAnnouncedRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!startedAt || remaining <= 0) return
+    const key = data.testId
+    if (!timerAnnouncedRef.current.has(`mount-${key}`)) {
+      timerAnnouncedRef.current.add(`mount-${key}`)
+      setTimerAnnounce(`Thời gian còn lại ${display}.`)
+      return
+    }
+    if (remaining <= 60 && !timerAnnouncedRef.current.has(`1m-${key}`)) {
+      timerAnnouncedRef.current.add(`1m-${key}`)
+      setTimerAnnounce('Còn dưới 1 phút.')
+      return
+    }
+    if (remaining <= 300 && !timerAnnouncedRef.current.has(`5m-${key}`)) {
+      timerAnnouncedRef.current.add(`5m-${key}`)
+      setTimerAnnounce('Còn dưới 5 phút.')
+    }
+  }, [startedAt, remaining, display, data.testId])
+
   function handleAnswer(questionId: string, type: QuizTakingQuestion['type'], value: QuizAnswer) {
     const now = Date.now()
     if (!(questionId in interactionStart.current)) {
@@ -537,7 +559,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
             <button
               type="button"
               onClick={() => setShowLeaveModal(true)}
-              className="mb-0.5 text-xs text-muted-foreground hover:text-foreground"
+              className="mb-0.5 min-h-11 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               ← Quay lại
             </button>
@@ -547,13 +569,14 @@ export function QuizTaker({ data }: QuizTakerProps) {
             </p>
           </div>
 
+          <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            {timerAnnounce}
+          </div>
           <div
             role="timer"
-            aria-live="polite"
-            aria-atomic="true"
             aria-label={`Thời gian còn lại ${display}`}
             className={cn(
-              'flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-mono text-sm font-bold tabular-nums',
+              'flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-1.5 font-mono text-sm font-bold tabular-nums',
               isWarning
                 ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400'
                 : 'border-border bg-background text-foreground',

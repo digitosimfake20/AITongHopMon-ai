@@ -96,7 +96,7 @@ async function getTeacherDashboardDataUncached(
         wrongCount: stats.wrongCount,
         studentPercent: pct,
         wrongPercent: pct,
-        sampleNote: `${stats.wrongCount} lượt sai — ${affected}/${studentCount} học sinh gặp khó`,
+        sampleNote: `${stats.wrongCount} lượt sai · ${affected}/${studentCount} học sinh gặp khó`,
       }
     })
 
@@ -122,7 +122,7 @@ async function getTeacherDashboardDataUncached(
       id: item.studentId,
       name,
       initials: getInitials(name),
-      reason: `Điểm trung bình ${avg}/10 — cần hỗ trợ thêm`,
+      reason: `Điểm trung bình ${avg}/10 · cần hỗ trợ thêm`,
     }
   })
 
@@ -134,10 +134,18 @@ async function getTeacherDashboardDataUncached(
         ? Math.round((gradedScores.reduce((sum, score) => sum + score, 0) / gradedScores.length) * 10) / 10
         : 0
 
+    // Packages do not store submission deadlines here — surface time limits honestly.
+    const durationMinutes =
+      pkg.mode === 'ADAPTIVE_PACKAGE'
+        ? pkg.tests.find((t) => t.difficultyLevel === 'MEDIUM')?.timeLimitMinutes ??
+          pkg.tests[0]?.timeLimitMinutes ??
+          0
+        : pkg.tests[0]?.timeLimitMinutes ?? 0
+
     return {
       id: pkg.id,
       title: pkg.mode === 'ADAPTIVE_PACKAGE' ? `${pkg.title} (Dễ/TB/Khó)` : pkg.title,
-      deadline: pkg.mode === 'ADAPTIVE_PACKAGE' ? '3 mức độ' : `${pkg.tests[0]?.timeLimitMinutes ?? 0} phút`,
+      deadline: durationMinutes > 0 ? `${durationMinutes} phút` : 'Chưa đặt',
       submitted: totalSubmitted,
       total: studentCount * Math.max(pkg.tests.length, 1),
       averageScore,

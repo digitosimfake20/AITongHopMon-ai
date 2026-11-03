@@ -70,19 +70,23 @@ function FeedbackModalContent({
       </p>
 
       {!message && !loading && (
-        <Button onClick={handleGenerate} className="gap-2">
-          <Brain className="size-4" />
+        <Button onClick={handleGenerate} className="min-h-11 gap-2">
+          <Brain className="size-4" aria-hidden />
           Soạn nhận xét với AI
         </Button>
       )}
 
+      <div role="status" aria-live="polite" className="sr-only">
+        {loading ? 'Đang soạn nhận xét' : error ? error : message ? 'Đã soạn xong nhận xét' : ''}
+      </div>
+
       {loading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Đang soạn nhận xét...
+          <Loader2 className="size-4 animate-spin" aria-hidden /> Đang soạn nhận xét...
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
       {message && (
         <div className="space-y-3">
@@ -145,26 +149,30 @@ function QuizModalContent({
       </p>
 
       {!questions && !loading && (
-        <Button onClick={handleGenerate} className="gap-2">
-          <Brain className="size-4" />
+        <Button onClick={handleGenerate} className="min-h-11 gap-2">
+          <Brain className="size-4" aria-hidden />
           Tạo bài tập phụ đạo
         </Button>
       )}
 
+      <div role="status" aria-live="polite" className="sr-only">
+        {loading ? 'Đang tạo bài phụ đạo' : error ? error : questions ? 'Đã tạo bài phụ đạo' : ''}
+      </div>
+
       {loading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Đang tạo bài tập...
+          <Loader2 className="size-4 animate-spin" aria-hidden /> Đang tạo bài tập...
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
       {questions && (
         <div className="space-y-4">
           {questions.map((q, i) => (
             <div key={q.id ?? i} className="rounded-xl border border-border bg-background p-4">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold text-primary">Câu {i + 1} — {q.topic}</span>
+                <span className="text-xs font-semibold text-primary">Câu {i + 1}: {q.topic}</span>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                     {TYPE_LABEL[q.type] ?? q.type}
@@ -233,19 +241,19 @@ export function StudentDetailActions({
     <>
       <div className="flex flex-col gap-2">
         <Button
-          className="w-full justify-start gap-2"
+          className="min-h-11 w-full justify-start gap-2"
           onClick={() => setFeedbackOpen(true)}
         >
-          <FileText className="size-4" />
-          Soạn nhận xét gửi Phụ huynh
+          <FileText className="size-4" aria-hidden />
+          Soạn nhận xét gửi phụ huynh
         </Button>
         <Button
           variant="outline"
-          className="w-full justify-start gap-2"
+          className="min-h-11 w-full justify-start gap-2"
           disabled={weakTopics.length === 0}
           onClick={() => setQuizOpen(true)}
         >
-          <HelpCircle className="size-4" />
+          <HelpCircle className="size-4" aria-hidden />
           Tạo bài phụ đạo riêng
         </Button>
       </div>

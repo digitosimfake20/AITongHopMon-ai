@@ -44,7 +44,11 @@ export function AdaptiveTopicList({ topics, focusTopicId }: AdaptiveTopicListPro
 
   useEffect(() => {
     if (!focusTopicId || !focusRef.current) return
-    focusRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    focusRef.current.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'center',
+    })
   }, [focusTopicId])
 
   function startPractice(topic: AdaptiveTopicItem, saveForLater: boolean) {
@@ -156,34 +160,36 @@ export function AdaptiveTopicList({ topics, focusTopicId }: AdaptiveTopicListPro
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">{label}</p>
 
-              {isFocus ? (
-                <div className="mt-3 flex flex-col gap-2">
+              <div className="mt-3 flex flex-col gap-2">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  aria-busy={practicingNow || undefined}
+                  onClick={() => startPractice(state, false)}
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-zeno px-3 text-sm font-medium text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:opacity-60"
+                >
+                  {practicingNow ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <BookOpen className="size-4" aria-hidden />
+                  )}
+                  {isFocus ? 'Luyện chủ đề này' : 'Luyện'}
+                </button>
+                {isFocus ? (
                   <button
                     type="button"
                     disabled={isPending}
-                    onClick={() => startPractice(state, false)}
-                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-zeno px-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
-                  >
-                    {practicingNow ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <BookOpen className="size-4" aria-hidden />
-                    )}
-                    Luyện chủ đề này
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isPending}
+                    aria-busy={savingLater || undefined}
                     onClick={() => startPractice(state, true)}
-                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-zeno/40 px-3 text-sm font-medium text-zeno hover:bg-zeno/10 disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-zeno/40 px-3 text-sm font-medium text-zeno hover:bg-zeno/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:opacity-60"
                   >
                     {savingLater ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden />
                     ) : null}
                     Lưu vào &quot;Làm sau&quot;
                   </button>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
           )
         })}

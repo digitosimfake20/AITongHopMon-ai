@@ -22,6 +22,14 @@ const INITIAL_STATE: DemoState = {
   revealed: false,
 }
 
+/** Static end frame for prefers-reduced-motion (teacher summary). */
+export const STATIC_DEMO_STATE: DemoState = {
+  stage: 'teacher',
+  questionIndex: 1,
+  selectedOptionId: 'a',
+  revealed: true,
+}
+
 /** One full loop of the story: student answers -> score pops -> teacher gets the AI summary. */
 const FRAMES: Frame[] = [
   { at: 0, state: INITIAL_STATE },
@@ -39,17 +47,47 @@ const FRAMES: Frame[] = [
 
 const LOOP_DURATION = 14500
 
+export function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => setReduced(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  return reduced
+}
+
 /**
  * Drives the scripted hero demo. Runs only while the demo is on screen so the
- * page stays cheap when the user has scrolled past it.
+ * page stays cheap when the user has scrolled past it. Honors pause + reduced motion.
  */
-export function useDemoSequence(active: boolean) {
-  const [state, setState] = useState<DemoState>(INITIAL_STATE)
+export function useDemoSequence(
+  active: boolean,
+  { paused = false, reducedMotion = false } = {},
+) {
+  const [state, setState] = useState<DemoState>(
+    reducedMotion ? STATIC_DEMO_STATE : INITIAL_STATE,
+  )
   const [loop, setLoop] = useState(0)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
-    if (!active) return
+    if (reducedMotion) {
+      for (const timer of timers.current) clearTimeout(timer)
+      timers.current = []
+      setState(STATIC_DEMO_STATE)
+      return
+    }
+
+    if (!active || paused) {
+      for (const timer of timers.current) clearTimeout(timer)
+      timers.current = []
+      return
+    }
 
     const clearAll = () => {
       for (const timer of timers.current) clearTimeout(timer)
@@ -58,6 +96,8 @@ export function useDemoSequence(active: boolean) {
 
     const run = () => {
       clearAll()
+      setState(INITIAL_STATE)
+
       for (const frame of FRAMES) {
         timers.current.push(
           setTimeout(() => {
@@ -75,7 +115,7 @@ export function useDemoSequence(active: boolean) {
 
     run()
     return clearAll
-  }, [active])
+  }, [active, paused, reducedMotion])
 
   return { ...state, loop }
 }

@@ -12,7 +12,7 @@ export function ClassHealthCard({
   return (
     <article className="flex flex-col rounded-xl border border-border bg-card p-6">
       <h2 className="text-base font-semibold text-card-foreground">
-        Sức khỏe lớp
+        Tình hình lớp
       </h2>
 
       <div className="mt-6 space-y-5">

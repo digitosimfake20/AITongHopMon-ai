@@ -113,7 +113,7 @@ export default async function AdaptivePage({ searchParams }: PageProps) {
           </p>
           <Link
             href="/quizzes"
-            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-zeno px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-zeno px-4 py-2 text-sm font-medium text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2"
           >
             <BookOpen className="size-4" aria-hidden />
             Xem đề kiểm tra
@@ -153,7 +153,7 @@ export default async function AdaptivePage({ searchParams }: PageProps) {
                   ) : (
                     <Link
                       href={`/quiz/take/${test.id}`}
-                      className="inline-flex min-h-11 items-center rounded-lg bg-zeno px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
+                      className="inline-flex min-h-11 items-center rounded-lg bg-zeno px-3 py-2 text-xs font-semibold text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2"
                     >
                       Làm bài
                     </Link>

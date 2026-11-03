@@ -104,12 +104,12 @@ export function ZenoProactivePanel({
           </div>
           {weakTopic ? (
             <Button
-              size="sm"
-              className="shrink-0 gap-1.5"
+              className="min-h-11 shrink-0 gap-1.5"
               disabled={isGenerating}
+              aria-busy={isGenerating || undefined}
               onClick={() => void handleGeneratePractice(false)}
             >
-              <Sparkles className="size-3.5" />
+              <Sparkles className="size-3.5" aria-hidden />
               {isGenerating ? 'Đang chuẩn bị...' : `Luyện ${PRACTICE_TIME_LIMIT_MINUTES} phút`}
             </Button>
           ) : null}

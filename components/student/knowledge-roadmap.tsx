@@ -25,12 +25,12 @@ import {
 import {
   getTopicClusterDef,
   inferTopicCluster,
-  masteryStatusLabel,
-  type MasteryStatus,
 } from '@/lib/knowledge/topic-clusters'
 import {
   MASTERY_STATUS_MASTERED,
   MASTERY_STATUS_PROGRESSING,
+  masteryStatusFromP,
+  masteryStatusLabelVi,
 } from '@/lib/knowledge/mastery-labels'
 import { cn } from '@/lib/utils'
 
@@ -294,19 +294,18 @@ export function KnowledgeRoadmap({
 
 function TopicRow({ state, compact }: { state: KnowledgeStateItem; compact?: boolean }) {
   const mastery = Math.round(state.pMastery * 100)
-  const status: MasteryStatus =
-    mastery >= 80 ? 'MASTERED' : mastery >= 50 ? 'PROGRESSING' : 'GAP'
+  const status = masteryStatusFromP(state.pMastery)
 
   const barColor = {
     MASTERED: 'bg-success',
-    PROGRESSING: 'bg-warning',
-    GAP: 'bg-destructive',
+    MEDIUM: 'bg-warning',
+    WEAK: 'bg-destructive',
   }[status]
 
   const statusIcon = {
     MASTERED: CheckCircle2,
-    PROGRESSING: TrendingUp,
-    GAP: AlertCircle,
+    MEDIUM: TrendingUp,
+    WEAK: AlertCircle,
   }[status]
 
   const StatusIcon = statusIcon
@@ -317,16 +316,23 @@ function TopicRow({ state, compact }: { state: KnowledgeStateItem; compact?: boo
         <p className={cn('font-medium text-foreground', compact ? 'text-xs' : 'text-sm')}>
           {state.title}
         </p>
-        <Badge variant="outline" className="gap-0.5 text-[10px]">
-          <StatusIcon className="size-2.5" />
-          {masteryStatusLabel(status)}
+        <Badge variant="outline" className="gap-0.5 text-xs">
+          <StatusIcon className="size-2.5" aria-hidden />
+          {masteryStatusLabelVi(status)}
         </Badge>
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary">
+        <div
+          className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          aria-valuenow={mastery}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${state.title}: ${masteryStatusLabelVi(status)} ${mastery}%`}
+        >
           <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${mastery}%` }} />
         </div>
-        <span className="shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground">{mastery}%</span>
+        <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">{mastery}%</span>
       </div>
     </div>
   )
@@ -364,7 +370,7 @@ function EmptyRoadmap() {
       </p>
       <Link
         href="/quizzes"
-        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-zeno px-4 text-sm font-medium text-white hover:opacity-90"
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-zeno px-4 text-sm font-medium text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2"
       >
         Xem đề kiểm tra
       </Link>

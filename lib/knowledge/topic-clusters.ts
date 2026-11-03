@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { Calculator, ChartColumn, CircleDot, Shapes, Sparkles } from 'lucide-react'
+import { masteryStatusFromAccuracyPercent } from '@/lib/knowledge/mastery-labels'
 
 export interface TopicClusterDef {
   id: string
@@ -58,9 +59,11 @@ export function getTopicClusterDef(clusterId: string): TopicClusterDef {
 
 export type MasteryStatus = 'MASTERED' | 'PROGRESSING' | 'GAP'
 
+/** Same bands as `masteryStatusFromP` / `MASTERY_STATUS_*` (85% / 60%). */
 export function masteryStatusFromPercent(percent: number): MasteryStatus {
-  if (percent >= 80) return 'MASTERED'
-  if (percent >= 50) return 'PROGRESSING'
+  const status = masteryStatusFromAccuracyPercent(percent)
+  if (status === 'MASTERED') return 'MASTERED'
+  if (status === 'MEDIUM') return 'PROGRESSING'
   return 'GAP'
 }
 

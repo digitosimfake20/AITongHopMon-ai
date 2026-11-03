@@ -92,12 +92,12 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           {isPractice && (
-            <span className="rounded-md bg-zeno/15 px-2 py-0.5 text-[11px] font-medium text-zeno">
+            <span className="rounded-md bg-zeno/15 px-2 py-0.5 text-xs font-medium text-zeno">
               Luyện thêm
             </span>
           )}
           {quiz.classTestId && (
-            <span className="rounded-md bg-info/15 px-2 py-0.5 text-[11px] font-medium text-info">
+            <span className="rounded-md bg-info/15 px-2 py-0.5 text-xs font-medium text-info">
               Hệ thống
             </span>
           )}
@@ -156,7 +156,7 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
           {canReview && (
             <Button
               variant="outline"
-              className="min-h-9 text-xs"
+              className="min-h-11 text-xs"
               nativeButton={false}
               render={<Link href={`/quiz/result/${resultId}`} />}
             >
@@ -166,14 +166,14 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
           )}
           {status.canTake ? (
             <Button
-              className="min-h-9 gap-1.5"
+              className="min-h-11 gap-1.5"
               nativeButton={false}
               render={<Link href={`/quiz/take/${quiz.testId}`} />}
             >
               {status.isDone ? 'Làm lại bài' : 'Bắt đầu làm bài'}
             </Button>
           ) : status.statusLabel !== 'Quá hạn' ? (
-            <Button className="min-h-9 gap-1.5" disabled>
+            <Button className="min-h-11 gap-1.5" disabled>
               <Lock className="size-3.5" />
               Không thể làm
             </Button>
@@ -227,7 +227,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           <Sparkles className="mt-0.5 size-4 shrink-0 text-zeno" aria-hidden />
           <h3 className="font-semibold leading-snug text-foreground">{quiz.title}</h3>
         </div>
-        <span className="rounded-md bg-zeno/15 px-2 py-0.5 text-[11px] font-medium text-zeno">
+        <span className="rounded-md bg-zeno/15 px-2 py-0.5 text-xs font-medium text-zeno">
           Phân hóa 2 lượt
         </span>
       </div>
@@ -287,7 +287,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           {progress.round1SubmissionId && quiz.allowReview && (
             <Button
               variant="outline"
-              className="min-h-9 text-xs"
+              className="min-h-11 text-xs"
               nativeButton={false}
               render={<Link href={`/quiz/result/${progress.round1SubmissionId}`} />}
             >
@@ -297,7 +297,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           {progress.round2SubmissionId && quiz.allowReview && (
             <Button
               variant="outline"
-              className="min-h-9 text-xs"
+              className="min-h-11 text-xs"
               nativeButton={false}
               render={<Link href={`/quiz/result/${progress.round2SubmissionId}`} />}
             >
@@ -306,7 +306,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
           )}
           {status.canTake ? (
             <Button
-              className="min-h-9 gap-1.5"
+              className="min-h-11 gap-1.5"
               nativeButton={false}
               render={<Link href={`/quiz/take/${progress.nextTestId}`} />}
             >
@@ -314,7 +314,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
               <ArrowRight className="size-3.5" />
             </Button>
           ) : (
-            <Button className="min-h-9 gap-1.5" disabled>
+            <Button className="min-h-11 gap-1.5" disabled>
               <Lock className="size-3.5" />
               {status.statusLabel === 'Chưa mở' ? 'Chưa mở' : 'Không thể làm'}
             </Button>

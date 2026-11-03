@@ -22,9 +22,9 @@ export function TeacherHeader({
   return (
     <header className="flex flex-col gap-4 border-b border-border bg-background/85 px-4 py-5 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          {className} — {subject}
-        </h1>
+        <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          {className} · {subject}
+        </p>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground sm:text-base">
           <Users className="size-4" aria-hidden="true" />
           {studentCount} học sinh

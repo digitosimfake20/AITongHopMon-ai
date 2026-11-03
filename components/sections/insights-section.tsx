@@ -7,17 +7,17 @@ const POINTS = [
   {
     id: 'p1',
     title: 'Đọc trong 30 giây',
-    body: 'Mỗi quiz có một đoạn ngắn bằng tiếng Việt. Không cần giải mã biểu đồ trước khi hành động.',
+    body: 'Mỗi quiz có một đoạn tiếng Việt nêu lỗ hổng và việc làm tiếp.',
   },
   {
     id: 'p2',
     title: 'Biết ai cần trao đổi',
-    body: 'Học sinh gặp khó được đánh dấu kèm câu hỏi làm khó họ, để cuộc nói chuyện bắt đầu nhanh.',
+    body: 'Mathz đánh dấu học sinh gặp khó kèm câu họ sai, để thầy cô mở trao đổi đúng chỗ.',
   },
   {
     id: 'p3',
     title: 'Báo cáo cho lãnh đạo',
-    body: 'Xuất tiến độ học sinh sạch cho họp bộ môn và gặp phụ huynh.',
+    body: 'Xuất bảng tiến độ học sinh cho họp bộ môn và gặp phụ huynh.',
   },
 ]
 
@@ -31,10 +31,10 @@ export function InsightsSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Chấm xong rồi. Đây là việc thầy cô làm tiếp.
+              Sau khi chấm, thầy cô đọc báo cáo lớp rồi chọn việc dạy lại.
             </h2>
             <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-              Một con số không đổi kế hoạch bài. Sau mỗi quiz bạn thấy điểm mạnh, lỗ hổng, và thứ cần dạy lại trước.
+              Sau mỗi quiz bạn thấy chỗ lớp còn hổng và việc cần dạy lại trước.
             </p>
 
             <ul className="mt-8 space-y-6">
