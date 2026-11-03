@@ -42,35 +42,36 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div>
-        <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-          Chọn tên của bạn — <span className="text-teal-600">{className}</span>
+        <h3 className="font-semibold text-foreground">
+          Chọn tên của bạn · <span className="text-zeno">{className}</span>
         </h3>
         {alreadyClaimed ? (
           <p className="mt-1 text-sm text-emerald-600">
             Bạn đã liên kết với tên: <strong>{alreadyClaimed.fullName}</strong>
           </p>
         ) : (
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Tìm và chọn đúng tên của bạn trong danh sách lớp, sau đó bấm Xác nhận.
           </p>
         )}
       </div>
 
-      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        <label htmlFor="name-picker-search" className="sr-only">
+          Tìm tên trong danh sách lớp
+        </label>
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <input
-          type="text"
+          id="name-picker-search"
+          type="search"
           placeholder="Tìm tên..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-zeno"
         />
       </div>
 
-      {/* Name grid */}
       <div className="grid max-h-[400px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
         {filtered.map((entry) => {
           const isLinkedByOther = !!entry.linkedUserId && entry.linkedUserId !== currentUserId
@@ -84,52 +85,50 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
               disabled={isLinkedByOther}
               onClick={() => !isLinkedByOther && setSelected(isSelected ? null : entry.id)}
               className={[
-                'flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all',
+                'flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
                 isLinkedByOther
-                  ? 'cursor-not-allowed border-slate-100 bg-slate-50 opacity-50 dark:border-slate-800 dark:bg-slate-900'
+                  ? 'cursor-not-allowed border-border bg-muted opacity-50'
                   : isLinkedByMe
                     ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/30'
                     : isSelected
-                      ? 'border-teal-400 bg-teal-50 ring-2 ring-teal-400 dark:border-teal-600 dark:bg-teal-950/30'
-                      : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50 dark:border-slate-700 dark:bg-slate-800/50',
+                      ? 'border-zeno bg-zeno/10 ring-2 ring-zeno dark:bg-zeno/20'
+                      : 'border-border bg-card hover:border-zeno/40 hover:bg-zeno/5',
               ].join(' ')}
             >
-              {/* STT badge */}
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-muted-foreground">
                 {entry.stt}
               </span>
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                <p className="truncate text-sm font-medium text-foreground">
                   {entry.fullName}
                 </p>
-                <p className="text-[11px] text-slate-400">{entry.studentCode}</p>
+                <p className="text-[11px] text-muted-foreground">{entry.studentCode}</p>
               </div>
 
-              {/* Status icon */}
-              {isLinkedByMe && <UserCheck className="size-4 shrink-0 text-emerald-500" />}
-              {isLinkedByOther && <UserX className="size-4 shrink-0 text-slate-400" />}
-              {isSelected && !isLinkedByMe && <Check className="size-4 shrink-0 text-teal-600" />}
+              {isLinkedByMe && <UserCheck className="size-4 shrink-0 text-emerald-500" aria-hidden />}
+              {isLinkedByOther && <UserX className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
+              {isSelected && !isLinkedByMe && <Check className="size-4 shrink-0 text-zeno" aria-hidden />}
             </button>
           )
         })}
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-sm text-slate-400">Không tìm thấy tên phù hợp</p>
+        <p className="text-center text-sm text-muted-foreground">Không tìm thấy tên phù hợp</p>
       )}
 
-      {/* Confirm button */}
       {selected && !alreadyClaimed && (
         <button
+          type="button"
           onClick={handleConfirm}
           disabled={isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zeno py-3 font-semibold text-white hover:opacity-90 disabled:opacity-60"
         >
           {isPending ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" aria-hidden />
           ) : (
-            <Check className="size-4" />
+            <Check className="size-4" aria-hidden />
           )}
           {isPending
             ? 'Đang xác nhận...'

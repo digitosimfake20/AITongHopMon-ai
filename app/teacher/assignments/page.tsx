@@ -10,9 +10,9 @@ export default async function TeacherAssignmentsPage() {
   return (
     <div className="mx-auto w-full max-w-4xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Giao bài & Ngân hàng Đề</h1>
+        <h1 className="text-2xl font-bold text-foreground">Giao bài & ngân hàng đề</h1>
         <p className="mt-1 text-muted-foreground">
-          Tải lên tệp .docx/.pdf để AI tự động trích xuất câu hỏi, hoặc soạn thủ công.
+          Tải .docx/.pdf để trích xuất câu hỏi, hoặc soạn thủ công.
         </p>
       </div>
 

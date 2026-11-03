@@ -118,7 +118,7 @@ export default async function QuizResultPage({ params }: PageProps) {
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
           <Star className="size-5 text-primary" aria-hidden />
-          Xem lại chi tiết
+          Chi tiết từng câu
         </h2>
         <div className="space-y-4">
           {result.questionResults.map((qr, i) => (

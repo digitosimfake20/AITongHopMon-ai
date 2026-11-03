@@ -75,8 +75,8 @@ export async function StudentOnboarding({ fullName, userId }: StudentOnboardingP
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Xin chào, {fullName}</h1>
-          <p className="mt-1 text-muted-foreground">Chọn lớp hoặc tham gia lớp mới</p>
+          <h1 className="text-2xl font-bold tracking-tight">Xin chào, {fullName}</h1>
+          <p className="mt-1 text-muted-foreground">Chọn lớp đang học hoặc nhập mã để tham gia lớp mới.</p>
         </div>
         <form action={signOutAction}>
           <Button type="submit" variant="outline" className="min-h-11">
@@ -107,7 +107,7 @@ export async function StudentOnboarding({ fullName, userId }: StudentOnboardingP
       ) : (
         <div className="mt-10 flex flex-col items-center rounded-2xl border border-dashed border-border py-16 text-center">
           <BookOpen className="size-12 text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">Bạn chưa tham gia lớp nào</p>
+          <p className="mt-4 text-muted-foreground">Chưa có lớp. Nhập mã bên dưới để tham gia.</p>
         </div>
       )}
 

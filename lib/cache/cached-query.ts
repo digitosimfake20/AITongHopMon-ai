@@ -47,7 +47,11 @@ export function bustCacheTags(...tags: string[]) {
   }
 }
 
-/** Class-scoped bust after assign / submit / roster. */
+/**
+ * Class-scoped bust after assign / roster (full refresh).
+ * Prefer `bustAfterSubmit` for quiz submits — submissions tag already covers
+ * teacherDash / classGap / packages that list that tag.
+ */
 export function bustClassCaches(classId: string, opts?: { studentId?: string }) {
   const tags = [
     CacheTags.teacherDash(classId),
@@ -66,4 +70,19 @@ export function bustClassCaches(classId: string, opts?: { studentId?: string }) 
     )
   }
   bustCacheTags(...tags)
+}
+
+/**
+ * Narrow submit invalidation: one class submissions tag covers dash/gap/packages
+ * that include it; plus adaptive/quiz-bank and the submitting student's slices.
+ */
+export function bustAfterSubmit(classId: string, studentId: string) {
+  bustCacheTags(
+    CacheTags.submissions(classId),
+    CacheTags.adaptive(classId),
+    CacheTags.quizBank(classId),
+    CacheTags.quizBankStudent(classId, studentId),
+    CacheTags.studentDash(studentId),
+    CacheTags.knowledge(studentId),
+  )
 }

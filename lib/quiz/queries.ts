@@ -20,32 +20,6 @@ export interface QuizPackageSummary {
   tests: QuizPackageTestSummary[]
 }
 
-interface RawTest {
-  id: string
-  title: string
-  difficultyLevel: DifficultyLevel
-  questionIds: unknown
-  timeLimitMinutes: number
-  submissions: { score: unknown }[]
-}
-
-function summarizeTest(test: RawTest | null): QuizPackageTestSummary | null {
-  if (!test) return null
-  const scores = test.submissions.map((s) => Number(s.score))
-  const averageScore =
-    scores.length > 0 ? Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10 : 0
-
-  return {
-    id: test.id,
-    title: test.title,
-    difficultyLevel: test.difficultyLevel,
-    questionCount: Array.isArray(test.questionIds) ? test.questionIds.length : 0,
-    timeLimitMinutes: test.timeLimitMinutes,
-    submittedCount: test.submissions.length,
-    averageScore,
-  }
-}
-
 // =============================================================================
 // Edit-mode data loader
 // =============================================================================
@@ -174,23 +148,94 @@ export async function getQuizPackageForEdit(
   return { id: pkg.id, title: pkg.title, description: pkg.description, mode: pkg.mode, classId: pkg.classId, tests }
 }
 
+type PackageTestMeta = {
+  id: string
+  title: string
+  difficultyLevel: DifficultyLevel
+  questionIds: unknown
+  timeLimitMinutes: number
+}
+
+function summarizeTestFromAgg(
+  test: PackageTestMeta | null | undefined,
+  stats: { submittedCount: number; averageScore: number } | undefined,
+): QuizPackageTestSummary | null {
+  if (!test) return null
+  return {
+    id: test.id,
+    title: test.title,
+    difficultyLevel: test.difficultyLevel,
+    questionCount: Array.isArray(test.questionIds) ? test.questionIds.length : 0,
+    timeLimitMinutes: test.timeLimitMinutes,
+    submittedCount: stats?.submittedCount ?? 0,
+    averageScore: stats?.averageScore ?? 0,
+  }
+}
+
 async function getQuizPackagesForClassUncached(classId: string) {
+  const testSelect = {
+    id: true,
+    title: true,
+    difficultyLevel: true,
+    questionIds: true,
+    timeLimitMinutes: true,
+  } as const
+
   const packages = await prisma.quizPackage.findMany({
     where: { classId },
     orderBy: { createdAt: 'desc' },
-    include: {
-      standardTest: { include: { submissions: { select: { score: true } } } },
-      easyTest: { include: { submissions: { select: { score: true } } } },
-      mediumTest: { include: { submissions: { select: { score: true } } } },
-      hardTest: { include: { submissions: { select: { score: true } } } },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      mode: true,
+      createdAt: true,
+      standardTest: { select: testSelect },
+      easyTest: { select: testSelect },
+      mediumTest: { select: testSelect },
+      hardTest: { select: testSelect },
     },
   })
+
+  const testIds = [
+    ...new Set(
+      packages.flatMap((pkg) => {
+        const tests = [pkg.standardTest, pkg.easyTest, pkg.mediumTest, pkg.hardTest]
+        return tests.flatMap((t) => (t ? [t.id] : []))
+      }),
+    ),
+  ]
+
+  const submissionAggs =
+    testIds.length > 0
+      ? await prisma.submission.groupBy({
+          by: ['testId'],
+          where: { testId: { in: testIds } },
+          _count: { id: true },
+          _avg: { score: true },
+        })
+      : []
+
+  const statsByTestId = new Map(
+    submissionAggs.map((row) => [
+      row.testId,
+      {
+        submittedCount: row._count.id,
+        averageScore:
+          row._avg.score != null ? Math.round(Number(row._avg.score) * 10) / 10 : 0,
+      },
+    ]),
+  )
 
   return packages.map((pkg) => {
     const tests =
       pkg.mode === 'STANDARD'
-        ? [summarizeTest(pkg.standardTest)]
-        : [summarizeTest(pkg.easyTest), summarizeTest(pkg.mediumTest), summarizeTest(pkg.hardTest)]
+        ? [summarizeTestFromAgg(pkg.standardTest, statsByTestId.get(pkg.standardTest?.id ?? ''))]
+        : [
+            summarizeTestFromAgg(pkg.easyTest, statsByTestId.get(pkg.easyTest?.id ?? '')),
+            summarizeTestFromAgg(pkg.mediumTest, statsByTestId.get(pkg.mediumTest?.id ?? '')),
+            summarizeTestFromAgg(pkg.hardTest, statsByTestId.get(pkg.hardTest?.id ?? '')),
+          ]
 
     return {
       id: pkg.id,

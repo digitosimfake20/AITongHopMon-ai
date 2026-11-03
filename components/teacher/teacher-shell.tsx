@@ -21,7 +21,10 @@ export function TeacherShell({ shell, children }: TeacherShellProps) {
           studentCount={shell.studentCount}
           teacherInitials={shell.initials}
         />
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8"
+        >
           {children}
         </main>
       </div>

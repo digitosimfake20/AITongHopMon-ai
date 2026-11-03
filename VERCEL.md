@@ -1,4 +1,4 @@
-# Vercel Deployment — Mathz / 8A2 Platform
+# Vercel Deployment: Mathz / 8A2 Platform
 
 ## 1. Push to GitHub
 
@@ -21,13 +21,13 @@ Add these in **Vercel → Project → Settings → Environment Variables**:
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | Production, Preview (server only) |
-| `DATABASE_URL` | Production, Preview — Supavisor **transaction** mode (`pooler.supabase.com:6543?pgbouncer=true`) |
-| `DIRECT_URL` | Production, Preview — Supavisor **session** mode (`pooler.supabase.com:5432`) |
-
-Copy both from **Supabase → Connect**. Use username `postgres.[PROJECT-REF]`, not `postgres@db.*`.
+| `DATABASE_URL` | Production, Preview: Supavisor **transaction** mode (`pooler.supabase.com:6543?pgbouncer=true`) |
+| `DIRECT_URL` | Production, Preview: Supavisor **session** mode (`pooler.supabase.com:5432`) |
 | `OPENAI_API_KEY` | Production, Preview |
 | `CHAT_ENCRYPTION_KEY` | Production, Preview |
 | `NEXT_PUBLIC_APP_URL` | Production = your Vercel URL |
+
+Copy `DATABASE_URL` and `DIRECT_URL` from **Supabase → Connect**. Use username `postgres.[PROJECT-REF]`, not `postgres@db.*`.
 
 Optional later: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 

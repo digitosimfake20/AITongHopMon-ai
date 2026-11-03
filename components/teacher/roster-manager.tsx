@@ -186,6 +186,10 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
       setRows((prev) => prev.filter((r) => r.id !== row.id))
       return
     }
+    const confirmed = window.confirm(
+      `Xóa "${row.fullName}" khỏi danh sách lớp? Hành động này không hoàn tác.`,
+    )
+    if (!confirmed) return
     startTransition(async () => {
       const result = await deleteRosterEntryAction(row.id)
       if (result.success) {
@@ -242,7 +246,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
             ) : (
               <FileSpreadsheet className="size-3.5 text-emerald-600" />
             )}
-            {isUploading ? 'Đang đọc...' : 'Upload Excel'}
+            {isUploading ? 'Đang đọc...' : 'Tải Excel'}
             <input
               ref={fileRef}
               type="file"
@@ -400,36 +404,42 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
                     {editingId === row.id ? (
                       <div className="inline-flex gap-1">
                         <button
+                          type="button"
                           onClick={() => saveEdit(row)}
-                          className="rounded p-1 hover:bg-emerald-100 dark:hover:bg-emerald-950"
+                          aria-label={`Lưu ${row.fullName}`}
+                          className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-emerald-950"
                         >
-                          <Check className="size-3.5 text-emerald-600" />
+                          <Check className="size-4 text-emerald-600" aria-hidden />
                         </button>
                         <button
+                          type="button"
                           onClick={cancelEdit}
-                          className="rounded p-1 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          aria-label="Hủy chỉnh sửa"
+                          className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-slate-700"
                         >
-                          <X className="size-3.5 text-slate-500" />
+                          <X className="size-4 text-slate-500" aria-hidden />
                         </button>
                       </div>
                     ) : (
                       <div className="inline-flex gap-1">
                         {!previewRows && (
                           <button
+                            type="button"
                             onClick={() => startEdit(row)}
-                            className="rounded p-1 hover:bg-blue-100 dark:hover:bg-blue-950"
-                            title="Sửa"
+                            aria-label={`Sửa ${row.fullName}`}
+                            className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-blue-950"
                           >
-                            <Pencil className="size-3.5 text-blue-500" />
+                            <Pencil className="size-4 text-blue-500" aria-hidden />
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => deleteRow(row)}
                           disabled={isPending}
-                          className="rounded p-1 hover:bg-rose-100 dark:hover:bg-rose-950"
-                          title="Xóa"
+                          aria-label={`Xóa ${row.fullName}`}
+                          className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 dark:hover:bg-rose-950"
                         >
-                          <Trash2 className="size-3.5 text-rose-500" />
+                          <Trash2 className="size-4 text-rose-500" aria-hidden />
                         </button>
                       </div>
                     )}

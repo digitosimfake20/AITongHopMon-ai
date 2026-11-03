@@ -7,17 +7,17 @@ const POINTS = [
   {
     id: 'p1',
     title: 'Đọc trong 30 giây',
-    body: 'Mỗi bài quiz tạo ra một đoạn ngắn bằng tiếng Việt — không cần giải mã biểu đồ trước khi hành động.',
+    body: 'Mỗi quiz có một đoạn ngắn bằng tiếng Việt. Không cần giải mã biểu đồ trước khi hành động.',
   },
   {
     id: 'p2',
     title: 'Biết ai cần trao đổi',
-    body: 'Học sinh gặp khó khăn được đánh dấu với câu hỏi cụ thể làm khó họ, giúp cuộc trò chuyện dễ dàng bắt đầu.',
+    body: 'Học sinh gặp khó được đánh dấu kèm câu hỏi làm khó họ, để cuộc nói chuyện bắt đầu nhanh.',
   },
   {
     id: 'p3',
     title: 'Báo cáo cho lãnh đạo',
-    body: 'Báo cáo tiến độ học sinh được xuất sạch cho các cuộc họp bộ môn và gặp phụ huynh.',
+    body: 'Xuất tiến độ học sinh sạch cho họp bộ môn và gặp phụ huynh.',
   },
 ]
 
@@ -30,19 +30,16 @@ export function InsightsSection() {
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-              Dành cho Giáo viên
-            </p>
-            <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Chấm xong bài rồi. Đây là những gì thầy cô cần làm tiếp theo.
+            <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              Chấm xong rồi. Đây là việc thầy cô làm tiếp.
             </h2>
             <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-              Một con số không thay đổi kế hoạch bài học. Mathz chuyển mỗi kết quả thành một bức tranh rõ ràng về lớp — điểm mạnh, lỗ hổng, và thứ đáng dạy lại trước tiên.
+              Một con số không đổi kế hoạch bài. Sau mỗi quiz bạn thấy điểm mạnh, lỗ hổng, và thứ cần dạy lại trước.
             </p>
 
             <ul className="mt-8 space-y-6">
               {POINTS.map((point) => (
-                <li key={point.id} className="border-l-2 border-border pl-4">
+                <li key={point.id} className="pl-0">
                   <h3 className="text-[15px] font-semibold text-foreground">
                     {point.title}
                   </h3>
@@ -54,7 +51,7 @@ export function InsightsSection() {
             </ul>
 
             <LinkButton
-              href="#cta"
+              href="/signup/teacher"
               variant="outline"
               className="mt-8 h-10 px-4"
             >

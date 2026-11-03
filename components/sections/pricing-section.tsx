@@ -14,9 +14,8 @@ export function PricingSection() {
   return (
     <Section
       id="pricing"
-      eyebrow="Bảng giá"
-      title="Miễn phí cho 1 Lớp • Công bằng cho toàn Trường"
-      description="Mọi gói đều bao gồm chấm điểm tức thì và báo cáo chi tiết. Nâng cấp khi tổ chuyên môn muốn chia sẻ ngân hàng đề và báo cáo AI."
+      title="Miễn phí cho một lớp. Mở rộng khi cả tổ cần."
+      description="Mọi gói đều có chấm tức thì và báo cáo. Nâng cấp khi tổ muốn chia sẻ ngân hàng đề và báo cáo AI."
     >
       <div className="flex justify-center">
         <BillingToggle period={period} onChange={setPeriod} />
@@ -31,7 +30,7 @@ export function PricingSection() {
       </ul>
 
       <p className="mt-8 text-center text-xs text-muted-foreground">
-        Các trường công lập & chính sách được hỗ trợ đặc biệt. Liên hệ để biết thêm.
+        Trường công và chính sách đặc biệt: liên hệ để trao đổi.
       </p>
     </Section>
   )
@@ -45,13 +44,13 @@ interface BillingToggleProps {
 function BillingToggle({ period, onChange }: BillingToggleProps) {
   const options: { id: BillingPeriod; label: string }[] = [
     { id: 'monthly', label: 'Theo tháng' },
-    { id: 'yearly', label: 'Theo năm · Tiết kiệm 20%' },
+    { id: 'yearly', label: 'Theo năm' },
   ]
 
   return (
     <div
       role="radiogroup"
-      aria-label="Billing period"
+      aria-label="Chu kỳ thanh toán"
       className="inline-flex items-center gap-1 rounded-xl border border-border bg-card p-1"
     >
       {options.map((option) => {
@@ -85,21 +84,32 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, period }: PlanCardProps) {
-  const price = period === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
-  const isNumericPrice = plan.id !== 'school'
+  const isYearly = period === 'yearly'
+  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice
+  const isNumericPrice = plan.id !== 'school' && plan.id !== 'starter'
+  // Yearly total must use /năm — never reuse the monthly unit string.
+  const unit = isNumericPrice
+    ? isYearly
+      ? 'VNĐ / giáo viên / năm'
+      : 'VNĐ / giáo viên / tháng'
+    : plan.unit
+  const monthlyEquivalent =
+    isNumericPrice && isYearly && plan.yearlyPrice > 0
+      ? Math.round(plan.yearlyPrice / 12)
+      : null
 
   return (
     <div
       className={cn(
-        'relative flex h-full flex-col rounded-2xl border bg-card p-6 transition-all duration-300',
+        'relative flex h-full flex-col rounded-2xl border bg-card p-6 transition-colors duration-200',
         plan.highlighted
-          ? 'border-accent shadow-[0_20px_50px_-28px_rgba(16,185,129,0.2)]'
-          : 'border-border hover:border-accent/30',
+          ? 'border-foreground/40 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.35)]'
+          : 'border-border hover:border-foreground/20',
       )}
     >
       {plan.highlighted ? (
-        <span className="absolute -top-3 left-6 rounded-full bg-accent px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-accent-foreground">
-          Phổ biến nhất
+        <span className="absolute -top-3 left-6 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-background">
+          Phổ biến
         </span>
       ) : null}
 
@@ -112,21 +122,29 @@ function PlanCard({ plan, period }: PlanCardProps) {
 
       <div className="mt-6">
         {isNumericPrice ? (
-          <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-bold tracking-tight text-foreground">
-              {price.toLocaleString('vi-VN')}
-            </span>
-            <span className="text-xs text-muted-foreground ml-1">{plan.unit}</span>
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold tracking-tight text-foreground">
+                {price.toLocaleString('vi-VN')}
+              </span>
+              <span className="ml-1 text-xs text-muted-foreground">{unit}</span>
+            </div>
+            {monthlyEquivalent !== null ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Tương đương {monthlyEquivalent.toLocaleString('vi-VN')} VNĐ / giáo
+                viên / tháng khi trả theo năm
+              </p>
+            ) : null}
           </div>
         ) : (
           <span className="text-3xl font-semibold tracking-tight text-foreground">
-            {plan.unit}
+            {unit}
           </span>
         )}
       </div>
 
       <LinkButton
-        href="#cta"
+        href="/signup/teacher"
         variant={plan.highlighted ? 'default' : 'outline'}
         className="mt-6 h-10 w-full"
       >
@@ -137,7 +155,7 @@ function PlanCard({ plan, period }: PlanCardProps) {
         {plan.features.map((feature) => (
           <li key={feature} className="flex items-start gap-2.5">
             <Check
-              className="mt-0.5 size-3.5 shrink-0 text-primary"
+              className="mt-0.5 size-3.5 shrink-0 text-foreground/70"
               aria-hidden="true"
             />
             <span className="text-[13px] leading-relaxed text-muted-foreground">

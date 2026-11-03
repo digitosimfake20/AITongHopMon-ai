@@ -48,10 +48,11 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
   if (!open) {
     return (
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
       >
-        <ArrowRightLeft className="size-3.5" />
+        <ArrowRightLeft className="size-3.5" aria-hidden />
         Gửi yêu cầu đổi tên
       </button>
     )
@@ -61,8 +62,13 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950/30">
       <div className="mb-4 flex items-center justify-between">
         <h4 className="font-semibold text-amber-900 dark:text-amber-300">Yêu cầu đổi tên</h4>
-        <button onClick={() => setOpen(false)} className="rounded p-1 hover:bg-amber-100">
-          <X className="size-4 text-amber-700" />
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          aria-label="Đóng yêu cầu đổi tên"
+        >
+          <X className="size-4 text-amber-700" aria-hidden />
         </button>
       </div>
 
@@ -74,14 +80,18 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
         . Hãy chọn tên đúng của bạn bên dưới.
       </p>
 
-      {/* Search + picker */}
       <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        <label htmlFor="name-change-search" className="sr-only">
+          Tìm tên cần đổi sang
+        </label>
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <input
+          id="name-change-search"
+          type="search"
           placeholder="Tìm tên..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-input bg-white py-2 pl-9 pr-4 text-sm dark:bg-slate-900"
+          className="w-full rounded-xl border border-input bg-background py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-zeno"
         />
       </div>
 
@@ -92,38 +102,42 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
             type="button"
             onClick={() => setTarget(e.id === target?.id ? null : e)}
             className={[
-              'flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-all',
+              'flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors',
               target?.id === e.id
-                ? 'border-teal-400 bg-teal-50 font-medium text-teal-700 dark:border-teal-600 dark:bg-teal-950/40 dark:text-teal-300'
-                : 'border-slate-200 bg-white hover:border-teal-300 dark:border-slate-700 dark:bg-slate-800',
+                ? 'border-zeno bg-zeno/10 font-medium text-zeno'
+                : 'border-border bg-card hover:border-zeno/40',
             ].join(' ')}
           >
-            <span className="w-5 shrink-0 text-center text-[10px] text-slate-400">{e.stt}</span>
+            <span className="w-5 shrink-0 text-center text-xs text-muted-foreground">{e.stt}</span>
             <span className="truncate">{e.fullName}</span>
           </button>
         ))}
         {available.length === 0 && (
-          <p className="col-span-2 text-center text-xs text-slate-400">
+          <p className="col-span-2 text-center text-xs text-muted-foreground">
             Không có tên khả dụng
           </p>
         )}
       </div>
 
-      {/* Reason */}
+      <label htmlFor="name-change-reason" className="sr-only">
+        Lý do đổi tên (tùy chọn)
+      </label>
       <textarea
+        id="name-change-reason"
         placeholder="Lý do đổi tên (tùy chọn, ví dụ: bấm nhầm tên bạn khác)"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         rows={2}
-        className="mb-4 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm dark:bg-slate-900"
+        className="mb-4 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zeno"
       />
 
       <button
+        type="button"
         onClick={handleSubmit}
         disabled={!target || isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zeno py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
       >
-        {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />}
+        {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ArrowRightLeft className="size-4" aria-hidden />}
         {target
           ? `Gửi yêu cầu: đổi sang "${target.fullName}"`
           : 'Chọn tên cần đổi sang'}

@@ -1,9 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getVerifiedAuthIdentity } from '@/lib/auth/claims'
 
 const AUTH_PREFIXES = ['/login', '/signup', '/auth']
 const AUTH_COOKIE_HINT = /^(sb-|sb:)/
-const GET_USER_TIMEOUT_MS = 4_000
+const GET_CLAIMS_TIMEOUT_MS = 4_000
+
+function isAuthCallback(pathname: string): boolean {
+  return pathname === '/auth/callback' || pathname.startsWith('/auth/callback/')
+}
 
 function isAuthRoute(pathname: string): boolean {
   return AUTH_PREFIXES.some(
@@ -11,8 +16,13 @@ function isAuthRoute(pathname: string): boolean {
   )
 }
 
+/** Login/signup entry points — redirect away when already signed in (not callback). */
+function isAuthEntryRoute(pathname: string): boolean {
+  return isAuthRoute(pathname) && !isAuthCallback(pathname)
+}
+
 function isPublicRoute(pathname: string): boolean {
-  return pathname === '/' || isAuthRoute(pathname) || pathname.startsWith('/auth/callback')
+  return pathname === '/' || isAuthRoute(pathname)
 }
 
 function hasSupabaseAuthCookie(request: NextRequest): boolean {
@@ -46,21 +56,28 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   }
 }
 
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone()
+  url.pathname = '/login'
+  return NextResponse.redirect(url)
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const hasSessionCookie = hasSupabaseAuthCookie(request)
+  const publicRoute = isPublicRoute(pathname)
 
-  // Public pages without session cookies: skip Auth entirely.
-  if (isPublicRoute(pathname) && !hasSupabaseAuthCookie(request)) {
-    return NextResponse.next({ request })
+  // No session cookie: skip Auth network entirely.
+  if (!hasSessionCookie) {
+    if (publicRoute) return NextResponse.next({ request })
+    return redirectToLogin(request)
   }
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    if (isPublicRoute(pathname)) return NextResponse.next({ request })
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    if (publicRoute) return NextResponse.next({ request })
+    return redirectToLogin(request)
   }
 
   let response = NextResponse.next({ request })
@@ -82,10 +99,13 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  let user: { id: string } | null = null
+  let userId: string | null = null
   try {
-    const result = await withTimeout(supabase.auth.getUser(), GET_USER_TIMEOUT_MS)
-    user = result.data.user
+    const result = await withTimeout(
+      getVerifiedAuthIdentity(supabase),
+      GET_CLAIMS_TIMEOUT_MS,
+    )
+    userId = result.identity?.id ?? null
 
     // Stale / missing refresh token: wipe cookies, never redirect-loop /login → /login
     if (result.error?.code === 'refresh_token_not_found') {
@@ -95,33 +115,27 @@ export async function proxy(request: NextRequest) {
         // ignore
       }
       clearSupabaseCookies(response, request)
-      if (isPublicRoute(pathname)) return response
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      const redirect = NextResponse.redirect(url)
+      if (publicRoute) return response
+      const redirect = redirectToLogin(request)
       clearSupabaseCookies(redirect, request)
       return redirect
     }
   } catch {
     // Timeout / network: treat as logged-out for public routes
-    if (isPublicRoute(pathname)) {
+    if (publicRoute) {
       clearSupabaseCookies(response, request)
       return response
     }
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    const redirect = NextResponse.redirect(url)
+    const redirect = redirectToLogin(request)
     clearSupabaseCookies(redirect, request)
     return redirect
   }
 
-  if (!user && !isPublicRoute(pathname)) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  if (!userId && !publicRoute) {
+    return redirectToLogin(request)
   }
 
-  if (user && isAuthRoute(pathname)) {
+  if (userId && isAuthEntryRoute(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/onboarding'
     return NextResponse.redirect(url)
@@ -141,6 +155,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * Skip static assets and Next internals — Auth only for document/RSC/API navigations.
+     * Public routes without a session cookie still short-circuit inside `proxy`.
+     */
+    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|woff2?|ttf|eot|otf)$).*)',
   ],
 }

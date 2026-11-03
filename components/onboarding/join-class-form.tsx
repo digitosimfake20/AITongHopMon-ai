@@ -87,16 +87,26 @@ export function JoinClassForm({ currentUserId }: JoinClassFormProps) {
     <form onSubmit={handleCodeSubmit} className="rounded-xl border border-dashed border-border bg-card/40 p-6">
       <h3 className="font-semibold text-foreground">Tham gia lớp bằng mã</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Nhập mã 8 ký tự do thầy cô cung cấp
+        Nhập đúng 8 ký tự thầy cô đưa.
       </p>
+      <label htmlFor="join-class-code" className="mt-4 mb-1.5 block text-sm font-medium text-foreground">
+        Mã lớp
+      </label>
       <input
+        id="join-class-code"
         value={code}
         onChange={(e) => setCode(normalizeClassCode(e.target.value).slice(0, 8))}
         placeholder="MATHABCX"
         maxLength={8}
         required
-        className="mt-4 min-h-11 w-full rounded-lg border border-input bg-background px-4 font-mono text-lg tracking-widest uppercase"
+        autoComplete="off"
+        spellCheck={false}
+        aria-describedby="join-class-code-hint"
+        className="min-h-11 w-full rounded-lg border border-input bg-background px-4 font-mono text-lg tracking-widest uppercase"
       />
+      <p id="join-class-code-hint" className="mt-1.5 text-xs text-muted-foreground">
+        8 ký tự, không phân biệt hoa thường.
+      </p>
       <Button
         type="submit"
         disabled={isPending || code.length !== 8}

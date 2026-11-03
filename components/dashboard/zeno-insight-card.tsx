@@ -11,7 +11,7 @@ export function ZenoInsightCard({ insight, updatedAt }: ZenoInsightCardProps) {
       <div className="flex items-center gap-2">
         <Lightbulb className="size-4 text-primary" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">
-          Lời khuyên Zeno AI
+          Lời khuyên từ Zeno
         </h2>
       </div>
       <div className="mt-4 flex-1 rounded-xl border border-primary/25 bg-accent/60 p-4">

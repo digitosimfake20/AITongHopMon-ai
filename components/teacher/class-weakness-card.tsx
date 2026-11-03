@@ -105,7 +105,7 @@ export function ClassWeaknessCard({ weaknesses }: ClassWeaknessCardProps) {
       <div className="flex items-center gap-2">
         <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">
-          Bản đồ Lỗ hổng Kiến thức Cả lớp
+          Lỗ hổng kiến thức cả lớp
         </h2>
       </div>
 

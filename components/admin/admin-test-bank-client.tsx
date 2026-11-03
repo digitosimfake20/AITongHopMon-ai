@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import {
-  FileJson, Loader2, Upload, Trash2, Layers, Sparkles, Clock, Pencil, X, Terminal,
+  FileJson, Loader2, Upload, Trash2, Layers, Sparkles, Clock, Pencil, X,
 } from 'lucide-react'
 import {
   publishSystemTestAction,
@@ -333,46 +333,46 @@ export function AdminTestBankClient({
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-10">
       <div>
-        <h1 className="font-mono text-2xl font-bold tracking-tight">
-          <span className="text-cyan-500">$</span> ngân-hàng-đề
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Ngân hàng đề hệ thống
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Dán JSON → chỉnh sửa câu hỏi trực tiếp → đăng. Lỗi JSON hiển thị ngay khi parse.
+          Dán JSON, chỉnh câu hỏi, rồi đăng. Lỗi parse hiện ngay dưới ô nhập.
         </p>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-700/30 pb-1 dark:border-slate-600/40">
+      <div className="flex gap-2 border-b border-border pb-1">
         <button
           type="button"
           onClick={() => setTab('single')}
-          className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 font-mono text-sm font-medium ${
+          className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 text-sm font-medium ${
             tab === 'single'
-              ? 'border-b-2 border-cyan-500 text-cyan-600 dark:text-cyan-400'
+              ? 'border-b-2 border-cyan-500 text-cyan-700 dark:text-cyan-400'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <FileJson className="size-4" />
-          single.test
+          Đề đơn
         </button>
         <button
           type="button"
           onClick={() => setTab('group')}
-          className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 font-mono text-sm font-medium ${
+          className={`flex items-center gap-1.5 rounded-t-lg px-4 py-2 text-sm font-medium ${
             tab === 'group'
-              ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              ? 'border-b-2 border-emerald-500 text-emerald-700 dark:text-emerald-400'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Terminal className="size-4" />
-          adaptive.group
+          <Layers className="size-4" />
+          Cụm phân hóa
         </button>
       </div>
 
       {tab === 'single' ? (
-        <section className="space-y-4 rounded-2xl border border-slate-700/30 bg-slate-950/20 p-6 dark:bg-slate-900/40">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <FileJson className="size-4 text-cyan-500" />
-            <span className="font-mono text-sm">// publish single test</span>
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <FileJson className="size-4 text-cyan-600 dark:text-cyan-400" />
+            Đăng đề đơn
           </h2>
           <JsonImportEditor
             label="Import & chỉnh sửa đề"
@@ -392,19 +392,17 @@ export function AdminTestBankClient({
           </Button>
         </section>
       ) : (
-        <section className="space-y-5 rounded-2xl border border-slate-700/40 bg-slate-950/30 p-6 dark:bg-slate-900/50">
+        <section className="space-y-5 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <Layers className="size-4 text-emerald-500" />
-              <span className="font-mono text-sm">
-                {isEditing ? '// edit adaptive.group' : '// create adaptive.group'}
-              </span>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Layers className="size-4 text-emerald-600 dark:text-emerald-400" />
+              {isEditing ? 'Sửa cụm đề phân hóa' : 'Tạo cụm đề phân hóa'}
             </h2>
             {isEditing && (
               <button
                 type="button"
                 onClick={cancelGroupEdit}
-                className="flex items-center gap-1 rounded-lg border border-slate-600/50 px-3 py-1.5 font-mono text-xs text-muted-foreground hover:bg-slate-800/50"
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
               >
                 <X className="size-3.5" />
                 Hủy sửa
@@ -413,50 +411,63 @@ export function AdminTestBankClient({
           </div>
 
           {isEditing && editingAssignedCount > 0 && (
-            <p className="rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 py-2 font-mono text-xs text-amber-400">
-              // assigned×{editingAssignedCount} — chỉnh sửa ngân hàng; lớp đang làm giữ bản đã giao
+            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/30 dark:text-amber-300">
+              Đã giao {editingAssignedCount} lớp — thay đổi áp dụng cho lần giao mới; lớp đang làm giữ bản cũ.
             </p>
           )}
 
-          <div className="grid gap-3 rounded-xl border border-slate-700/30 bg-slate-900/40 p-4 font-mono text-sm sm:grid-cols-2">
+          <div className="grid gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs text-cyan-500/80">title</label>
+              <label htmlFor="admin-group-title" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Tiêu đề
+              </label>
               <input
+                id="admin-group-title"
                 value={groupTitle}
                 onChange={(e) => setGroupTitle(e.target.value)}
-                className="min-h-10 w-full rounded-lg border border-slate-600/50 bg-slate-950/60 px-3 text-sm text-foreground"
+                className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
                 placeholder="Kiểm tra Phân thức đại số"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-cyan-500/80">topic</label>
+              <label htmlFor="admin-group-topic" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Chủ đề
+              </label>
               <input
+                id="admin-group-topic"
                 value={groupTopic}
                 onChange={(e) => setGroupTopic(e.target.value)}
-                className="min-h-10 w-full rounded-lg border border-slate-600/50 bg-slate-950/60 px-3 text-sm"
+                className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs text-cyan-500/80">
-                <Clock className="size-3.5" />
-                durationMinutes (cả 3 tier)
+              <label
+                htmlFor="admin-group-duration"
+                className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+              >
+                <Clock className="size-3.5" aria-hidden />
+                Thời gian (phút, cả 3 mức)
               </label>
               <input
+                id="admin-group-duration"
                 type="number"
                 min={1}
                 value={groupDurationMinutes}
                 onChange={(e) =>
                   setGroupDurationMinutes(Math.max(1, Number(e.target.value) || 1))
                 }
-                className="min-h-10 w-full rounded-lg border border-slate-600/50 bg-slate-950/60 px-3 text-sm"
+                className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-cyan-500/80">subject</label>
+              <label htmlFor="admin-group-subject" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Môn
+              </label>
               <select
+                id="admin-group-subject"
                 value={groupSubject}
                 onChange={(e) => setGroupSubject(e.target.value)}
-                className="min-h-10 w-full rounded-lg border border-slate-600/50 bg-slate-950/60 px-3 text-sm"
+                className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               >
                 {SYSTEM_SUBJECTS.map((s) => (
                   <option key={s} value={s}>{s}</option>
@@ -464,19 +475,25 @@ export function AdminTestBankClient({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-cyan-500/80">grade</label>
+              <label htmlFor="admin-group-grade" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Khối
+              </label>
               <input
+                id="admin-group-grade"
                 value={groupGrade}
                 onChange={(e) => setGroupGrade(e.target.value)}
-                className="min-h-10 w-full rounded-lg border border-slate-600/50 bg-slate-950/60 px-3 text-sm"
+                className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs text-cyan-500/80">description?</label>
+              <label htmlFor="admin-group-description" className="mb-1 block text-xs font-medium text-muted-foreground">
+                Mô tả (tuỳ chọn)
+              </label>
               <input
+                id="admin-group-description"
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
-                className="min-h-10 w-full rounded-lg border border-slate-600/50 bg-slate-950/60 px-3 text-sm"
+                className="min-h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
           </div>
@@ -489,12 +506,12 @@ export function AdminTestBankClient({
                   key={tier}
                   type="button"
                   onClick={() => setActiveTier(tier)}
-                  className={`rounded-md px-3 py-1.5 font-mono text-xs font-medium transition-colors ${
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                     activeTier === tier
                       ? TIER_ACTIVE[tier]
                       : done
-                        ? 'border border-emerald-500/40 bg-emerald-950/30 text-emerald-400'
-                        : 'border border-slate-600/50 bg-slate-900/50 text-muted-foreground'
+                        ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/30 dark:text-emerald-400'
+                        : 'border border-border bg-muted/40 text-muted-foreground'
                   }`}
                 >
                   {TIER_LABELS[tier]}
@@ -520,8 +537,8 @@ export function AdminTestBankClient({
             </div>
           ))}
 
-          <p className="font-mono text-xs text-muted-foreground">
-            {'// '}Mỗi tier: dán JSON → parse → chỉnh câu. duration={groupDurationMinutes}m áp dụng cả 3.
+          <p className="text-xs text-muted-foreground">
+            Mỗi mức (EASY / MEDIUM / HARD): dán JSON, phân tích, rồi chỉnh câu. Thời gian {groupDurationMinutes} phút áp dụng cả 3 mức.
           </p>
 
           {isEditing ? (
@@ -549,25 +566,27 @@ export function AdminTestBankClient({
       )}
 
       <section className="space-y-3">
-        <h2 className="font-mono text-sm font-semibold text-muted-foreground">
-          {tab === 'single' ? `// tests[${filtered.length}]` : `// groups[${filteredGroups.length}]`}
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          {tab === 'single'
+            ? `Đề đơn đã đăng (${filtered.length})`
+            : `Cụm phân hóa đã đăng (${filteredGroups.length})`}
         </h2>
         {tab === 'single' ? (
           filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-600/40 p-10 text-center font-mono text-sm text-muted-foreground">
-              empty array
+            <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+              Chưa có đề đơn nào.
             </div>
           ) : (
             <ul className="space-y-2">
               {filtered.map((t) => (
-                <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-700/30 bg-slate-900/30 px-4 py-3">
+                <li key={t.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
                   <div>
-                    <p className="font-medium">{t.title}</p>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {t.subject} · grade {t.grade} · {t.durationMinutes}m · {t.questionCount} q
+                    <p className="font-medium text-card-foreground">{t.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.subject} · Khối {t.grade} · {t.durationMinutes} phút · {t.questionCount} câu
                     </p>
                   </div>
-                  <button type="button" disabled={isPending} onClick={() => handleDelete(t.id)} className="rounded-lg p-2 text-rose-500 hover:bg-rose-950/30">
+                  <button type="button" disabled={isPending} onClick={() => handleDelete(t.id)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30" aria-label="Xóa đề">
                     <Trash2 className="size-4" />
                   </button>
                 </li>
@@ -575,24 +594,26 @@ export function AdminTestBankClient({
             </ul>
           )
         ) : filteredGroups.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-600/40 p-10 text-center font-mono text-sm text-muted-foreground">
-            empty array
+          <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+            Chưa có cụm phân hóa nào.
           </div>
         ) : (
           <ul className="space-y-2">
             {filteredGroups.map((g) => (
-              <li key={g.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-700/40 bg-slate-900/30 px-4 py-3">
+              <li key={g.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{g.title}</p>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {g.subject} · grade {g.grade}
+                  <p className="font-medium text-card-foreground">{g.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {g.subject} · Khối {g.grade}
                     {g.topic && ` · ${g.topic}`}
-                    {g.durationMinutes > 0 && ` · ${g.durationMinutes}m`}
+                    {g.durationMinutes > 0 && ` · ${g.durationMinutes} phút`}
                   </p>
-                  <p className="mt-0.5 font-mono text-xs text-cyan-500/90">
+                  <p className="mt-0.5 font-mono text-xs tabular-nums text-cyan-700 dark:text-cyan-400">
                     EASY {g.easyQuestionCount} · MEDIUM {g.mediumQuestionCount} · HARD {g.hardQuestionCount}
                     {g.assignedClassCount > 0 && (
-                      <span className="ml-2 text-amber-500/90">· assigned×{g.assignedClassCount}</span>
+                      <span className="ml-2 text-amber-700 dark:text-amber-400">
+                        · Đã giao {g.assignedClassCount} lớp
+                      </span>
                     )}
                   </p>
                 </div>
@@ -601,8 +622,9 @@ export function AdminTestBankClient({
                     type="button"
                     disabled={isPending || loadingEditId === g.id}
                     title="Sửa cụm đề"
+                    aria-label="Sửa cụm đề"
                     onClick={() => handleStartEditGroup(g.id)}
-                    className="rounded-lg p-2 text-cyan-500 hover:bg-cyan-950/30 disabled:opacity-40"
+                    className="rounded-lg p-2 text-cyan-700 hover:bg-cyan-50 disabled:opacity-40 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
                   >
                     {loadingEditId === g.id ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -610,7 +632,7 @@ export function AdminTestBankClient({
                       <Pencil className="size-4" />
                     )}
                   </button>
-                  <button type="button" disabled={isPending} onClick={() => handleDeleteGroup(g.id)} className="rounded-lg p-2 text-rose-500 hover:bg-rose-950/30">
+                  <button type="button" disabled={isPending} onClick={() => handleDeleteGroup(g.id)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30" aria-label="Xóa cụm đề">
                     <Trash2 className="size-4" />
                   </button>
                 </div>

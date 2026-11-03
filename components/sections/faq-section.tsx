@@ -11,9 +11,8 @@ export function FaqSection() {
   return (
     <Section
       id="faq"
-      eyebrow="FAQ"
-      title="Câu hỏi thường gặp từ trường học"
-      description="Nếu câu hỏi của bạn không có ở đây, đội ngũ chúng tôi sẽ trả lời email trong vòng một ngày."
+      title="Câu hỏi thường gặp"
+      description="Chưa thấy câu trả lời? Đăng ký giáo viên để được hỗ trợ khi thiết lập lớp."
     >
       <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card px-5 py-2 sm:px-6">
         <Accordion multiple={false}>

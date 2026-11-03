@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Brain, Copy, Check, FileText, Loader2, X, HelpCircle, BarChart2 } from 'lucide-react'
+import { Brain, Copy, Check, FileText, Loader2, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import {
   generateStudentFeedbackAction,
   generatePersonalizedQuizAction,
@@ -18,41 +19,6 @@ interface StudentDetailActionsProps {
   avgScore: number
   weakTopics: string[]
   behaviorSignals: string[]
-}
-
-// ---------------------------------------------------------------------------
-// Modal shell
-// ---------------------------------------------------------------------------
-
-function Modal({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean
-  onClose: () => void
-  title: string
-  children: React.ReactNode
-}) {
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
-      <div className="relative mt-16 w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="font-semibold text-foreground">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1 text-muted-foreground hover:bg-secondary"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -99,8 +65,8 @@ function FeedbackModalContent({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        AI sẽ soạn một tin nhắn nhẹ nhàng, xây dựng để gửi cho phụ huynh hoặc học sinh về tình
-        hình học tập của <strong>{studentName}</strong>.
+        Soạn tin gửi phụ huynh hoặc học sinh về tình hình học tập của{' '}
+        <strong>{studentName}</strong>.
       </p>
 
       {!message && !loading && (
@@ -171,9 +137,11 @@ function QuizModalContent({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        AI sẽ tạo <strong>5 câu hỏi</strong> nhắm thẳng vào các chủ đề yếu của{' '}
-        <strong>{studentName}</strong>:{' '}
-        <span className="text-foreground">{weakTopics.slice(0, 3).join(', ')}{weakTopics.length > 3 ? '...' : ''}</span>
+        Tạo <strong>5 câu</strong> theo chủ đề yếu của <strong>{studentName}</strong>:{' '}
+        <span className="text-foreground">
+          {weakTopics.slice(0, 3).join(', ')}
+          {weakTopics.length > 3 ? '…' : ''}
+        </span>
       </p>
 
       {!questions && !loading && (
@@ -278,14 +246,16 @@ export function StudentDetailActions({
           onClick={() => setQuizOpen(true)}
         >
           <HelpCircle className="size-4" />
-          Tạo bài tập phụ đạo riêng (1-click)
+          Tạo bài phụ đạo riêng
         </Button>
       </div>
 
-      <Modal
+      <AccessibleDialog
         open={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
         title="Soạn nhận xét gửi Phụ huynh / Học sinh"
+        className="items-start overflow-y-auto backdrop-blur-sm"
+        panelClassName="mt-16 max-w-2xl rounded-2xl border-border bg-card shadow-2xl"
       >
         <FeedbackModalContent
           studentName={studentName}
@@ -293,15 +263,17 @@ export function StudentDetailActions({
           weakTopics={weakTopics}
           behaviorSignals={behaviorSignals}
         />
-      </Modal>
+      </AccessibleDialog>
 
-      <Modal
+      <AccessibleDialog
         open={quizOpen}
         onClose={() => setQuizOpen(false)}
-        title="Bài tập phụ đạo cá nhân hóa (AI)"
+        title="Bài tập phụ đạo"
+        className="items-start overflow-y-auto backdrop-blur-sm"
+        panelClassName="mt-16 max-w-2xl rounded-2xl border-border bg-card shadow-2xl"
       >
         <QuizModalContent studentName={studentName} weakTopics={weakTopics} />
-      </Modal>
+      </AccessibleDialog>
     </>
   )
 }

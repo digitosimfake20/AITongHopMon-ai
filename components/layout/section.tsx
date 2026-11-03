@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils'
 
 interface SectionProps {
   id?: string
-  eyebrow?: string
   title: string
   description?: string
   align?: 'center' | 'left'
@@ -13,7 +12,6 @@ interface SectionProps {
 
 export function Section({
   id,
-  eyebrow,
   title,
   description,
   align = 'center',
@@ -34,12 +32,7 @@ export function Section({
           align === 'center' && 'mx-auto text-center',
         )}
       >
-        {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {title}
         </h2>
         {description ? (

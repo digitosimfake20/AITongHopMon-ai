@@ -5,9 +5,8 @@ import type { Testimonial } from '@/lib/types'
 export function TestimonialsSection() {
   return (
     <Section
-      eyebrow="From the staffroom"
-      title="Teachers keep telling us the same thing"
-      description="Less time marking, more time teaching — and a much clearer picture of what the class needs."
+      title="Giáo viên nói gì sau một kỳ"
+      description="Ít giờ chấm bài hơn. Rõ hơn chỗ lớp còn hổng."
     >
       <ul className="grid gap-4 md:grid-cols-3">
         {TESTIMONIALS.map((testimonial) => (
@@ -26,7 +25,7 @@ interface TestimonialCardProps {
 
 function TestimonialCard({ testimonial }: TestimonialCardProps) {
   return (
-    <figure className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 transition-colors duration-300 hover:border-primary/30">
+    <figure className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 transition-colors duration-200 hover:border-foreground/20">
       <blockquote className="text-[14px] leading-relaxed text-card-foreground">
         &ldquo;{testimonial.quote}&rdquo;
       </blockquote>

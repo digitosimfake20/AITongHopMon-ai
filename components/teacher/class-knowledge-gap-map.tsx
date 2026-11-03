@@ -14,7 +14,6 @@ import {
   Target,
   TrendingUp,
   Users,
-  X,
   Zap,
 } from 'lucide-react'
 import { generateRemedialSuggestionAction, type RemedialSuggestion } from '@/app/actions/teacher-ai'
@@ -28,6 +27,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import {
   Card,
   CardContent,
@@ -50,31 +50,28 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
   const [selectedGap, setSelectedGap] = useState<CriticalGap | null>(null)
   const [expandedTier, setExpandedTier] = useState<StudentTierGroup['id'] | null>(null)
 
-  const headerTitle = `BÁO CÁO LỖ HỔNG KIẾN THỨC — LỚP ${data.className.toUpperCase()}`
+  const headerTitle = `Lỗ hổng kiến thức — Lớp ${data.className}`
 
   return (
     <div className="space-y-8 pb-8">
       {/* Header */}
-      <header className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-cyan-50/40 p-6 dark:border-slate-700/60 dark:from-slate-900 dark:via-slate-900 dark:to-cyan-950/20">
+      <header className="rounded-2xl border border-border bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-cyan-100 dark:bg-cyan-950/60">
               <Target className="size-5 text-cyan-700 dark:text-cyan-400" />
             </div>
             <div>
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
-                Class Knowledge Gap Map
-              </p>
-              <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
+              <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                 {headerTitle}
               </h1>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {data.subject} · Chủ đề trọng tâm:{' '}
-                <span className="font-medium text-slate-700 dark:text-slate-300">
+                <span className="font-medium text-foreground">
                   {data.chapterHint}
                 </span>
               </p>
-              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
                 {data.stats.aggregationNote}
               </p>
             </div>
@@ -140,8 +137,8 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
         <section>
           <SectionHeading
             icon={<BookOpen className="size-4" />}
-            title="Tổng quan theo cụm kiến thức"
-            subtitle="Nhóm chủ đề theo Đại số, Hình học… để dễ theo dõi"
+            title="Theo cụm kiến thức"
+            subtitle="Đại số, Hình học và các nhóm chủ đề liên quan"
           />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.topicClusters.map((cluster) => (
@@ -175,11 +172,11 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
       <section>
         <SectionHeading
           icon={<TrendingUp className="size-4" />}
-          title="Tỷ lệ câu đúng theo chủ đề (mọi lượt làm)"
-          subtitle="Không phải BKT trên hồ sơ học sinh — chỉ câu tự chấm, không gồm ESSAY"
+          title="Tỷ lệ câu đúng theo chủ đề"
+          subtitle="Mọi lượt làm, chỉ câu tự chấm (không gồm ESSAY). Không phải điểm BKT trên hồ sơ."
         />
         {data.topicMastery.length === 0 ? (
-          <EmptyState message="Chưa có dữ liệu bài làm. Giao bài kiểm tra để lập bản đồ lỗ hổng." />
+          <EmptyState message="Chưa có bài làm. Giao bài kiểm tra để lập bản đồ lỗ hổng." />
         ) : (
           <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
             <div className="overflow-x-auto">
@@ -244,10 +241,10 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
         <SectionHeading
           icon={<AlertTriangle className="size-4 text-rose-500" />}
           title="Lỗ hổng cấp thiết"
-          subtitle="Theo từng câu hỏi (cùng chủ đề có thể có nhiều mục) — % = HS từng sai ≥1 lần"
+          subtitle="Theo từng câu hỏi — % là học sinh từng sai ≥1 lần"
         />
         {data.criticalGaps.length === 0 ? (
-          <EmptyState message="Chưa phát hiện lỗ hổng cấp thiết. Lớp đang làm bài ổn định!" />
+          <EmptyState message="Chưa có lỗ hổng cấp thiết trên dữ liệu hiện tại." />
         ) : (
           <div className="mt-4 space-y-4">
             {data.criticalGaps.map((gap, idx) => (
@@ -266,8 +263,8 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
       <section>
         <SectionHeading
           icon={<Sparkles className="size-4 text-teal-500" />}
-          title="Phân nhóm & đề xuất AI"
-          subtitle="Giao bài phù hợp từng nhóm — kèm điểm mạnh từng HS"
+          title="Phân nhóm & đề xuất"
+          subtitle="Giao bài theo nhóm; xem điểm mạnh từng học sinh"
         />
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           {data.tierGroups.map((tier) => (
@@ -487,10 +484,10 @@ function TierCard({
 
   const actionLabel =
     tier.id === 'excellent'
-      ? 'Giao cụm đề HARD'
+      ? 'Giao cụm đề Khó'
       : tier.id === 'good'
-        ? 'Giao bài luyện MEDIUM'
-        : 'Kích hoạt Zeno AI ôn tập'
+        ? 'Giao bài luyện Trung bình'
+        : 'Tạo gợi ý ôn tập'
 
   return (
     <Card className={cn('overflow-hidden', tierStyles.border, tierStyles.bg)}>
@@ -586,39 +583,30 @@ function TierCard({
 
 function StudentListModal({ gap, onClose }: { gap: CriticalGap; onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="gap-modal-title"
+    <AccessibleDialog
+      open
+      onClose={onClose}
+      title={`HS bị hổng — ${gap.topic}`}
+      className="items-end sm:items-center"
+      panelClassName="max-h-[85vh] max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-border"
     >
-      <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-border">
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <div>
-            <h3 id="gap-modal-title" className="font-semibold">
-              HS bị hổng — {gap.topic}
-            </h3>
-            <p className="text-xs text-muted-foreground">{gap.affectedStudents.length} học sinh</p>
-          </div>
-          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Đóng">
-            <X className="size-4" />
-          </Button>
-        </div>
-        <ul className="max-h-[60vh] overflow-y-auto p-4">
-          {gap.affectedStudents.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center gap-3 border-b border-border/50 py-2.5 last:border-0"
-            >
-              <Avatar size="sm">
-                <AvatarFallback className="text-[10px]">{s.initials}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium">{s.fullName}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+        {gap.affectedStudents.length} học sinh
+      </p>
+      <ul className="max-h-[60vh] overflow-y-auto">
+        {gap.affectedStudents.map((s) => (
+          <li
+            key={s.id}
+            className="flex items-center gap-3 border-b border-border/50 py-2.5 last:border-0"
+          >
+            <Avatar size="sm">
+              <AvatarFallback className="text-[10px]">{s.initials}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium">{s.fullName}</span>
+          </li>
+        ))}
+      </ul>
+    </AccessibleDialog>
   )
 }
 

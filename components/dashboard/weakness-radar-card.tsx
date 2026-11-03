@@ -19,14 +19,14 @@ export function WeaknessRadarCard({ topics }: WeaknessRadarCardProps) {
       <div className="flex items-center gap-2">
         <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">
-          Lỗ hổng cần ôn tập gấp
+          Chủ đề cần ôn
         </h2>
       </div>
 
       <ul className="mt-5 space-y-5">
         {topics.length === 0 ? (
           <li className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-            Chưa có dữ liệu luyện tập. Làm bài kiểm tra hoặc chat với Zeno để nhận phân tích.
+            Chưa có dữ liệu luyện tập. Làm bài kiểm tra để Zeno chỉ ra chủ đề yếu.
           </li>
         ) : (
           topics.map((topic) => (
@@ -35,13 +35,20 @@ export function WeaknessRadarCard({ topics }: WeaknessRadarCardProps) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="font-medium text-card-foreground">{topic.label}</span>
-                    <span className="font-mono tabular-nums text-muted-foreground">
+                    <span className="tabular-nums text-muted-foreground">
                       {topic.accuracy}%
                     </span>
                   </div>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary"
+                    role="progressbar"
+                    aria-valuenow={topic.accuracy}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={topic.label}
+                  >
                     <div
-                      className={cn('h-full rounded-full transition-all', BAR_COLORS[topic.severity])}
+                      className={cn('h-full rounded-full', BAR_COLORS[topic.severity])}
                       style={{ width: `${topic.accuracy}%` }}
                     />
                   </div>
@@ -52,7 +59,7 @@ export function WeaknessRadarCard({ topics }: WeaknessRadarCardProps) {
                   nativeButton={false}
                   render={<Link href={`/adaptive?topic=${topic.id}`} />}
                 >
-                  Vá lỗi này
+                  Luyện chủ đề này
                 </Button>
               </div>
             </li>

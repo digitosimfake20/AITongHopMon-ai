@@ -13,7 +13,7 @@ export function AssignedQuizzesTable({ quizzes }: AssignedQuizzesTableProps) {
       <div className="flex items-center gap-2">
         <ClipboardList className="size-4 text-muted-foreground" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">
-          Bài test / Quiz đã giao
+          Bài đã giao
         </h2>
       </div>
 

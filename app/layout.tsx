@@ -1,14 +1,21 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist_Mono, Inter } from 'next/font/google'
+import { Fraunces, Geist_Mono, Inter } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { Toaster } from 'sonner'
+import { SkipLink } from '@/components/a11y/skip-link'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import './globals.css'
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'vietnamese'],
   variable: '--font-inter',
+  display: 'swap',
+})
+
+const fraunces = Fraunces({
+  subsets: ['latin', 'vietnamese'],
+  variable: '--font-fraunces',
   display: 'swap',
 })
 
@@ -19,9 +26,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Mathz — Bài kiểm tra AI và phân tích lớp học tức thì',
+  title: 'Mathz | Quiz Toán AI và báo cáo lớp tức thì',
   description:
-    'Mathz giúp giáo viên soạn bài kiểm tra Toán trong vài phút, chấm điểm tự động, và tạo báo cáo AI về những gì lớp thực sự hiểu.',
+    'Mathz giúp giáo viên soạn quiz Toán nhanh, chấm tự động, và đọc báo cáo AI về chỗ lớp còn hổng.',
   keywords: [
     'AI quiz platform',
     'formative assessment',
@@ -30,11 +37,10 @@ export const metadata: Metadata = {
     'school software',
     'teacher tools',
   ],
-  generator: 'v0.app',
   openGraph: {
-    title: 'Mathz — Bài kiểm tra AI và phân tích lớp học tức thì',
+    title: 'Mathz | Quiz Toán AI và báo cáo lớp tức thì',
     description:
-      'Soạn bài kiểm tra Toán trong vài phút, chấm điểm tự động, và nhận báo cáo AI về lớp học.',
+      'Soạn quiz Toán nhanh, chấm tự động, nhận báo cáo AI về lớp học.',
     type: 'website',
   },
   icons: {
@@ -50,8 +56,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fbfcfd' },
-    { media: '(prefers-color-scheme: dark)', color: '#101318' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 }
 
@@ -60,12 +66,13 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} ${geistMono.variable} bg-background`}
+      className={`${inter.variable} ${fraunces.variable} ${geistMono.variable} bg-background`}
     >
       <body className="bg-background font-sans antialiased">
         <ThemeProvider>
+          <SkipLink />
           {children}
           <Toaster richColors closeButton position="top-center" />
         </ThemeProvider>

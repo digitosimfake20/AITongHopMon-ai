@@ -6,6 +6,7 @@
 
 @theme inline {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, 'Times New Roman', serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --color-sidebar-ring: var(--sidebar-ring);
@@ -41,6 +42,8 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-brand: var(--brand);
+  --color-zeno: var(--zeno);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -86,6 +89,9 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #000000;
+  /* Mathz mark (mono) + single Zeno AI accent — AA-safer than teal-600 on white */
+  --brand: #000000;
+  --zeno: #0f766e;
 }
 
 .dark {
@@ -123,6 +129,8 @@
   --sidebar-accent-foreground: #000000;
   --sidebar-border: #333333;
   --sidebar-ring: #ffffff;
+  --brand: #ffffff;
+  --zeno: #2dd4bf;
 }
 
 @layer base {
@@ -134,6 +142,14 @@
   }
   html {
     scroll-behavior: smooth;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--foreground) 18%, transparent);
+    color: var(--foreground);
+  }
+  input,
+  textarea {
+    caret-color: var(--foreground);
   }
 }
 

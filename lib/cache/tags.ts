@@ -25,11 +25,15 @@ export const CacheTags = {
 /** TTLs in seconds — catalog changes rarely; dashboards stay fresher. */
 export const CacheTTL = {
   testBank: 300,
-  teacherDash: 90,
-  packages: 60,
-  adaptive: 60,
-  classGap: 180,
-  quizBank: 45,
+  /** Was 90s; longer soft TTL — submit still busts via submissions tag. */
+  teacherDash: 180,
+  packages: 90,
+  adaptive: 90,
+  /** Was 180s; gap map is expensive — prefer tag bust over short soft expiry. */
+  classGap: 300,
+  quizBank: 60,
   studentDash: 45,
+  /** Chrome mastery/streak — longer TTL; busted with studentDash + knowledge on submit. */
+  studentShell: 120,
   knowledge: 90,
 } as const

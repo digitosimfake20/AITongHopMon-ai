@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, useTransition } from 'react'
+import { useId, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import {
-  BookOpen, Clock, Layers, Loader2, Send, X, Filter, Sparkles, BarChart3,
+  BookOpen, Clock, Layers, Loader2, Send, Filter, Sparkles, BarChart3,
 } from 'lucide-react'
 import { assignClassTestAction } from '@/app/actions/system-test'
 import type { SystemTestSummary } from '@/app/actions/system-test'
@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/test-group'
 import { SYSTEM_SUBJECTS } from '@/lib/validations/system-test'
 import { Button } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import { withClassParam } from '@/lib/class/with-class-param'
 
 interface TeacherClassOption {
@@ -167,16 +168,16 @@ export function TeacherTestBankClient({
       <div>
         <h1 className="text-xl font-bold">Ngân hàng đề hệ thống</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Giao đề đơn hoặc cụm đề phân hóa 3 cấp (2 lượt: TB → Dễ/Khó theo điểm).
+          Giao đề đơn hoặc cụm phân hóa 3 cấp (2 lượt: Lượt 1 Trung bình → Lượt 2 Dễ/Khó theo điểm).
         </p>
       </div>
 
       {/* Active adaptive assignments */}
       {adaptiveAssignments.length > 0 && (
-        <section className="space-y-3 rounded-2xl border border-slate-700/40 bg-slate-900/30 p-5 dark:bg-slate-950/40">
-          <h2 className="flex items-center gap-2 font-mono text-sm font-semibold">
-            <BarChart3 className="size-4 text-cyan-500" />
-            // adaptive.assignments
+        <section className="space-y-3 rounded-2xl border border-border bg-muted/30 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <BarChart3 className="size-4 text-cyan-600 dark:text-cyan-400" />
+            Bài phân hóa đang giao
           </h2>
           <ul className="space-y-2">
             {adaptiveAssignments.map((a) => (
@@ -244,26 +245,26 @@ export function TeacherTestBankClient({
       {/* Adaptive groups */}
       {filteredGroups.length > 0 && (
         <section className="space-y-3">
-          <h2 className="flex items-center gap-2 font-mono text-sm font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
             <Sparkles className="size-4" />
-            adaptive.groups
-            <span className="rounded-full bg-emerald-950/50 px-2 py-0.5 font-mono text-[11px] normal-case text-emerald-400">
-              [{filteredGroups.length}]
+            Cụm đề phân hóa
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+              {filteredGroups.length}
             </span>
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filteredGroups.map((g) => (
-              <article key={g.id} className="flex flex-col gap-3 rounded-2xl border border-slate-700/40 bg-slate-900/30 p-5">
-                <h3 className="font-semibold">{g.title}</h3>
-                <p className="font-mono text-xs text-muted-foreground">
-                  {g.subject} · grade {g.grade}
+              <article key={g.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <h3 className="font-semibold text-card-foreground">{g.title}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {g.subject} · Khối {g.grade}
                   {g.topic && ` · ${g.topic}`}
                 </p>
-                <p className="font-mono text-xs text-cyan-500/90">
-                  EASY {g.easyQuestionCount} · MEDIUM {g.mediumQuestionCount} · HARD {g.hardQuestionCount}
+                <p className="font-mono text-xs tabular-nums text-cyan-700 dark:text-cyan-400">
+                  Dễ {g.easyQuestionCount} · Trung bình {g.mediumQuestionCount} · Khó {g.hardQuestionCount}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  2 rounds: L1 MEDIUM → L2 EASY (&lt;8) or HARD (≥8)
+                  2 lượt: Lượt 1 Trung bình → Lượt 2 Dễ (&lt;8.0) hoặc Khó (≥8.0)
                 </p>
                 <Button
                   type="button"
@@ -336,21 +337,22 @@ export function TeacherTestBankClient({
           onClose={() => setAssigning(null)}
           onConfirm={handleConfirmAssign}
           extra={
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Số lần được làm</label>
-              <div className="flex flex-wrap gap-2">
+            <fieldset>
+              <legend className="mb-1.5 block text-sm font-medium">Số lần được làm</legend>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Số lần được làm">
                 {[{ label: '1 lần', value: 1 }, { label: '3 lần', value: 3 }, { label: 'Không giới hạn', value: -1 }].map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setMaxAttempts(opt.value)}
-                    className={`rounded-lg border px-3 py-2 text-sm ${maxAttempts === opt.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}
+                    aria-pressed={maxAttempts === opt.value}
+                    className={`min-h-11 rounded-lg border px-3 py-2 text-sm ${maxAttempts === opt.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border'}`}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
-            </div>
+            </fieldset>
           }
         />
       )}
@@ -359,7 +361,7 @@ export function TeacherTestBankClient({
       {assigningGroup && (
         <AssignModal
           title={`Giao cụm đề: ${assigningGroup.title}`}
-          subtitle="Học sinh bắt buộc làm 2 lượt (TB → Dễ/Khó)"
+          subtitle="Học sinh bắt buộc làm 2 lượt (Lượt 1 Trung bình → Lượt 2 Dễ/Khó)"
           classId={classId}
           setClassId={setClassId}
           classes={classes}
@@ -375,8 +377,11 @@ export function TeacherTestBankClient({
           extra={
             <div>
               <div>
-                <label className="mb-1.5 block text-sm font-medium">Ngưỡng lên đề Khó (≥)</label>
+                <label htmlFor="assign-pass-threshold" className="mb-1.5 block text-sm font-medium">
+                  Ngưỡng lên đề Khó (≥)
+                </label>
                 <input
+                  id="assign-pass-threshold"
                   type="number"
                   step="0.5"
                   min={0}
@@ -430,51 +435,94 @@ function AssignModal({
   onConfirm: () => void
   extra?: React.ReactNode
 }) {
+  const fieldId = useId()
+  const classFieldId = `${fieldId}-class`
+  const startFieldId = `${fieldId}-start`
+  const endFieldId = `${fieldId}-end`
+  const reviewFieldId = `${fieldId}-review`
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-xl">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h3 className="font-semibold">{title}</h3>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted">
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Lớp học</label>
-            <select value={classId} onChange={(e) => setClassId(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm">
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-              ))}
-            </select>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Mở đề lúc</label>
-              <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm" />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Deadline</label>
-              <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="min-h-11 w-full rounded-lg border px-3 text-sm" />
-            </div>
-          </div>
-          {extra}
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={allowReview} onChange={(e) => setAllowReview(e.target.checked)} className="size-4 rounded" />
-            Cho xem lời giải sau khi nộp
-          </label>
-        </div>
-        <div className="mt-6 flex gap-3">
-          <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={onClose}>Hủy</Button>
-          <Button type="button" className="min-h-11 flex-1 gap-2" disabled={isPending} onClick={onConfirm}>
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+    <AccessibleDialog
+      open
+      onClose={onClose}
+      title={title}
+      className="items-end bg-black/40 sm:items-center"
+      panelClassName="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border bg-card p-6 shadow-xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" className="min-h-11 flex-1" onClick={onClose}>
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            className="min-h-11 flex-1 gap-2"
+            disabled={isPending}
+            onClick={onConfirm}
+            data-dialog-initial-focus
+          >
+            {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
             Xác nhận giao
           </Button>
+        </>
+      }
+    >
+      {subtitle ? <p className="mb-4 -mt-2 text-sm text-muted-foreground">{subtitle}</p> : null}
+      <div className="space-y-4">
+        <div>
+          <label htmlFor={classFieldId} className="mb-1.5 block text-sm font-medium">
+            Lớp học
+          </label>
+          <select
+            id={classFieldId}
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            className="min-h-11 w-full rounded-lg border px-3 text-sm"
+          >
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.code})
+              </option>
+            ))}
+          </select>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor={startFieldId} className="mb-1.5 block text-sm font-medium">
+              Mở đề lúc
+            </label>
+            <input
+              id={startFieldId}
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="min-h-11 w-full rounded-lg border px-3 text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor={endFieldId} className="mb-1.5 block text-sm font-medium">
+              Hạn nộp
+            </label>
+            <input
+              id={endFieldId}
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="min-h-11 w-full rounded-lg border px-3 text-sm"
+            />
+          </div>
+        </div>
+        {extra}
+        <label htmlFor={reviewFieldId} className="flex items-center gap-2 text-sm">
+          <input
+            id={reviewFieldId}
+            type="checkbox"
+            checked={allowReview}
+            onChange={(e) => setAllowReview(e.target.checked)}
+            className="size-4 rounded"
+          />
+          Cho xem lời giải sau khi nộp
+        </label>
       </div>
-    </div>
+    </AccessibleDialog>
   )
 }

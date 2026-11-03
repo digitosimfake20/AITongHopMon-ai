@@ -34,7 +34,7 @@ export function DashboardSidebar({
         </div>
       </div>
 
-      <nav aria-label="Dashboard" className="flex-1 space-y-1 px-3 py-4">
+      <nav aria-label="Điều hướng học sinh" className="flex-1 space-y-1 px-3 py-4">
         {DASHBOARD_NAV.map((item) => {
           const active =
             item.href === '/dashboard'
@@ -46,6 +46,7 @@ export function DashboardSidebar({
             <Link
               key={item.id}
               href={item.href}
+              aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active

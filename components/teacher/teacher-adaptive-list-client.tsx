@@ -27,20 +27,20 @@ export function TeacherAdaptiveListClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-xl font-bold">
-          <Sparkles className="size-5 text-emerald-500" />
-          Tổng hợp bài giao phân hóa
+        <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
+          <Sparkles className="size-5 text-emerald-600 dark:text-emerald-400" />
+          Bài giao phân hóa
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Theo dõi tiến trình 2 lượt làm bài của học sinh (L1 TB → L2 Dễ/Khó).
+          Theo dõi 2 lượt làm bài (Lượt 1 Trung bình → Lượt 2 Dễ/Khó).
         </p>
       </div>
 
       {assignments.length === 0 ? (
-        <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-          Chưa giao cụm đề phân hóa nào.{' '}
+        <div className="rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
+          Chưa giao cụm đề phân hóa.{' '}
           <Link href={withClassParam('/teacher/test-bank', classId)} className="text-primary underline">
-            Giao tại Ngân hàng đề
+            Giao tại ngân hàng đề
           </Link>
         </div>
       ) : (
@@ -48,7 +48,7 @@ export function TeacherAdaptiveListClient({
           {assignments.map((a) => (
             <article
               key={a.classTestId}
-              className="flex flex-col gap-3 rounded-2xl border border-slate-700/40 bg-slate-900/30 p-5"
+              className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm"
             >
               <h2 className="font-semibold">{a.title}</h2>
               <p className="text-xs text-muted-foreground">

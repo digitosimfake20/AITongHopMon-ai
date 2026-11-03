@@ -1,43 +1,32 @@
 import { ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { LinkButton } from '@/components/ui/link-button'
 
 export function CtaSection() {
   return (
     <section id="cta" className="scroll-mt-20 px-4 pb-24 sm:px-6">
       <div className="relative mx-auto w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-card px-6 py-14 text-center sm:px-10 sm:py-16">
-        <div
-          aria-hidden="true"
-          className="grid-lines mask-fade-b pointer-events-none absolute inset-0 opacity-60"
-        />
         <div className="relative">
           <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Sẵn sàng chạy bài kiểm tra tiếp theo trên Mathz?
+            Chạy bài kiểm tra tiếp theo trên Mathz
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-pretty leading-relaxed text-muted-foreground">
-            Miễn phí cho 1 Lớp vĩnh viễn. Sử dụng câu hỏi riêng hoặc để AI soạn — bạn sẽ có kết quả và bản tóm tắt trước khi tiết học kết thúc.
+            Miễn phí cho một lớp. Dùng câu hỏi riêng hoặc để AI soạn. Kết quả và tóm tắt sẵn trước khi hết tiết.
           </p>
-          <form
-            className="mx-auto mt-8 flex w-full max-w-md flex-col gap-2.5 sm:flex-row"
-            action="#"
-          >
-            <label htmlFor="school-email" className="sr-only">
-              Email trường học
-            </label>
-            <input
-              id="school-email"
-              name="email"
-              type="email"
-              required
-              placeholder="tothanhhai@linux.vn"
-              className="h-11 flex-1 rounded-lg border border-input bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors hover:border-foreground/20 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            />
-            <Button type="submit" className="h-11 px-5 text-[15px]">
-              Dùng thử miễn phí
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <LinkButton href="/signup/teacher" className="h-11 px-5 text-[15px]">
+              Đăng ký giáo viên
               <ArrowRight className="size-4" aria-hidden="true" />
-            </Button>
-          </form>
+            </LinkButton>
+            <LinkButton
+              href="/signup/student"
+              variant="outline"
+              className="h-11 px-5 text-[15px]"
+            >
+              Đăng ký học sinh
+            </LinkButton>
+          </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Không cần thẻ tín dụng · Bảo mật dữ liệu theo quy định
+            Không cần thẻ tín dụng · Dữ liệu học đường tách biệt
           </p>
         </div>
       </div>
