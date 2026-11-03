@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePrefersReducedMotion } from '@/components/hero/use-demo-sequence'
 import { cn } from '@/lib/utils'
 
 interface ScoreRingProps {
@@ -19,9 +20,15 @@ export function ScoreRing({
   strokeWidth = 10,
   className,
 }: ScoreRingProps) {
-  const [progress, setProgress] = useState(0)
+  const reducedMotion = usePrefersReducedMotion()
+  const [progress, setProgress] = useState(reducedMotion ? value : 0)
 
   useEffect(() => {
+    if (reducedMotion) {
+      setProgress(value)
+      return
+    }
+
     let frame = 0
     const start = performance.now()
 
@@ -35,7 +42,7 @@ export function ScoreRing({
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [value])
+  }, [value, reducedMotion])
 
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
@@ -45,7 +52,7 @@ export function ScoreRing({
     <div
       className={cn('relative inline-flex items-center justify-center', className)}
       role="img"
-      aria-label={`Score ${value} percent`}
+      aria-label={`Điểm ${value} phần trăm`}
     >
       <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle
@@ -73,7 +80,7 @@ export function ScoreRing({
           {progress}%
         </span>
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Score
+          Điểm
         </span>
       </div>
     </div>

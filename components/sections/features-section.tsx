@@ -7,7 +7,7 @@ export function FeaturesSection() {
     <Section
       id="features"
       title="Đủ cho một bài kiểm tra 15 phút"
-      description="Soạn đề, chấm bài, rồi biết học sinh nào cần gặp riêng."
+      description="Soạn đề và chấm bài, rồi biết học sinh nào cần gặp riêng."
     >
       <ul className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((feature) => (

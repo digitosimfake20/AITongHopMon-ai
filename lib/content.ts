@@ -46,7 +46,7 @@ export const FEATURES: Feature[] = [
     id: 'summaries',
     title: 'Báo cáo AI bằng tiếng Việt',
     description:
-      'Một đoạn sau mỗi quiz: lớp nắm gì, hổng chỗ nào, nên dạy lại gì trước.',
+      'Một đoạn sau mỗi quiz nêu chỗ lớp còn hổng và việc nên dạy lại trước.',
     icon: BrainCircuit,
   },
   {
@@ -200,8 +200,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: 'Quản trị và báo cáo cấp trường.',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    unit: 'Liên hệ',
-    ctaLabel: 'Liên hệ',
+    unit: 'Theo trường',
+    ctaLabel: 'Đăng ký giáo viên',
     features: [
       'Toàn bộ tính năng Tổ bộ môn',
       'Tài khoản email nhà trường',

@@ -61,6 +61,9 @@ export function InsightPanel() {
                   />
                 )}
                 {topic.label}
+                <span className="sr-only">
+                  {topic.status === 'solid' ? 'Vững' : 'Cần theo dõi'}
+                </span>
               </span>
               <span className="font-mono tabular-nums text-muted-foreground">
                 {topic.value}%
