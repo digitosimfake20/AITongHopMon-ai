@@ -21,8 +21,7 @@ export function TeacherAnimation() {
   }, [])
 
   return (
-    <div className="relative aspect-[4/3] w-full min-h-[320px] overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-background to-card text-left">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+    <div className="relative aspect-[4/3] w-full min-h-[320px] overflow-hidden rounded-xl border border-border bg-card text-left">
 
       {stage === 'teaching' && (
         <div className="absolute inset-0 flex items-center justify-center p-6">

@@ -7,17 +7,8 @@ const PROOF_POINTS = ['Miễn phí cho 1 lớp', 'Không cần thẻ tín dụng
 
 export function HeroSection() {
   return (
-    <section id="top" className="relative overflow-hidden border-b border-border">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-40 grid-lines"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[22rem] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--zeno)_10%,transparent),transparent_68%)]"
-      />
-
-      <div className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-14 sm:px-6 sm:pt-20">
+    <section id="top" className="border-b border-border">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-display text-balance text-5xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl md:text-7xl">
             {SITE_NAME}
