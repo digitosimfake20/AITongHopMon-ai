@@ -20,7 +20,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   return (
     <button
       type="button"
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={isDark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className={cn(
         'inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground',

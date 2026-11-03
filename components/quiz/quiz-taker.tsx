@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, CheckCircle2, Clock, Loader2, Send } from 'lucide-react'
 import { MathText } from '@/components/quiz/math-text'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import { submitQuizAction } from '@/app/actions/quiz-submission'
 import type { QuizTakingData, QuizTakingQuestion } from '@/lib/quiz/quiz-bank-queries'
 import {
@@ -92,14 +93,20 @@ function MCEditor({
   question,
   answer,
   onChange,
+  questionNumber,
 }: {
   question: QuizTakingQuestion
   answer: string | undefined
   onChange: (v: string) => void
+  questionNumber: number
 }) {
   const options = question.options ?? []
   return (
-    <div className="mt-4 space-y-2">
+    <div
+      className="mt-4 space-y-2"
+      role="radiogroup"
+      aria-label={`Câu ${questionNumber} — chọn đáp án`}
+    >
       {options.map((opt, i) => {
         const label = OPTION_LABELS[i]
         const selected = answer === label
@@ -107,6 +114,8 @@ function MCEditor({
           <button
             key={i}
             type="button"
+            role="radio"
+            aria-checked={selected}
             onClick={() => onChange(label)}
             className={cn(
               'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors',
@@ -120,6 +129,7 @@ function MCEditor({
                 'flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold',
                 selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border',
               )}
+              aria-hidden
             >
               {label}
             </span>
@@ -156,12 +166,17 @@ function TFEditor({
             <span className="flex-1 text-sm">
               <MathText text={stmt.content} />
             </span>
-            <div className="flex shrink-0 gap-1 rounded-lg bg-secondary p-1">
+            <div
+              className="flex shrink-0 gap-1 rounded-lg bg-secondary p-1"
+              role="group"
+              aria-label={`Mệnh đề ${stmt.label}`}
+            >
               <button
                 type="button"
+                aria-pressed={val === true}
                 onClick={() => onChange({ ...answer, [stmt.label]: true })}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'min-h-9 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   val === true
                     ? 'bg-green-600 text-white'
                     : 'text-muted-foreground hover:bg-background',
@@ -171,9 +186,10 @@ function TFEditor({
               </button>
               <button
                 type="button"
+                aria-pressed={val === false}
                 onClick={() => onChange({ ...answer, [stmt.label]: false })}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'min-h-9 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   val === false
                     ? 'bg-red-600 text-white'
                     : 'text-muted-foreground hover:bg-background',
@@ -194,11 +210,13 @@ function TextEditor({
   value,
   placeholder,
   onChange,
+  ariaLabel,
 }: {
   multiline: boolean
   value: string
   placeholder: string
   onChange: (v: string) => void
+  ariaLabel: string
 }) {
   if (multiline) {
     return (
@@ -206,6 +224,7 @@ function TextEditor({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={ariaLabel}
         rows={5}
         className="mt-4 w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
       />
@@ -217,6 +236,7 @@ function TextEditor({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
+      aria-label={ariaLabel}
       className="mt-4 w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
     />
   )
@@ -267,6 +287,7 @@ function QuestionCard({
           question={question}
           answer={answer?.value as string | undefined}
           onChange={(v) => onChange('MULTIPLE_CHOICE', v)}
+          questionNumber={index + 1}
         />
       )}
       {question.type === 'TRUE_FALSE_GROUP' && (
@@ -281,6 +302,7 @@ function QuestionCard({
           multiline={false}
           value={(answer?.value as string) ?? ''}
           placeholder="Nhập đáp án..."
+          ariaLabel={`Câu ${index + 1} — đáp án ngắn`}
           onChange={(v) => onChange('SHORT_ANSWER', v)}
         />
       )}
@@ -289,6 +311,7 @@ function QuestionCard({
           multiline
           value={(answer?.value as string) ?? ''}
           placeholder="Viết bài làm tại đây..."
+          ariaLabel={`Câu ${index + 1} — bài làm tự luận`}
           onChange={(v) => onChange('ESSAY', v)}
         />
       )}
@@ -315,23 +338,21 @@ function ConfirmSubmitDialog({
 }) {
   const unanswered = totalCount - answeredCount
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
-        <h2 className="text-lg font-bold text-foreground">Xác nhận nộp bài</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Bạn đã trả lời <strong>{answeredCount}/{totalCount}</strong> câu hỏi.
-          {unanswered > 0 && (
-            <span className="ml-1 text-amber-600">
-              Còn {unanswered} câu chưa làm.
-            </span>
-          )}
-        </p>
-        <div className="mt-5 flex justify-end gap-3">
+    <AccessibleDialog
+      open
+      onClose={onCancel}
+      title="Xác nhận nộp bài"
+      closeOnEscape={!isSubmitting}
+      showCloseButton={!isSubmitting}
+      className="backdrop-blur-sm"
+      panelClassName="max-w-sm rounded-2xl border-border bg-card p-6 shadow-xl"
+      footer={
+        <>
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-50"
           >
             Làm tiếp
           </button>
@@ -339,20 +360,35 @@ function ConfirmSubmitDialog({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            data-dialog-initial-focus
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
-            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            {isSubmitting ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
             {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p className="text-sm text-muted-foreground">
+        Bạn đã trả lời <strong>{answeredCount}/{totalCount}</strong> câu hỏi.
+        {unanswered > 0 && (
+          <span className="ml-1 text-amber-600">
+            Còn {unanswered} câu chưa làm.
+          </span>
+        )}
+      </p>
+    </AccessibleDialog>
   )
 }
 
 function SubmittingOverlay() {
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-background/90 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-background/90 backdrop-blur-sm"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
       <Loader2 className="size-10 animate-spin text-primary" aria-hidden />
       <div className="text-center">
         <p className="text-lg font-semibold text-foreground">Đang chấm và nộp bài...</p>
@@ -512,6 +548,10 @@ export function QuizTaker({ data }: QuizTakerProps) {
           </div>
 
           <div
+            role="timer"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`Thời gian còn lại ${display}`}
             className={cn(
               'flex items-center gap-1.5 rounded-xl border px-3 py-1.5 font-mono text-sm font-bold tabular-nums',
               isWarning
@@ -520,12 +560,20 @@ export function QuizTaker({ data }: QuizTakerProps) {
             )}
           >
             <Clock className={cn('size-3.5', isWarning && 'text-red-600')} aria-hidden />
-            {display}
+            <span aria-hidden>{display}</span>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-secondary">
+        <div
+          className="h-1 bg-secondary"
+          role="progressbar"
+          aria-label="Tiến độ trả lời"
+          aria-valuemin={0}
+          aria-valuemax={data.questions.length}
+          aria-valuenow={answeredCount}
+          aria-valuetext={`${answeredCount} trên ${data.questions.length} câu`}
+        >
           <div
             className="h-full bg-primary transition-all duration-1000"
             style={{ width: `${(answeredCount / data.questions.length) * 100}%` }}
@@ -534,10 +582,13 @@ export function QuizTaker({ data }: QuizTakerProps) {
       </header>
 
       {/* Question list */}
-      <main className="mx-auto max-w-3xl space-y-5 px-4 py-6">
+      <main id="main-content" className="mx-auto max-w-3xl space-y-5 px-4 py-6">
         {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            <AlertCircle className="size-4 shrink-0" />
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
+            <AlertCircle className="size-4 shrink-0" aria-hidden />
             {error}
           </div>
         )}
@@ -588,35 +639,39 @@ export function QuizTaker({ data }: QuizTakerProps) {
 
       {isSubmitting && <SubmittingOverlay />}
 
-      {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-foreground">Đang làm bài</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Bạn đang trong tiến trình làm bài. Thời gian vẫn tiếp tục trôi. Bạn có muốn tiếp tục làm không?
-            </p>
-            <div className="mt-5 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLeaveModal(false)
-                  router.push('/dashboard')
-                }}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary"
-              >
-                Về Dashboard
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowLeaveModal(false)}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Tiếp tục làm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AccessibleDialog
+        open={showLeaveModal}
+        onClose={() => setShowLeaveModal(false)}
+        title="Đang làm bài"
+        className="backdrop-blur-sm"
+        panelClassName="max-w-sm rounded-2xl border-border bg-card p-6 shadow-xl"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLeaveModal(false)
+                router.push('/dashboard')
+              }}
+              className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary"
+            >
+              Về Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLeaveModal(false)}
+              data-dialog-initial-focus
+              className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Tiếp tục làm
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted-foreground">
+          Bạn đang trong tiến trình làm bài. Thời gian vẫn tiếp tục trôi. Bạn có muốn tiếp tục làm không?
+        </p>
+      </AccessibleDialog>
     </>
   )
 }

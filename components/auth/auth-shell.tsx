@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Logo } from '@/components/brand/logo'
 import type { AuthRole } from '@/lib/auth/types'
 import { StudentAnimation } from './student-animation'
 import { TeacherAnimation } from './teacher-animation'
@@ -22,12 +22,7 @@ export function AuthShell({ role, title, subtitle, onBack, children }: AuthShell
       </div>
       <div className="flex min-h-dvh flex-col">
         <header className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6">
-          <Link
-            href="/"
-            className="text-lg font-bold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Mathz
-          </Link>
+          <Logo showPartner={false} />
           <button
             type="button"
             onClick={onBack}

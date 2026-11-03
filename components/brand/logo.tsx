@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 interface LogoProps {
   className?: string
   showWordmark?: boolean
+  /** Show FPT as partnership mark (not the Mathz identity). */
+  showPartner?: boolean
   /** Set to `null` to render without a link wrapper */
   href?: string | null
   size?: number
@@ -14,24 +16,40 @@ interface LogoProps {
 export function Logo({
   className,
   showWordmark = true,
+  showPartner = true,
   href = '/',
-  size = 32,
+  size = 28,
 }: LogoProps) {
   const inner = (
     <>
-      <Image
-        src="/fpt.png"
-        alt={`${SITE_NAME} logo`}
-        width={size}
-        height={size}
-        className="h-auto w-auto max-h-10 rounded-md object-contain"
-        style={{ width: size, height: 'auto' }}
-        priority
-      />
       {showWordmark ? (
-        <span className="text-[15px] font-semibold tracking-tight text-foreground">
+        <span className="font-display text-[1.35rem] leading-none tracking-tight text-foreground">
           {SITE_NAME}
         </span>
+      ) : (
+        <span className="sr-only">{SITE_NAME}</span>
+      )}
+      {showPartner ? (
+        <>
+          <span
+            className="hidden h-4 w-px bg-border sm:block"
+            aria-hidden="true"
+          />
+          <span className="inline-flex items-center gap-1.5">
+            <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline">
+              Đối tác
+            </span>
+            <Image
+              src="/fpt.png"
+              alt="FPT"
+              width={size}
+              height={size}
+              className="h-auto w-auto max-h-7 rounded-sm object-contain opacity-80"
+              style={{ width: size, height: 'auto' }}
+              priority
+            />
+          </span>
+        </>
       ) : null}
       <span className="sr-only">{SITE_NAME} home</span>
     </>

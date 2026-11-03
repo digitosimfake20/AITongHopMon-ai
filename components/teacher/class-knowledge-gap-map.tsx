@@ -14,7 +14,6 @@ import {
   Target,
   TrendingUp,
   Users,
-  X,
   Zap,
 } from 'lucide-react'
 import { generateRemedialSuggestionAction, type RemedialSuggestion } from '@/app/actions/teacher-ai'
@@ -28,6 +27,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { buttonVariants } from '@/components/ui/button'
+import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import {
   Card,
   CardContent,
@@ -583,39 +583,30 @@ function TierCard({
 
 function StudentListModal({ gap, onClose }: { gap: CriticalGap; onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="gap-modal-title"
+    <AccessibleDialog
+      open
+      onClose={onClose}
+      title={`HS bị hổng — ${gap.topic}`}
+      className="items-end sm:items-center"
+      panelClassName="max-h-[85vh] max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-border"
     >
-      <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-border">
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <div>
-            <h3 id="gap-modal-title" className="font-semibold">
-              HS bị hổng — {gap.topic}
-            </h3>
-            <p className="text-xs text-muted-foreground">{gap.affectedStudents.length} học sinh</p>
-          </div>
-          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Đóng">
-            <X className="size-4" />
-          </Button>
-        </div>
-        <ul className="max-h-[60vh] overflow-y-auto p-4">
-          {gap.affectedStudents.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center gap-3 border-b border-border/50 py-2.5 last:border-0"
-            >
-              <Avatar size="sm">
-                <AvatarFallback className="text-[10px]">{s.initials}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium">{s.fullName}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+        {gap.affectedStudents.length} học sinh
+      </p>
+      <ul className="max-h-[60vh] overflow-y-auto">
+        {gap.affectedStudents.map((s) => (
+          <li
+            key={s.id}
+            className="flex items-center gap-3 border-b border-border/50 py-2.5 last:border-0"
+          >
+            <Avatar size="sm">
+              <AvatarFallback className="text-[10px]">{s.initials}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium">{s.fullName}</span>
+          </li>
+        ))}
+      </ul>
+    </AccessibleDialog>
   )
 }
 

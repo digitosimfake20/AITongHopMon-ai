@@ -1,14 +1,21 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist_Mono, Inter } from 'next/font/google'
+import { Fraunces, Geist_Mono, Inter } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { Toaster } from 'sonner'
+import { SkipLink } from '@/components/a11y/skip-link'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import './globals.css'
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'vietnamese'],
   variable: '--font-inter',
+  display: 'swap',
+})
+
+const fraunces = Fraunces({
+  subsets: ['latin', 'vietnamese'],
+  variable: '--font-fraunces',
   display: 'swap',
 })
 
@@ -61,10 +68,11 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} ${geistMono.variable} bg-background`}
+      className={`${inter.variable} ${fraunces.variable} ${geistMono.variable} bg-background`}
     >
       <body className="bg-background font-sans antialiased">
         <ThemeProvider>
+          <SkipLink />
           {children}
           <Toaster richColors closeButton position="top-center" />
         </ThemeProvider>

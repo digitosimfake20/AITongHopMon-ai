@@ -28,7 +28,7 @@ const FOOTER_GROUPS = [
     links: [
       { label: 'Về Mathz', href: '#top' },
       { label: 'Bảo mật dữ liệu', href: '#faq' },
-      { label: 'Hỗ trợ', href: '#cta' },
+      { label: 'Đăng ký giáo viên', href: '/signup/teacher' },
     ],
   },
 ]

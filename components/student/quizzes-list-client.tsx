@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { BookOpen } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -98,6 +99,15 @@ export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListCl
         <p className="mt-4 font-medium text-muted-foreground">
           Chưa có bài kiểm tra nào được giao.
         </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Trong lúc chờ đề lớp, luyện theo lỗ hổng kiến thức của bạn.
+        </p>
+        <Link
+          href="/adaptive"
+          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-zeno px-4 text-sm font-medium text-white hover:opacity-90"
+        >
+          Luyện theo lỗ hổng
+        </Link>
       </div>
     )
   }
@@ -164,9 +174,17 @@ export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListCl
 
       <TabsContent value="later">
         {allPractice.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Chưa có bài luyện thêm. Mở Tổng quan để nhận gợi ý từ Zeno.
-          </p>
+          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Chưa có bài luyện thêm. Mở Tổng quan để nhận gợi ý từ Zeno.
+            </p>
+            <Link
+              href="/adaptive"
+              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg border border-zeno/40 px-4 text-sm font-medium text-zeno hover:bg-zeno/10"
+            >
+              Luyện theo lỗ hổng
+            </Link>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {allPractice.map((quiz) => (

@@ -12,7 +12,7 @@ export function FaqSection() {
     <Section
       id="faq"
       title="Câu hỏi thường gặp"
-      description="Không thấy câu trả lời? Gửi email; đội ngũ phản hồi trong một ngày làm việc."
+      description="Chưa thấy câu trả lời? Đăng ký giáo viên để được hỗ trợ khi thiết lập lớp."
     >
       <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card px-5 py-2 sm:px-6">
         <Accordion multiple={false}>
