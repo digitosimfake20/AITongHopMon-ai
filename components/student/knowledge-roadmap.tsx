@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import {
   AlertCircle,
   Award,
@@ -361,6 +362,12 @@ function EmptyRoadmap() {
       <p className="mt-1 text-sm text-muted-foreground">
         Làm ít nhất một bài kiểm tra để Zeno lập bản đồ kiến thức của bạn.
       </p>
+      <Link
+        href="/quizzes"
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-zeno px-4 text-sm font-medium text-white hover:opacity-90"
+      >
+        Xem đề kiểm tra
+      </Link>
     </div>
   )
 }

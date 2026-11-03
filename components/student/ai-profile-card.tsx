@@ -12,9 +12,16 @@ import { PracticePreTestModal } from '@/components/quiz/practice-pretest-modal'
 
 interface AiProfileCardProps {
   profile: CognitiveProfileSummary | null
+  /** When set (from `/adaptive?topic=`), practice uses this knowledge node. */
+  focusTopicId?: string | null
+  focusTopicTitle?: string
 }
 
-export function AiProfileCard({ profile }: AiProfileCardProps) {
+export function AiProfileCard({
+  profile,
+  focusTopicId,
+  focusTopicTitle,
+}: AiProfileCardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +36,11 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
   function handleGenerateQuiz(saveForLater: boolean) {
     setError(null)
     startTransition(async () => {
-      const result = await generateSmartQuizAction({ saveForLater })
+      const result = await generateSmartQuizAction({
+        saveForLater,
+        topicKeys: focusTopicId ? [focusTopicId] : undefined,
+        topicTitles: focusTopicTitle ? [focusTopicTitle] : undefined,
+      })
       if (result.success && result.data) {
         if (saveForLater) {
           addSavedPractice({
@@ -61,8 +72,8 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
     return (
       <div className="col-span-full rounded-2xl border border-dashed border-border bg-muted/30 p-6">
         <div className="flex items-start gap-4">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-950">
-            <Brain className="size-5 text-teal-600" />
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zeno/15">
+            <Brain className="size-5 text-zeno" aria-hidden />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">Hồ sơ tư duy</h3>
@@ -84,11 +95,11 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
 
   return (
     <>
-      <div className="col-span-full rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-sky-50 p-5 dark:border-teal-900 dark:from-teal-950/40 dark:to-sky-950/40">
+      <div className="col-span-full rounded-2xl border border-zeno/25 bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-teal-600 text-white">
-              <Brain className="size-4" />
+            <div className="flex size-9 items-center justify-center rounded-xl bg-zeno text-white">
+              <Brain className="size-4" aria-hidden />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Hồ sơ tư duy</h3>
@@ -121,28 +132,36 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
           </div>
         )}
 
+        {focusTopicTitle ? (
+          <p className="mb-3 text-xs text-muted-foreground">
+            Bài luyện sẽ ưu tiên chủ đề: <strong className="text-foreground">{focusTopicTitle}</strong>
+          </p>
+        ) : null}
+
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
+            type="button"
             onClick={() => handleGenerateQuiz(false)}
             disabled={isPending}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-zeno px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" aria-hidden />
                 Đang trộn đề...
               </>
             ) : (
               <>
-                <BookOpen className="size-4" />
+                <BookOpen className="size-4" aria-hidden />
                 Luyện tập từ kho đề ({PRACTICE_TIME_LIMIT_MINUTES} phút)
               </>
             )}
           </button>
           <button
+            type="button"
             onClick={() => handleGenerateQuiz(true)}
             disabled={isPending}
-            className="rounded-xl border border-teal-300 px-4 py-2.5 text-sm font-medium text-teal-700 hover:bg-teal-50 disabled:opacity-60 dark:border-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/30"
+            className="min-h-11 rounded-xl border border-zeno/40 px-4 py-2.5 text-sm font-medium text-zeno hover:bg-zeno/10 disabled:opacity-60"
           >
             Lưu vào &quot;Làm sau&quot;
           </button>

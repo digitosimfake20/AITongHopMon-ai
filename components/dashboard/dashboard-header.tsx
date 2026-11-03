@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { LayoutGrid, LogOut, Star } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -25,12 +26,20 @@ export function DashboardHeader({
   initials,
   masteryScore,
 }: DashboardHeaderProps) {
+  const pathname = usePathname()
+  const isOverview = pathname === '/dashboard'
+  const greeting = `${getGreeting()}, ${studentName}!`
+  const greetingClass =
+    'text-xl font-semibold tracking-tight text-foreground sm:text-2xl'
+
   return (
     <header className="flex flex-col gap-4 border-b border-border bg-background/85 px-4 py-5 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          {getGreeting()}, {studentName}!
-        </h1>
+        {isOverview ? (
+          <h1 className={greetingClass}>{greeting}</h1>
+        ) : (
+          <p className={greetingClass}>{greeting}</p>
+        )}
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
           Hôm nay làm bài kiểm tra nào trước?
         </p>
