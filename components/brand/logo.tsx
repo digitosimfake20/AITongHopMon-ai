@@ -35,20 +35,15 @@ export function Logo({
             className="hidden h-4 w-px bg-border sm:block"
             aria-hidden="true"
           />
-          <span className="inline-flex items-center gap-1.5">
-            <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:inline">
-              Đối tác
-            </span>
-            <Image
-              src="/fpt.png"
-              alt="FPT"
-              width={size}
-              height={size}
-              className="h-auto w-auto max-h-7 rounded-sm object-contain opacity-80"
-              style={{ width: size, height: 'auto' }}
-              priority
-            />
-          </span>
+          <Image
+            src="/fpt.png"
+            alt="FPT"
+            width={size}
+            height={size}
+            className="h-auto w-auto max-h-7 rounded-sm object-contain opacity-75"
+            style={{ width: size, height: 'auto' }}
+            priority
+          />
         </>
       ) : null}
       <span className="sr-only">{SITE_NAME} home</span>

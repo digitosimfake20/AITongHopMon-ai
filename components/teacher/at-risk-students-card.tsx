@@ -10,7 +10,7 @@ interface AtRiskStudentsCardProps {
 
 export function AtRiskStudentsCard({ students }: AtRiskStudentsCardProps) {
   return (
-    <article className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.18)]">
+    <article className="flex flex-col rounded-xl border border-border bg-card p-6">
       <div className="flex items-center gap-2">
         <UserRound className="size-4 text-destructive" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">

@@ -6,7 +6,7 @@ export function TrustedBy() {
   return (
     <section
       aria-label="Trường đang dùng Mathz"
-      className="border-y border-border bg-card/40 py-8"
+      className="border-y border-border bg-secondary/35 py-8"
     >
       <p className="text-center text-xs font-medium tracking-wide text-muted-foreground">
         Đang dùng trong lớp tại

@@ -14,8 +14,8 @@ export function PricingSection() {
   return (
     <Section
       id="pricing"
-      title="Miễn phí cho một lớp. Mở rộng khi cả tổ cần."
-      description="Mọi gói đều có chấm tức thì và báo cáo. Nâng cấp khi tổ muốn chia sẻ ngân hàng đề và báo cáo AI."
+      title="Một lớp miễn phí. Mở rộng khi tổ cần."
+      description="Mọi gói đều chấm tức thì và có báo cáo. Nâng cấp khi tổ chia sẻ ngân hàng đề."
     >
       <div className="flex justify-center">
         <BillingToggle period={period} onChange={setPeriod} />
@@ -101,14 +101,14 @@ function PlanCard({ plan, period }: PlanCardProps) {
   return (
     <div
       className={cn(
-        'relative flex h-full flex-col rounded-2xl border bg-card p-6 transition-colors duration-200',
+        'relative flex h-full flex-col rounded-xl border bg-card p-6 transition-colors duration-200',
         plan.highlighted
-          ? 'border-foreground/40 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.35)]'
-          : 'border-border hover:border-foreground/20',
+          ? 'border-foreground/50 bg-secondary/40'
+          : 'border-border hover:border-foreground/25',
       )}
     >
       {plan.highlighted ? (
-        <span className="absolute -top-3 left-6 rounded-full bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-background">
+        <span className="absolute -top-3 left-6 rounded-md bg-foreground px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-background">
           Phổ biến
         </span>
       ) : null}

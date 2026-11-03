@@ -87,18 +87,18 @@ export function AiProfileCard({
   }
 
   const personaIcon = {
-    'Nhanh nhạy nhưng ẩu': <Zap className="size-4 text-amber-500" />,
-    'Cẩn thận - Ngâm lâu': <Clock className="size-4 text-blue-500" />,
-    'Thành thạo': <TrendingUp className="size-4 text-emerald-500" />,
-    'Chắc chắn, tốc độ tốt': <TrendingUp className="size-4 text-emerald-500" />,
-  }[profile.personaType] ?? <Brain className="size-4 text-teal-500" />
+    'Nhanh nhạy nhưng ẩu': <Zap className="size-4 text-warning" />,
+    'Cẩn thận - Ngâm lâu': <Clock className="size-4 text-info" />,
+    'Thành thạo': <TrendingUp className="size-4 text-success" />,
+    'Chắc chắn, tốc độ tốt': <TrendingUp className="size-4 text-success" />,
+  }[profile.personaType] ?? <Brain className="size-4 text-zeno" />
 
   return (
     <>
-      <div className="col-span-full rounded-2xl border border-zeno/25 bg-card p-5">
+      <div className="col-span-full rounded-xl border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-zeno text-white">
+            <div className="flex size-9 items-center justify-center rounded-md bg-zeno text-zeno-foreground">
               <Brain className="size-4" aria-hidden />
             </div>
             <div>
@@ -106,17 +106,17 @@ export function AiProfileCard({
               <p className="text-xs text-muted-foreground">Phân tích từ Zeno</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm dark:bg-slate-800">
+          <div className="flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-foreground">
             {personaIcon}
             {profile.personaType}
           </div>
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatBadge icon={<Clock className="size-3.5 text-blue-500" />} label="Tốc độ TB" value={`${profile.avgSpeed}s/câu`} color="blue" />
-          <StatBadge icon={<AlertTriangle className="size-3.5 text-amber-500" />} label="Tỷ lệ ẩu" value={`${profile.carelessRate}%`} color="amber" />
-          <StatBadge icon={<TrendingUp className="size-3.5 text-emerald-500" />} label="Điểm mạnh" value={`${profile.strengths.length} chủ đề`} color="emerald" />
-          <StatBadge icon={<TrendingDown className="size-3.5 text-rose-500" />} label="Cần cải thiện" value={`${profile.weaknesses.length} chủ đề`} color="rose" />
+          <StatBadge icon={<Clock className="size-3.5 text-info" />} label="Tốc độ TB" value={`${profile.avgSpeed}s/câu`} color="info" />
+          <StatBadge icon={<AlertTriangle className="size-3.5 text-warning" />} label="Tỷ lệ ẩu" value={`${profile.carelessRate}%`} color="warning" />
+          <StatBadge icon={<TrendingUp className="size-3.5 text-success" />} label="Điểm mạnh" value={`${profile.strengths.length} chủ đề`} color="success" />
+          <StatBadge icon={<TrendingDown className="size-3.5 text-destructive" />} label="Cần cải thiện" value={`${profile.weaknesses.length} chủ đề`} color="danger" />
         </div>
 
         {profile.weaknesses.length > 0 && (
@@ -185,13 +185,13 @@ export function AiProfileCard({
   )
 }
 
-type StatColor = 'blue' | 'amber' | 'emerald' | 'rose'
+type StatColor = 'info' | 'warning' | 'success' | 'danger'
 
 const colorMap: Record<StatColor, string> = {
-  blue: 'bg-blue-50 dark:bg-blue-950/50',
-  amber: 'bg-amber-50 dark:bg-amber-950/50',
-  emerald: 'bg-emerald-50 dark:bg-emerald-950/50',
-  rose: 'bg-rose-50 dark:bg-rose-950/50',
+  info: 'bg-info/10',
+  warning: 'bg-warning/10',
+  success: 'bg-success/10',
+  danger: 'bg-destructive/10',
 }
 
 function StatBadge({

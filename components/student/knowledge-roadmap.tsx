@@ -96,11 +96,11 @@ export function KnowledgeRoadmap({
   return (
     <div className="space-y-6">
       {/* Header stats */}
-      <div className="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50/80 via-white to-teal-50/50 p-5 dark:border-sky-900/40 dark:from-sky-950/30 dark:via-slate-900 dark:to-teal-950/20">
+      <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950">
-              <MapIcon className="size-5 text-sky-600" aria-hidden />
+            <div className="flex size-10 items-center justify-center rounded-md bg-secondary">
+              <MapIcon className="size-5 text-foreground" aria-hidden />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">
@@ -108,23 +108,23 @@ export function KnowledgeRoadmap({
               </h1>
               <p className="text-sm text-muted-foreground">
                 {states.length} chủ đề · Thành thạo tổng thể{' '}
-                <span className="font-semibold tabular-nums text-sky-600">{overallMastery}%</span>
+                <span className="font-semibold tabular-nums text-foreground">{overallMastery}%</span>
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <SummaryPill icon={CheckCircle2} tone="emerald" label={`${mastered.length} thành thạo`} />
-            <SummaryPill icon={TrendingUp} tone="amber" label={`${progressing.length} đang tiến`} />
-            <SummaryPill icon={AlertCircle} tone="rose" label={`${weak.length} cần ôn`} />
+            <SummaryPill icon={CheckCircle2} tone="success" label={`${mastered.length} thành thạo`} />
+            <SummaryPill icon={TrendingUp} tone="warning" label={`${progressing.length} đang tiến`} />
+            <SummaryPill icon={AlertCircle} tone="danger" label={`${weak.length} cần ôn`} />
           </div>
         </div>
         <div className="mt-4">
-          <div className="mb-1 flex justify-between text-xs font-medium text-sky-700 dark:text-sky-300">
+          <div className="mb-1 flex justify-between text-xs font-medium text-muted-foreground">
             <span>Tiến độ tổng thể</span>
             <span>{overallMastery}%</span>
           </div>
           <div
-            className="h-2.5 overflow-hidden rounded-full bg-sky-100 dark:bg-sky-900"
+            className="h-2.5 overflow-hidden rounded-full bg-secondary"
             role="progressbar"
             aria-valuenow={overallMastery}
             aria-valuemin={0}
@@ -132,7 +132,7 @@ export function KnowledgeRoadmap({
             aria-label="Tiến độ tổng thể"
           >
             <div
-              className="h-full rounded-full bg-sky-500"
+              className="h-full rounded-full bg-foreground"
               style={{ width: `${overallMastery}%` }}
             />
           </div>
@@ -141,10 +141,10 @@ export function KnowledgeRoadmap({
 
       {/* Strengths first — positive framing */}
       {topStrengths.length > 0 && (
-        <section className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+        <section className="rounded-xl border border-success/25 bg-success/10 p-5">
           <div className="mb-3 flex items-center gap-2">
-            <Award className="size-4 text-emerald-600" aria-hidden />
-            <h2 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            <Award className="size-4 text-success" aria-hidden />
+            <h2 className="text-sm font-semibold text-success">
               Điểm mạnh của bạn
             </h2>
           </div>
@@ -152,14 +152,14 @@ export function KnowledgeRoadmap({
             {topStrengths.map((s) => (
               <div
                 key={s.nodeId}
-                className="flex items-center justify-between rounded-xl border border-emerald-200/60 bg-white/70 px-3 py-2 dark:border-emerald-900/40 dark:bg-emerald-950/30"
+                className="flex items-center justify-between rounded-lg border border-success/20 bg-card px-3 py-2"
               >
-                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                <span className="text-sm font-medium text-foreground">
                   {s.title}
                 </span>
                 <Badge
                   variant="outline"
-                  className="border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300"
+                  className="border-success/40 text-success"
                 >
                   {Math.round(s.pMastery * 100)}%
                 </Badge>
@@ -274,15 +274,15 @@ export function KnowledgeRoadmap({
       )}
 
       {zenoSummary && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4 dark:border-teal-900 dark:bg-teal-950/30">
-          <p className="mb-1 text-xs font-semibold text-teal-600 dark:text-teal-400">
+        <div className="rounded-xl border border-zeno/25 bg-zeno/10 p-4">
+          <p className="mb-1 text-xs font-semibold text-zeno">
             Nhật ký học tập của Zeno
           </p>
-          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             {zenoSummary.split('\n').at(-1)?.trim()}
           </p>
           {zenoUpdatedAt && (
-            <p className="mt-1.5 text-xs text-slate-400">
+            <p className="mt-1.5 text-xs text-muted-foreground/80">
               Cập nhật: {new Date(zenoUpdatedAt).toLocaleDateString('vi-VN')}
             </p>
           )}
@@ -298,9 +298,9 @@ function TopicRow({ state, compact }: { state: KnowledgeStateItem; compact?: boo
     mastery >= 80 ? 'MASTERED' : mastery >= 50 ? 'PROGRESSING' : 'GAP'
 
   const barColor = {
-    MASTERED: 'bg-emerald-500',
-    PROGRESSING: 'bg-amber-400',
-    GAP: 'bg-rose-400',
+    MASTERED: 'bg-success',
+    PROGRESSING: 'bg-warning',
+    GAP: 'bg-destructive',
   }[status]
 
   const statusIcon = {
@@ -312,9 +312,9 @@ function TopicRow({ state, compact }: { state: KnowledgeStateItem; compact?: boo
   const StatusIcon = statusIcon
 
   return (
-    <div className={cn('rounded-xl bg-slate-50/80 px-3 py-2 dark:bg-slate-800/40', compact && 'py-1.5')}>
+    <div className={cn('rounded-lg bg-secondary/50 px-3 py-2', compact && 'py-1.5')}>
       <div className="mb-1 flex items-center justify-between gap-2">
-        <p className={cn('font-medium text-slate-700 dark:text-slate-300', compact ? 'text-xs' : 'text-sm')}>
+        <p className={cn('font-medium text-foreground', compact ? 'text-xs' : 'text-sm')}>
           {state.title}
         </p>
         <Badge variant="outline" className="gap-0.5 text-[10px]">
@@ -323,10 +323,10 @@ function TopicRow({ state, compact }: { state: KnowledgeStateItem; compact?: boo
         </Badge>
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+        <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary">
           <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${mastery}%` }} />
         </div>
-        <span className="shrink-0 text-[10px] font-semibold tabular-nums text-slate-500">{mastery}%</span>
+        <span className="shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground">{mastery}%</span>
       </div>
     </div>
   )
@@ -338,16 +338,16 @@ function SummaryPill({
   label,
 }: {
   icon: typeof CheckCircle2
-  tone: 'emerald' | 'amber' | 'rose'
+  tone: 'success' | 'warning' | 'danger'
   label: string
 }) {
   const tones = {
-    emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-    amber: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-    rose: 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+    success: 'bg-success/15 text-success',
+    warning: 'bg-warning/15 text-warning',
+    danger: 'bg-destructive/15 text-destructive',
   }
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium', tones[tone])}>
+    <span className={cn('inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium', tones[tone])}>
       <Icon className="size-3.5" />
       {label}
     </span>

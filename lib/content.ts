@@ -37,9 +37,9 @@ export const FEATURES: Feature[] = [
   },
   {
     id: 'grading',
-    title: 'Chấm xong trong khoảng 2 giây',
+    title: 'Chấm xong dưới 2 giây',
     description:
-      'Trắc nghiệm và tự luận ngắn theo đáp án thầy cô đặt. Mỗi câu hiện điểm kèm giải thích ngắn.',
+      'Trắc nghiệm và tự luận ngắn theo đáp án thầy cô đặt. Mỗi câu có điểm và giải thích ngắn.',
     icon: Zap,
   },
   {
@@ -78,11 +78,10 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     step: 1,
     title: 'Tạo bài kiểm tra',
     description:
-      'Dùng tài liệu của thầy cô, hoặc để Mathz gợi ý bộ đề Toán 8 trong khoảng 30 giây.',
+      'Dùng tài liệu của thầy cô, hoặc để Mathz gợi ý bộ đề Toán 8 trong 30 giây.',
     icon: BookOpenCheck,
     bullets: [
       'Tải PDF hoặc nhập chủ đề Toán',
-      'Chọn độ khó và số câu',
       'Sửa câu trước khi giao',
     ],
   },
@@ -91,12 +90,11 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     step: 2,
     title: 'Học sinh làm bài',
     description:
-      'Giao diện gọn trên laptop và máy tính bảng. Vào bằng mã lớp; mỗi câu được lưu khi trả lời.',
+      'Vào bằng mã lớp trên laptop hoặc máy tính bảng. Mỗi câu tự lưu khi trả lời.',
     icon: Users,
     bullets: [
       'Vào bằng mã lớp',
-      'Tự lưu mỗi câu trả lời',
-      'Có phản hồi ngay khi nộp',
+      'Phản hồi ngay khi nộp',
     ],
   },
   {
@@ -104,12 +102,11 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     step: 3,
     title: 'Đọc tình hình lớp',
     description:
-      'Điểm, biểu đồ lỗ hổng và tóm tắt AI hiện trên dashboard trước khi hết tiết.',
+      'Điểm, lỗ hổng và tóm tắt AI hiện trên dashboard trước khi hết tiết.',
     icon: TrendingUp,
     bullets: [
       'Danh sách dạy lại theo ưu tiên',
       'Cảnh báo học sinh cần hỗ trợ',
-      'Xuất sang bảng tính',
     ],
   },
 ]
@@ -141,28 +138,28 @@ export const TESTIMONIALS: Testimonial[] = [
     id: 't1',
     quote:
       'Trước đây tôi chấm vào chiều chủ nhật. Giờ tôi đọc tóm tắt AI chiều thứ sáu và biết thứ hai cần dạy gì.',
-    name: 'Cô Mai Anh',
-    role: 'Giáo viên Toán lớp 8',
-    school: 'FPT School Hà Nội',
-    initials: 'MA',
+    name: 'Thầy Trọng Khiêm',
+    role: 'Trưởng bộ môn toán',
+    school: 'FPT School Hải Phòng',
+    initials: 'TK',
   },
   {
     id: 't2',
     quote:
       'Biểu đồ chỉ ra lỗ hổng Hằng đẳng thức mà kiểm tra cuối kỳ sẽ bỏ sót.',
-    name: 'Thầy Hùng',
+    name: 'Cô Minh Huyền',
     role: 'Trưởng bộ môn Toán',
-    school: 'FPT School Bắc Ninh',
-    initials: 'TH',
+    school: 'FPT School Hải Phòng',
+    initials: 'MH',
   },
   {
     id: 't3',
     quote:
       'Học sinh thấy điểm và phản hồi ngay, không chỉ một dấu X đỏ.',
-    name: 'Cô Linh',
-    role: 'Phó Hiệu trưởng Chất lượng',
-    school: 'FPT School Đà Nẵng',
-    initials: 'CL',
+    name: 'Thầy Quách Đức Mạnh',
+    role: 'Phó Hiệu trưởng',
+    school: 'FPT School Hải Phòng',
+    initials: 'M',
   },
 ]
 
@@ -179,7 +176,6 @@ export const PRICING_PLANS: PricingPlan[] = [
       '1 giáo viên, 1 lớp',
       '20 quiz AI / tháng',
       'Chấm điểm tức thì',
-      'Phân tích chủ đề cơ bản',
     ],
   },
   {
@@ -193,7 +189,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     ctaLabel: 'Bắt đầu dùng thử',
     features: [
       'Không giới hạn lớp và quiz',
-      'Báo cáo AI chi tiết',
       'Ngân hàng đề chung tổ Toán',
       'Theo dõi tiến độ học sinh',
       'Xuất CSV sang Excel',
@@ -212,7 +207,6 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Tài khoản email nhà trường',
       'Quản trị viên và phân quyền',
       'Báo cáo cho ban giám hiệu',
-      'Hỗ trợ tập huấn giáo viên',
     ],
   },
 ]
@@ -240,13 +234,13 @@ export const FAQS: FaqItem[] = [
     id: 'f4',
     question: 'Có dùng câu hỏi riêng của giáo viên được không?',
     answer:
-      'Được. Viết tay, nhập ngân hàng sẵn có, hoặc để Mathz soạn rồi chỉnh. Nhiều giáo viên kết hợp cả ba.',
+      'Được. Viết tay, nhập ngân hàng sẵn có, hoặc để Mathz soạn rồi chỉnh.',
   },
   {
     id: 'f5',
     question: 'Chạy được trên máy của trường không?',
     answer:
-      'Chạy trên trình duyệt: Chromebook, iPad, laptop Windows và điện thoại. Không cần cài đặt; ổn định trên mạng chậm.',
+      'Chạy trên trình duyệt: Chromebook, iPad, laptop Windows. Không cần cài đặt.',
   },
 ]
 
@@ -276,8 +270,5 @@ export const DEMO_QUESTIONS: QuizQuestion[] = [
 ]
 
 export const TRUSTED_BY: string[] = [
-  'FPT School Hà Nội',
-  'FPT School Bắc Ninh',
-  'FPT School Đà Nẵng',
-  'FPT School Cần Thơ',
+  'FPTSchool Hải Phòng',
 ]

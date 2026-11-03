@@ -28,7 +28,7 @@ export function TeacherAdaptiveListClient({
     <div className="space-y-6">
       <div>
         <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
-          <Sparkles className="size-5 text-emerald-600 dark:text-emerald-400" />
+          <Sparkles className="size-5 text-zeno" />
           Bài giao phân hóa
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">

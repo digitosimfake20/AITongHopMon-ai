@@ -244,7 +244,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
             {isUploading ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
-              <FileSpreadsheet className="size-3.5 text-emerald-600" />
+              <FileSpreadsheet className="size-3.5 text-success" />
             )}
             {isUploading ? 'Đang đọc...' : 'Tải Excel'}
             <input
@@ -260,7 +260,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
           {/* Add manual */}
           <button
             onClick={() => setShowAddRow((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-zeno px-3 py-1.5 text-xs font-medium text-zeno-foreground hover:bg-zeno/90"
           >
             <Plus className="size-3.5" />
             Thêm thủ công
@@ -285,7 +285,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
             <button
               onClick={confirmPreview}
               disabled={isPending}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-lg bg-success px-3 py-1 text-xs font-medium text-success-foreground hover:bg-success/90 disabled:opacity-60"
             >
               {isPending ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}
               Lưu danh sách
@@ -296,7 +296,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
 
       {/* ── Add manual row form ──────────────────────────────────────────── */}
       {showAddRow && (
-        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-teal-200 bg-teal-50 p-3 dark:border-teal-800 dark:bg-teal-950/30">
+        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-zeno/25 bg-zeno/10 p-3">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-medium text-slate-500">STT</label>
             <input
@@ -329,7 +329,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
           <button
             onClick={addRow}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-lg bg-zeno px-3 py-1.5 text-sm font-medium text-zeno-foreground hover:bg-zeno/90 disabled:opacity-60"
           >
             {isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
             Thêm
@@ -391,7 +391,7 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
                   {/* Linked account */}
                   <td className="px-3 py-2">
                     {row.linkedUserId ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      <span className="rounded-md bg-success/15 px-2 py-0.5 text-[11px] font-medium text-success">
                         {row.linkedUserName ?? 'Đã liên kết'}
                       </span>
                     ) : (
@@ -407,9 +407,9 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
                           type="button"
                           onClick={() => saveEdit(row)}
                           aria-label={`Lưu ${row.fullName}`}
-                          className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-emerald-950"
+                          className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-success/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <Check className="size-4 text-emerald-600" aria-hidden />
+                          <Check className="size-4 text-success" aria-hidden />
                         </button>
                         <button
                           type="button"
@@ -427,9 +427,9 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
                             type="button"
                             onClick={() => startEdit(row)}
                             aria-label={`Sửa ${row.fullName}`}
-                            className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-blue-950"
+                            className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-info/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
-                            <Pencil className="size-4 text-blue-500" aria-hidden />
+                            <Pencil className="size-4 text-info" aria-hidden />
                           </button>
                         )}
                         <button

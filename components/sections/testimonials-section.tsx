@@ -5,8 +5,8 @@ import type { Testimonial } from '@/lib/types'
 export function TestimonialsSection() {
   return (
     <Section
-      title="Giáo viên nói gì sau một kỳ"
-      description="Ít giờ chấm bài hơn. Rõ hơn chỗ lớp còn hổng."
+      title="Giáo viên sau một kỳ"
+      description="Ít giờ chấm. Rõ chỗ lớp còn hổng."
     >
       <ul className="grid gap-4 md:grid-cols-3">
         {TESTIMONIALS.map((testimonial) => (
@@ -25,14 +25,14 @@ interface TestimonialCardProps {
 
 function TestimonialCard({ testimonial }: TestimonialCardProps) {
   return (
-    <figure className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 transition-colors duration-200 hover:border-foreground/20">
+    <figure className="flex h-full flex-col rounded-xl border border-border bg-card p-6 transition-colors duration-200 hover:border-foreground/25">
       <blockquote className="text-[14px] leading-relaxed text-card-foreground">
         &ldquo;{testimonial.quote}&rdquo;
       </blockquote>
       <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-5">
         <span
           aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary font-mono text-xs font-medium text-muted-foreground"
+          className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary font-mono text-xs font-medium text-muted-foreground"
         >
           {testimonial.initials}
         </span>

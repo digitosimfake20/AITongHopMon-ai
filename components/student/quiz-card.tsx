@@ -25,9 +25,9 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  EASY: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400',
-  MEDIUM: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-400',
-  HARD: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
+  EASY: 'bg-success/15 text-success',
+  MEDIUM: 'bg-warning/15 text-warning',
+  HARD: 'bg-destructive/15 text-destructive',
 }
 
 function formatDeadline(d: Date): string {
@@ -77,14 +77,14 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
       Đã hoàn thành 2 lượt bắt buộc
     </div>
   ) : status.showCompletedBanner && status.progressLine ? (
-    <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+    <div className="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">
       <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
       Đã hoàn thành · {status.progressLine}
     </div>
   ) : null
 
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+    <article className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/20">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <BookOpen className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
@@ -92,12 +92,12 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           {isPractice && (
-            <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
+            <span className="rounded-md bg-zeno/15 px-2 py-0.5 text-[11px] font-medium text-zeno">
               Luyện thêm
             </span>
           )}
           {quiz.classTestId && (
-            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">
+            <span className="rounded-md bg-info/15 px-2 py-0.5 text-[11px] font-medium text-info">
               Hệ thống
             </span>
           )}
@@ -131,7 +131,7 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
         {status.isDone ? (
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="size-4 text-green-600" aria-hidden />
+            <CheckCircle2 className="size-4 text-success" aria-hidden />
             <span className="text-muted-foreground">
               {status.statusLabel}
               {score != null && (
@@ -199,12 +199,12 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
       Quá hạn
     </div>
   ) : status.progressLine ? (
-    <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+    <div className="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">
       <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
       {status.isDone ? 'Hoàn thành 2 lượt' : 'Tiến trình'}: {status.progressLine}
     </div>
   ) : progress.status === 'round2_pending' ? (
-    <div className="flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:bg-sky-950/30 dark:text-sky-300">
+    <div className="flex items-center gap-2 rounded-lg bg-info/10 px-3 py-2 text-xs text-info">
       <Sparkles className="size-3.5 shrink-0" aria-hidden />
       Gợi ý lượt 2:{' '}
       <strong>
@@ -221,13 +221,13 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
         : 'Hoàn thành'
 
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-teal-200/60 bg-gradient-to-br from-teal-50/50 to-sky-50/30 p-5 shadow-sm dark:border-teal-900/40 dark:from-teal-950/20 dark:to-sky-950/10">
+    <article className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/20">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
+          <Sparkles className="mt-0.5 size-4 shrink-0 text-zeno" aria-hidden />
           <h3 className="font-semibold leading-snug text-foreground">{quiz.title}</h3>
         </div>
-        <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-medium text-teal-700 dark:bg-teal-950/50 dark:text-teal-400">
+        <span className="rounded-md bg-zeno/15 px-2 py-0.5 text-[11px] font-medium text-zeno">
           Phân hóa 2 lượt
         </span>
       </div>
@@ -255,9 +255,9 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
         <div
           className={`rounded-lg border p-2.5 ${
             progress.round2SubmissionId
-              ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950/20'
+              ? 'border-success/40 bg-success/10'
               : progress.round2Difficulty
-                ? 'border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/20'
+                ? 'border-info/40 bg-info/10'
                 : 'border-dashed border-border opacity-60'
           }`}
         >

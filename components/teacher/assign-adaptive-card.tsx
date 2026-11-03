@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 export function AssignAdaptiveCard() {
   return (
-    <article className="col-span-1 flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.18)] transition-colors duration-200 hover:border-accent/40 lg:col-span-2">
+    <article className="col-span-1 flex flex-col justify-between rounded-xl border border-border bg-card p-6 transition-colors duration-200 hover:border-foreground/25 lg:col-span-2">
       <div>
         <h2 className="text-xl font-semibold tracking-tight text-card-foreground sm:text-2xl">
           Giao bài phân hóa theo năng lực

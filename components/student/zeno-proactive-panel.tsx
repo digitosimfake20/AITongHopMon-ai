@@ -83,9 +83,9 @@ export function ZenoProactivePanel({
   return (
     <>
       <div className="col-span-full space-y-3">
-        <div className="flex flex-col gap-3 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 via-teal-50/80 to-emerald-50/60 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-sky-900/50 dark:from-sky-950/30 dark:via-teal-950/20 dark:to-emerald-950/20">
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-zeno text-zeno-foreground">
               <Zap className="size-5" aria-hidden />
             </div>
             <div>

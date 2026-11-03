@@ -10,7 +10,7 @@ export function StudentSignupSection() {
       description="Đăng ký tài khoản, nhập mã 8 ký tự từ thầy cô, rồi vào làm bài."
     >
       <div className="mx-auto max-w-2xl">
-        <div className="rounded-2xl border border-border bg-card px-6 py-10 text-center sm:px-10">
+        <div className="rounded-xl border border-border bg-card px-6 py-10 text-center sm:px-10">
           <BookOpen
             className="mx-auto size-8 text-foreground/70"
             aria-hidden="true"

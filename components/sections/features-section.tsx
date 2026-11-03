@@ -7,11 +7,11 @@ export function FeaturesSection() {
     <Section
       id="features"
       title="Đủ cho một bài kiểm tra 15 phút"
-      description="Từ soạn đề đến biết ba học sinh cần nói chuyện riêng ngày mai."
+      description="Soạn đề, chấm bài, rồi biết học sinh nào cần gặp riêng."
     >
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((feature) => (
-          <li key={feature.id}>
+          <li key={feature.id} className="bg-card">
             <FeatureCard feature={feature} />
           </li>
         ))}
@@ -28,8 +28,8 @@ function FeatureCard({ feature }: FeatureCardProps) {
   const Icon = feature.icon
 
   return (
-    <div className="group h-full rounded-2xl border border-border bg-card p-5 transition-colors duration-200 hover:border-foreground/20">
-      <span className="flex size-9 items-center justify-center rounded-lg border border-border bg-secondary text-muted-foreground transition-colors duration-200 group-hover:border-foreground/25 group-hover:text-foreground">
+    <div className="group h-full p-5 transition-colors duration-200 hover:bg-secondary/60 sm:p-6">
+      <span className="flex size-9 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors duration-200 group-hover:border-foreground/25 group-hover:text-foreground">
         <Icon className="size-4.5" aria-hidden="true" />
       </span>
       <h3 className="mt-4 text-[15px] font-semibold text-card-foreground">

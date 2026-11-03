@@ -101,7 +101,7 @@ interface ClassWeaknessCardProps {
 
 export function ClassWeaknessCard({ weaknesses }: ClassWeaknessCardProps) {
   return (
-    <article className="col-span-1 rounded-2xl border border-border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.18)] lg:col-span-2">
+    <article className="col-span-1 rounded-xl border border-border bg-card p-6 lg:col-span-2">
       <div className="flex items-center gap-2">
         <AlertTriangle className="size-4 text-destructive" aria-hidden="true" />
         <h2 className="text-base font-semibold text-card-foreground">

@@ -1,21 +1,16 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Fraunces, Geist_Mono, Inter } from 'next/font/google'
+import { Be_Vietnam_Pro, Geist_Mono } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { Toaster } from 'sonner'
 import { SkipLink } from '@/components/a11y/skip-link'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import './globals.css'
 
-const inter = Inter({
+const beVietnam = Be_Vietnam_Pro({
   subsets: ['latin', 'vietnamese'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-const fraunces = Fraunces({
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-fraunces',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-be-vietnam',
   display: 'swap',
 })
 
@@ -56,8 +51,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#eceff3' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f1218' },
   ],
 }
 
@@ -68,7 +63,7 @@ export default function RootLayout({
     <html
       lang="vi"
       suppressHydrationWarning
-      className={`${inter.variable} ${fraunces.variable} ${geistMono.variable} bg-background`}
+      className={`${beVietnam.variable} ${geistMono.variable} bg-background`}
     >
       <body className="bg-background font-sans antialiased">
         <ThemeProvider>
