@@ -32,8 +32,10 @@ export function QuizUploadZone({ onParsed, label }: QuizUploadZoneProps) {
 
     const result = await parseQuizFileAction(formData)
     if (result.success && result.data) {
-      const mode = result.data.usedVision ? '(GPT-4o Vision)' : '(GPT-4o mini)'
-      toast.success(`Đã trích xuất ${result.data.questions.length} câu hỏi ${mode}`)
+      const mode = result.data.usedVision ? '(ảnh/PDF)' : ''
+      toast.success(
+        `Đã trích xuất ${result.data.questions.length} câu hỏi${mode ? ` ${mode}` : ''}`,
+      )
       onParsed(result.data.questions)
     } else {
       toast.error(result.error ?? 'Không thể xử lý tệp')
@@ -63,7 +65,7 @@ export function QuizUploadZone({ onParsed, label }: QuizUploadZoneProps) {
         <>
           <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
           <p className="mt-3 text-sm font-medium text-foreground">
-            AI đang phân tích tệp, vui lòng chờ...
+            Đang phân tích tệp…
           </p>
         </>
       ) : (
@@ -73,10 +75,10 @@ export function QuizUploadZone({ onParsed, label }: QuizUploadZoneProps) {
             {label ?? 'Kéo thả hoặc chọn tệp'}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            .docx (Word) · .pdf · .png / .jpg / .webp — AI sẽ tự động trích xuất câu hỏi
+            .docx · .pdf · .png / .jpg / .webp — hệ thống trích xuất câu hỏi từ tệp
           </p>
-          <p className="mt-1 text-xs text-primary/80">
-            💡 PDF và ảnh chụp được phân tích bằng GPT-4o Vision — đọc công thức toán chính xác hơn.
+          <p className="mt-1 text-xs text-muted-foreground">
+            PDF và ảnh: đọc công thức toán bằng nhận diện hình ảnh.
           </p>
           <button
             type="button"

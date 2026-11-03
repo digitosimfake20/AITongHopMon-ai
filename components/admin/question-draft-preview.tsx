@@ -128,10 +128,10 @@ interface TestDraftPreviewProps {
 /** Xem trước toàn bộ đề như ngân hàng đề học sinh. */
 export function TestDraftPreview({ title, durationMinutes, questions }: TestDraftPreviewProps) {
   return (
-    <div className="space-y-4 rounded-2xl border-2 border-dashed border-cyan-500/30 bg-slate-900/20 p-4 dark:bg-slate-950/40">
+    <div className="space-y-4 rounded-2xl border border-dashed border-border bg-muted/20 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Eye className="size-4 text-cyan-500" />
-        <h3 className="font-mono text-sm font-semibold text-cyan-400">// preview</h3>
+        <Eye className="size-4 text-cyan-600 dark:text-cyan-400" />
+        <h3 className="text-sm font-semibold text-foreground">Xem trước đề</h3>
         <span className="text-xs text-muted-foreground">
           {title || '(Chưa có tiêu đề)'} · {durationMinutes} phút · {questions.length} câu
         </span>

@@ -54,7 +54,7 @@ export function TopicAnalyticsCard({ topicMastery, withAdvice }: TopicAnalyticsC
     >
       <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-card-foreground">
         <BarChart2 className="size-4 text-primary" aria-hidden />
-        Phân tích theo Chủ đề
+        Phân tích theo chủ đề
       </h2>
 
       <ul className="space-y-3">

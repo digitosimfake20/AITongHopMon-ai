@@ -4,9 +4,9 @@ import { ArrowUpRight, PartyPopper, Target, TrendingUp } from 'lucide-react'
 import { ScoreRing } from '@/components/hero/score-ring'
 
 const BREAKDOWN = [
-  { id: 'Hằng Đẳng thức', label: 'Hằng Đẳng thức', value: 92 },
-  { id: 'Phương trình bật nhất', label: 'Phương trình bật nhất', value: 80 },
-  { id: 'Hệ phương trình', label: 'Hệ phương trình', value: 64 },
+  { id: 'hang-dang-thuc', label: 'Hằng đẳng thức', value: 92 },
+  { id: 'pt-bac-nhat', label: 'Phương trình bậc nhất', value: 80 },
+  { id: 'he-pt', label: 'Hệ phương trình', value: 64 },
 ]
 
 export function ScoreView() {
@@ -15,7 +15,7 @@ export function ScoreView() {
       <div className="animate-pop-in space-y-1">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-3 py-1 text-[11px] font-medium text-success">
           <PartyPopper className="size-3.5" aria-hidden="true" />
-          Bài đã được nộp!
+          Đã nộp bài
         </span>
       </div>
 
@@ -31,11 +31,11 @@ export function ScoreView() {
         style={{ animationDelay: '600ms' }}
       >
         <p className="text-base font-semibold text-foreground">
-          Làm hay lắm!, Văn A — 8 trên 10 điểm
+          Văn A: 8/10 điểm
         </p>
         <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <TrendingUp className="size-3.5 text-success" aria-hidden="true" />
-          Điểm trung bình tăng 0.3 từ tuần trước
+          Trung bình tăng 0.3 so với tuần trước
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export function ScoreView() {
         style={{ animationDelay: '1200ms' }}
       >
         <Target className="size-3.5" aria-hidden="true" />
-        Review respiration
+        Ôn hệ phương trình
         <ArrowUpRight className="size-3" aria-hidden="true" />
       </div>
     </div>

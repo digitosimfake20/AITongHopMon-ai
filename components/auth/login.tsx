@@ -60,8 +60,8 @@ export function Login({ role, onSwitchToSignup, onBack }: LoginProps) {
               </h1>
               <p className="mt-2 text-sm text-muted-foreground sm:text-base">
                 {role === 'student'
-                  ? 'Nhập email và mật khẩu để tiếp tục'
-                  : 'Nhập email trường và mật khẩu'}
+                  ? 'Dùng email và mật khẩu đã đăng ký.'
+                  : 'Dùng email trường và mật khẩu.'}
               </p>
             </div>
 

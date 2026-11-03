@@ -34,13 +34,13 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
         if (saveForLater) {
           addSavedPractice({
             testId: result.data.testId,
-            title: `Luyện tập — ${result.data.weakTopic}`,
+            title: `Luyện tập: ${result.data.weakTopic}`,
             topic: result.data.weakTopic,
             questionCount: result.data.questionCount,
             timeLimitMinutes: result.data.timeLimitMinutes,
             savedAt: Date.now(),
           })
-          toast.success('Đã thêm vào tab "Làm sau" — mở Ngân hàng đề để làm bất cứ lúc nào')
+          toast.success('Đã thêm vào tab Làm sau trong Ngân hàng đề')
           router.push('/quizzes?tab=later')
           return
         }
@@ -65,9 +65,9 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
             <Brain className="size-5 text-teal-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Hồ sơ Tư duy AI</h3>
+            <h3 className="font-semibold text-foreground">Hồ sơ tư duy</h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Hoàn thành ít nhất một bài kiểm tra để Zeno xây dựng hồ sơ học tập cá nhân của bạn.
+              Làm ít nhất một bài kiểm tra để Zeno lập hồ sơ học tập của bạn.
             </p>
           </div>
         </div>
@@ -91,7 +91,7 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
               <Brain className="size-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Hồ sơ Tư duy AI</h3>
+              <h3 className="text-sm font-semibold text-foreground">Hồ sơ tư duy</h3>
               <p className="text-xs text-muted-foreground">Phân tích từ Zeno</p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export function AiProfileCard({ profile }: AiProfileCardProps) {
           open={pretestOpen}
           onOpenChange={setPretestOpen}
           testId={pendingQuiz.testId}
-          title={`Luyện tập — ${pendingQuiz.weakTopic}`}
+          title={`Luyện tập: ${pendingQuiz.weakTopic}`}
           topic={pendingQuiz.weakTopic}
           questionCount={pendingQuiz.questionCount}
           timeLimitMinutes={pendingQuiz.timeLimitMinutes}

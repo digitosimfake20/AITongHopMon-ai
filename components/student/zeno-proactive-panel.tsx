@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { AlertTriangle, Flame, Sparkles, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -36,8 +35,8 @@ export function ZenoProactivePanel({
     if (sessionStorage.getItem(key)) return
     sessionStorage.setItem(key, '1')
 
-    toast('Zeno AI gợi ý ôn tập', {
-      description: `Zeno nhận thấy bạn đang gặp chút rắc rối ở dạng ${weakTopic}. Hãy thử bài luyện ${PRACTICE_TIME_LIMIT_MINUTES} phút để gỡ điểm nhé!`,
+    toast('Gợi ý ôn tập từ Zeno', {
+      description: `Điểm yếu ở dạng ${weakTopic}. Luyện ${PRACTICE_TIME_LIMIT_MINUTES} phút để củng cố.`,
       duration: 8000,
       action: {
         label: 'Luyện ngay',
@@ -61,7 +60,7 @@ export function ZenoProactivePanel({
       const { addSavedPractice } = await import('@/lib/quiz/active-quiz-session')
       addSavedPractice({
         testId: result.data.testId,
-        title: `Luyện tập — ${result.data.weakTopic}`,
+        title: `Luyện tập: ${result.data.weakTopic}`,
         topic: result.data.weakTopic,
         questionCount: result.data.questionCount,
         timeLimitMinutes: result.data.timeLimitMinutes,
@@ -90,18 +89,15 @@ export function ZenoProactivePanel({
               <Zap className="size-5" aria-hidden />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">
-                Chào ngày mới, {firstName}! 
-              </p>
+              <p className="text-sm font-semibold text-foreground">{firstName}</p>
               {streakDays > 0 ? (
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Flame className="size-4 text-amber-500" aria-hidden />
-                  Chuỗi học tập:{' '}
-                  <strong className="text-foreground">{streakDays} ngày</strong> liên tiếp
+                  Chuỗi học · <strong className="text-foreground">{streakDays} ngày</strong> liên tiếp
                 </p>
               ) : (
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Làm bài hôm nay để bắt đầu chuỗi học tập.
+                  Làm một bài hôm nay để mở chuỗi học.
                 </p>
               )}
             </div>
@@ -123,8 +119,8 @@ export function ZenoProactivePanel({
           <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm dark:border-amber-900/50 dark:bg-amber-950/25">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
             <p className="text-amber-900 dark:text-amber-200">
-              <strong>Zeno nhận thấy</strong> bạn đang gặp chút rắc rối ở dạng{' '}
-              <strong>{weakTopic}</strong>. Hãy thử bài luyện {PRACTICE_TIME_LIMIT_MINUTES} phút để gỡ điểm nhé!
+              Zeno đánh dấu dạng <strong>{weakTopic}</strong> còn yếu. Luyện{' '}
+              {PRACTICE_TIME_LIMIT_MINUTES} phút để củng cố.
             </p>
           </div>
         ) : null}
@@ -135,7 +131,7 @@ export function ZenoProactivePanel({
           open={pretestOpen}
           onOpenChange={setPretestOpen}
           testId={pendingQuiz.testId}
-          title={`Luyện tập — ${pendingQuiz.weakTopic}`}
+          title={`Luyện tập: ${pendingQuiz.weakTopic}`}
           topic={pendingQuiz.weakTopic}
           questionCount={pendingQuiz.questionCount}
           timeLimitMinutes={pendingQuiz.timeLimitMinutes}

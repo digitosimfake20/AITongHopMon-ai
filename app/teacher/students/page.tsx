@@ -29,7 +29,7 @@ export default async function TeacherStudentsPage() {
         <div className="flex items-center gap-2">
           <Users className="size-5 text-primary" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">Danh sách Học sinh</h1>
+            <h1 className="text-xl font-bold text-foreground">Danh sách học sinh</h1>
             <p className="text-sm text-muted-foreground">
               {shell.className} · {students.length} học sinh
             </p>

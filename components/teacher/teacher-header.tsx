@@ -47,7 +47,7 @@ export function TeacherHeader({
           render={<Link href="/teacher/assignments" />}
         >
           <Plus className="size-4" aria-hidden="true" />
-          Tạo &amp; Giao Bài Mới
+          Tạo &amp; giao bài
         </Button>
         <ThemeToggle />
         <Avatar size="lg">

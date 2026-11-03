@@ -87,7 +87,7 @@ export function JoinClassForm({ currentUserId }: JoinClassFormProps) {
     <form onSubmit={handleCodeSubmit} className="rounded-xl border border-dashed border-border bg-card/40 p-6">
       <h3 className="font-semibold text-foreground">Tham gia lớp bằng mã</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Nhập mã 8 ký tự do thầy cô cung cấp
+        Nhập đúng 8 ký tự thầy cô đưa.
       </p>
       <input
         value={code}

@@ -99,8 +99,8 @@ function FeedbackModalContent({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        AI sẽ soạn một tin nhắn nhẹ nhàng, xây dựng để gửi cho phụ huynh hoặc học sinh về tình
-        hình học tập của <strong>{studentName}</strong>.
+        Soạn tin gửi phụ huynh hoặc học sinh về tình hình học tập của{' '}
+        <strong>{studentName}</strong>.
       </p>
 
       {!message && !loading && (
@@ -171,9 +171,11 @@ function QuizModalContent({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        AI sẽ tạo <strong>5 câu hỏi</strong> nhắm thẳng vào các chủ đề yếu của{' '}
-        <strong>{studentName}</strong>:{' '}
-        <span className="text-foreground">{weakTopics.slice(0, 3).join(', ')}{weakTopics.length > 3 ? '...' : ''}</span>
+        Tạo <strong>5 câu</strong> theo chủ đề yếu của <strong>{studentName}</strong>:{' '}
+        <span className="text-foreground">
+          {weakTopics.slice(0, 3).join(', ')}
+          {weakTopics.length > 3 ? '…' : ''}
+        </span>
       </p>
 
       {!questions && !loading && (
@@ -278,7 +280,7 @@ export function StudentDetailActions({
           onClick={() => setQuizOpen(true)}
         >
           <HelpCircle className="size-4" />
-          Tạo bài tập phụ đạo riêng (1-click)
+          Tạo bài phụ đạo riêng
         </Button>
       </div>
 
@@ -298,7 +300,7 @@ export function StudentDetailActions({
       <Modal
         open={quizOpen}
         onClose={() => setQuizOpen(false)}
-        title="Bài tập phụ đạo cá nhân hóa (AI)"
+        title="Bài tập phụ đạo"
       >
         <QuizModalContent studentName={studentName} weakTopics={weakTopics} />
       </Modal>

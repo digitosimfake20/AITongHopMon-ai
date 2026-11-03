@@ -34,7 +34,7 @@ export function DashboardSidebar({
         </div>
       </div>
 
-      <nav aria-label="Dashboard" className="flex-1 space-y-1 px-3 py-4">
+      <nav aria-label="Điều hướng học sinh" className="flex-1 space-y-1 px-3 py-4">
         {DASHBOARD_NAV.map((item) => {
           const active =
             item.href === '/dashboard'

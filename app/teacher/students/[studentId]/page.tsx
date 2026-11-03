@@ -50,9 +50,9 @@ function ScoreBar({ score, total = 10 }: { score: number; total?: number }) {
 }
 
 const MASTERY_CONFIG = {
-  WEAK:     { emoji: '🔴', label: 'Yếu',           bar: 'bg-red-500',   badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' },
-  MEDIUM:   { emoji: '🟡', label: 'Đang tiến bộ',  bar: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
-  MASTERED: { emoji: '🟢', label: 'Thành thạo',   bar: 'bg-green-500', badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' },
+  WEAK:     { label: 'Yếu',           bar: 'bg-red-500',   badge: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' },
+  MEDIUM:   { label: 'Đang tiến bộ',  bar: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
+  MASTERED: { label: 'Thành thạo',   bar: 'bg-green-500', badge: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' },
 }
 
 function TopicRow({ t }: { t: TopicMasteryItem }) {
@@ -62,7 +62,7 @@ function TopicRow({ t }: { t: TopicMasteryItem }) {
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-foreground">{t.topic}</p>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg.badge}`}>
-          {cfg.emoji} {cfg.label}
+          {cfg.label}
         </span>
       </div>
       <div className="mt-1.5 flex items-center gap-2">
@@ -87,7 +87,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
   if (!student) notFound()
 
   const weakTopicNames = student.weakTopics.map((t) => t.topic)
-  const behaviorSignalLabels = student.behaviorSignals.map((s) => `${s.emoji} ${s.label}: ${s.description}`)
+  const behaviorSignalLabels = student.behaviorSignals.map((s) => `${s.label}: ${s.description}`)
 
   return (
     <div className="space-y-6">
@@ -127,12 +127,12 @@ export default async function StudentDetailPage({ params }: PageProps) {
       {/* ── Behavior signals ───────────────────────────────────────────────── */}
       {student.behaviorSignals.length > 0 && (
         <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-card-foreground">Tín hiệu Hành vi Học tập</h2>
+          <h2 className="mb-3 text-sm font-semibold text-card-foreground">Tín hiệu hành vi học tập</h2>
           <div className="flex flex-wrap gap-2">
             {student.behaviorSignals.map((sig) => (
               <div
                 key={sig.type}
-                className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-sm ${
+                className={`rounded-xl border px-3 py-2 text-sm ${
                   sig.type === 'CARELESS'
                     ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
                     : sig.type === 'STUCK'
@@ -142,11 +142,8 @@ export default async function StudentDetailPage({ params }: PageProps) {
                         : 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20'
                 }`}
               >
-                <span className="text-lg leading-none">{sig.emoji}</span>
-                <div>
-                  <p className="font-semibold text-foreground">{sig.label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{sig.description}</p>
-                </div>
+                <p className="font-semibold text-foreground">{sig.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{sig.description}</p>
               </div>
             ))}
           </div>

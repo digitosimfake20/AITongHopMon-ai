@@ -20,8 +20,8 @@ export async function TeacherOnboarding({ fullName }: TeacherOnboardingProps) {
             <GraduationCap className="size-5 text-teal-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Quản lý lớp học</h1>
-            <p className="text-sm text-muted-foreground">Xin chào, {fullName}</p>
+            <h1 className="text-2xl font-bold tracking-tight">Quản lý lớp học</h1>
+            <p className="text-sm text-muted-foreground">Xin chào, {fullName}. Tạo lớp hoặc mở lớp sẵn có.</p>
           </div>
         </div>
         <form action={signOutAction}>
@@ -46,7 +46,7 @@ export async function TeacherOnboarding({ fullName }: TeacherOnboardingProps) {
       ) : (
         <div className="mt-10 flex flex-col items-center rounded-2xl border border-dashed border-border py-16 text-center">
           <GraduationCap className="size-12 text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">Chưa có lớp nào. Tạo lớp đầu tiên ở trên.</p>
+          <p className="mt-4 text-muted-foreground">Chưa có lớp. Tạo lớp đầu tiên ở trên.</p>
         </div>
       )}
     </div>

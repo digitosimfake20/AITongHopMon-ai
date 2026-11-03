@@ -32,8 +32,8 @@ export function QuizPreTestGate({ data, children }: QuizPreTestGateProps) {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6 rounded-2xl border bg-card p-6 shadow-lg">
         <div className="text-center">
-          <Sparkles className="mx-auto size-10 text-primary" />
-          <h1 className="mt-3 text-xl font-bold">Bạn đã sẵn sàng chưa?</h1>
+          <Sparkles className="mx-auto size-10 text-primary" aria-hidden />
+          <h1 className="mt-3 text-xl font-bold text-card-foreground">Sẵn sàng làm bài</h1>
           <p className="mt-1 text-sm text-muted-foreground">{data.title}</p>
         </div>
 

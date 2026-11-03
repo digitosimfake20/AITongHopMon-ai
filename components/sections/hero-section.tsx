@@ -1,9 +1,10 @@
-import { ArrowRight, Check, Sparkles } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { ProductDemo } from '@/components/hero/product-demo'
 import { LinkButton } from '@/components/ui/link-button'
+import { SITE_NAME } from '@/lib/content'
 
 const PROOF_POINTS = [
-  'Miễn phí cho 1 Lớp',
+  'Miễn phí cho 1 lớp',
   'Không cần thẻ tín dụng',
   'Thiết lập trong 5 phút',
 ]
@@ -13,30 +14,29 @@ export function HeroSection() {
     <section id="top" className="relative overflow-hidden">
       <div
         aria-hidden="true"
-        className="grid-lines mask-fade-b pointer-events-none absolute inset-x-0 top-0 h-[32rem] opacity-[0.5]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--foreground)_6%,transparent),transparent_70%)]"
       />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
-            Chấm bài tự động &amp; Phân tích lỗ hỏng kiến thức của Học sinh
-          </span>
+          <p className="text-sm font-semibold tracking-tight text-foreground sm:text-base">
+            {SITE_NAME}
+          </p>
 
-          <h1 className="mt-6 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            Bài kiểm tra tự chấm điểm và và chỉ ra khả năng học bài của từng học sinh
+          <h1 className="mt-4 text-balance text-4xl font-semibold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+            Quiz Toán tự chấm. Biết ngay ai đang kẹt.
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Học sinh làm bài Quiz Toán, nhận ngay kết quả. Thầy cô nhận báo cáo chi tiết và bản tóm tắt AI về mức độ hiểu bài của cả lớp chỉ trong 2 giây.
+            Học sinh nộp bài là có điểm. Thầy cô nhận báo cáo lớp và tóm tắt AI trong vài giây.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <LinkButton
-              href="#cta"
+              href="/signup"
               className="h-11 w-full px-5 text-[15px] sm:w-auto"
             >
-              Dùng thử miễn phí cho 1 Lớp
+              Dùng thử miễn phí
               <ArrowRight className="size-4" aria-hidden="true" />
             </LinkButton>
             <LinkButton
@@ -54,7 +54,7 @@ export function HeroSection() {
                 key={point}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground"
               >
-                <Check className="size-3.5 text-accent" aria-hidden="true" />
+                <Check className="size-3.5 text-foreground/70" aria-hidden="true" />
                 {point}
               </li>
             ))}

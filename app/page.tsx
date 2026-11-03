@@ -5,6 +5,7 @@ import { FaqSection } from '@/components/sections/faq-section'
 import { FeaturesSection } from '@/components/sections/features-section'
 import { HeroSection } from '@/components/sections/hero-section'
 import { InsightsSection } from '@/components/sections/insights-section'
+import { PricingSection } from '@/components/sections/pricing-section'
 import { StudentSignupSection } from '@/components/sections/student-signup-section'
 import { WorkflowSection } from '@/components/sections/workflow-section'
 
@@ -18,6 +19,7 @@ export default function HomePage() {
         <WorkflowSection />
         <InsightsSection />
         <StudentSignupSection />
+        <PricingSection />
         <FaqSection />
         <CtaSection />
       </main>

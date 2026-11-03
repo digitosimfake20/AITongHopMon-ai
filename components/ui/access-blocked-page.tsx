@@ -11,7 +11,7 @@ interface AccessBlockedPageProps {
 
 export function AccessBlockedPage({
   title = 'Không truy cập được',
-  description = 'Liên kết có thể sai, bài đã hết hạn, hoặc tài khoản không có quyền xem nội dung này.',
+  description = 'Liên kết sai, bài hết hạn, hoặc tài khoản không có quyền xem.',
   backHref = '/dashboard',
   backLabel = 'Quay lại',
 }: AccessBlockedPageProps) {
