@@ -1,4 +1,4 @@
-import { bustCacheTags, bustClassCaches } from '@/lib/cache/cached-query'
+import { bustAfterSubmit, bustCacheTags, bustClassCaches } from '@/lib/cache/cached-query'
 import { CacheTags } from '@/lib/cache/tags'
 
 /** Admin/teacher published or deleted system tests / groups. */
@@ -18,7 +18,7 @@ export function invalidateAfterAssign(classId: string) {
 
 /** Student submitted a quiz (scores, bank status, gap map, dashboards). */
 export function invalidateAfterSubmit(classId: string, studentId: string) {
-  bustClassCaches(classId, { studentId })
+  bustAfterSubmit(classId, studentId)
 }
 
 /** Roster / membership changed. */

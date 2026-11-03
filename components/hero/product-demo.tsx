@@ -1,7 +1,7 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { Laptop } from 'lucide-react'
-import { QuizView } from '@/components/hero/quiz-view'
 import { ScoreView } from '@/components/hero/score-view'
 import { TeacherView } from '@/components/hero/teacher-view'
 import { useDemoSequence } from '@/components/hero/use-demo-sequence'
@@ -10,6 +10,16 @@ import { DEMO_QUESTIONS } from '@/lib/content'
 import type { DemoStage } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+/** KaTeX + react-katex live only in this chunk — loaded when the demo enters view. */
+const QuizView = dynamic(
+  () =>
+    import('@/components/hero/quiz-view').then((m) => ({ default: m.QuizView })),
+  {
+    ssr: false,
+    loading: () => <QuizStagePlaceholder />,
+  },
+)
+
 const STAGE_LABELS: Record<DemoStage, string> = {
   quiz: 'Học sinh làm bài',
   score: 'Điểm tức thì',
@@ -17,6 +27,25 @@ const STAGE_LABELS: Record<DemoStage, string> = {
 }
 
 const STAGES: DemoStage[] = ['quiz', 'score', 'teacher']
+
+function QuizStagePlaceholder() {
+  return (
+    <div
+      className="flex h-full flex-col gap-5 p-5 sm:p-7"
+      aria-hidden="true"
+    >
+      <div className="h-6 w-28 animate-pulse rounded-md bg-secondary" />
+      <div className="h-1.5 w-full rounded-full bg-secondary" />
+      <div className="h-8 w-full max-w-md animate-pulse rounded-md bg-secondary" />
+      <div className="flex flex-col gap-2.5">
+        <div className="h-12 animate-pulse rounded-xl bg-secondary" />
+        <div className="h-12 animate-pulse rounded-xl bg-secondary" />
+        <div className="h-12 animate-pulse rounded-xl bg-secondary" />
+        <div className="h-12 animate-pulse rounded-xl bg-secondary" />
+      </div>
+    </div>
+  )
+}
 
 export function ProductDemo() {
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.25 })
@@ -48,13 +77,17 @@ export function ProductDemo() {
         <div className="relative h-[27rem] overflow-hidden sm:h-[29rem]">
           <div key={`${stage}-${loop}`} className="absolute inset-0">
             {stage === 'quiz' ? (
-              <QuizView
-                question={question}
-                questionIndex={questionIndex}
-                totalQuestions={DEMO_QUESTIONS.length}
-                selectedOptionId={selectedOptionId}
-                revealed={revealed}
-              />
+              inView ? (
+                <QuizView
+                  question={question}
+                  questionIndex={questionIndex}
+                  totalQuestions={DEMO_QUESTIONS.length}
+                  selectedOptionId={selectedOptionId}
+                  revealed={revealed}
+                />
+              ) : (
+                <QuizStagePlaceholder />
+              )
             ) : null}
             {stage === 'score' ? <ScoreView /> : null}
             {stage === 'teacher' ? <TeacherView /> : null}

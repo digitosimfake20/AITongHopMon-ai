@@ -11,10 +11,11 @@ export default async function DashboardPage() {
     shell.classLabel,
   )
 
+  // streakDays/masteryScore come from shared getStudentShellStats cache (same as layout chrome)
   return (
     <DashboardGrid
       data={data}
-      streakDays={shell.streakDays}
+      streakDays={data.streakDays}
       fullStudentName={user.fullName}
     />
   )

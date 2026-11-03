@@ -90,10 +90,15 @@ function MessageBubble({ msg }: { msg: ChatMessageDisplay }) {
 
 interface ZenoChatModalProps {
   sessionId?: string
+  /** Open immediately on mount (used when user clicked the lazy FAB before the chunk loaded). */
+  defaultOpen?: boolean
 }
 
-export function ZenoChatModal({ sessionId: initialSessionId }: ZenoChatModalProps) {
-  const [open, setOpen] = useState(false)
+export function ZenoChatModal({
+  sessionId: initialSessionId,
+  defaultOpen = false,
+}: ZenoChatModalProps) {
+  const [open, setOpen] = useState(defaultOpen)
   const [messages, setMessages] = useState<ChatMessageDisplay[]>([])
   const [input, setInput] = useState('')
   const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId)

@@ -2,7 +2,7 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth/session'
 import { resolveStudentClassId, resolveTeacherClassId } from '@/lib/class/resolve-class-id'
-import { computeStreakDays } from '@/lib/dashboard/streak'
+import { getStudentShellStats } from '@/lib/dashboard/student-data'
 import prisma from '@/lib/prisma'
 import { getInitials } from '@/lib/utils/initials'
 
@@ -51,32 +51,8 @@ export const resolveStudentContext = cache(async (): Promise<{
 
   if (!membership) redirect('/onboarding')
 
-  const [masteryStates, streakSubs] = await Promise.all([
-    prisma.studentKnowledgeState.findMany({
-      where: { studentId: user.id },
-      select: { pMastery: true },
-    }),
-    prisma.submission.findMany({
-      where: { studentId: user.id },
-      select: { submittedAt: true },
-      orderBy: { submittedAt: 'desc' },
-      take: 90,
-    }),
-  ])
-
-  const masteryScore =
-    masteryStates.length > 0
-      ? Math.round(
-          (masteryStates.reduce(
-            (sum: number, state: { pMastery: unknown }) => sum + Number(state.pMastery),
-            0,
-          ) /
-            masteryStates.length) *
-            10 *
-            10,
-        ) / 10
-      : 0
-
+  // Mastery/streak: shared cached lean loader (not full knowledge rows / dash payload).
+  const shellStats = await getStudentShellStats(user.id)
   const firstName = user.fullName.split(/\s+/)[0] ?? user.fullName
 
   return {
@@ -87,8 +63,8 @@ export const resolveStudentContext = cache(async (): Promise<{
       initials: getInitials(user.fullName),
       classLabel: membership.class.name,
       classId: membership.class.id,
-      masteryScore,
-      streakDays: computeStreakDays(streakSubs.map((s) => s.submittedAt)),
+      masteryScore: shellStats.masteryScore,
+      streakDays: shellStats.streakDays,
     },
   }
 })
