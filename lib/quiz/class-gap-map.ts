@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getInitials } from '@/lib/utils/initials'
 import {
@@ -7,11 +8,11 @@ import {
   type MasteryStatus,
 } from '@/lib/knowledge/topic-clusters'
 import {
-  ensureTopicsCanonicalized,
   mergeStatsByCanonicalKey,
   resolveTopicCanonicalSync,
+  type CanonicalTopic,
 } from '@/lib/knowledge/topic-canonicalize-ai'
-import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
+import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import { computeClassCompletionDetail } from '@/lib/quiz/class-completion-stats'
 import { criticalGapHeadline } from '@/lib/quiz/critical-gap-display'
 import type { QuestionType } from '@/lib/quiz/types'
@@ -134,6 +135,41 @@ type QuestionWrongRow = {
   student_count: number
 }
 
+type QuestionStudentRow = {
+  question_id: string
+  student_id: string
+}
+
+/**
+ * GET/read-safe topic merge: existing TopicCanonicalAlias rows + rule sync only.
+ * Never calls OpenAI / ensureTopicsCanonicalized (write/ingest path owns AI).
+ */
+async function resolveTopicsFromAliasesOnly(
+  rawLabels: string[],
+): Promise<Map<string, CanonicalTopic>> {
+  const normalized = [...new Set(rawLabels.map(normalizeTopicName).filter(Boolean))]
+  const result = new Map<string, CanonicalTopic>()
+  if (normalized.length === 0) return result
+
+  const aliasKeys = normalized.map((l) => topicToNodeId(l))
+  const cached = await prisma.topicCanonicalAlias.findMany({
+    where: { aliasKey: { in: aliasKeys } },
+    select: { aliasKey: true, canonicalKey: true, canonicalLabel: true },
+  })
+  const cacheByAlias = new Map(cached.map((r) => [r.aliasKey, r]))
+
+  for (const label of normalized) {
+    const hit = cacheByAlias.get(topicToNodeId(label))
+    result.set(
+      label,
+      hit
+        ? { topicName: hit.canonicalLabel, topicKey: hit.canonicalKey }
+        : resolveTopicCanonicalSync(label),
+    )
+  }
+  return result
+}
+
 // ---------------------------------------------------------------------------
 // Query
 // ---------------------------------------------------------------------------
@@ -201,7 +237,7 @@ async function getClassGapMapDataUncached(
     ...topicRows.map((r) => r.topic_label),
     ...studentTopicRows.map((r) => r.topic_label),
   ]
-  const canon = await ensureTopicsCanonicalized(allLabels, classroom.subject)
+  const canon = await resolveTopicsFromAliasesOnly(allLabels)
 
   const mergedTopicRows = mergeStatsByCanonicalKey(topicRows, canon)
 
@@ -327,26 +363,25 @@ async function getClassGapMapDataUncached(
       : []
   const questionById = new Map(questions.map((q) => [q.id, q]))
 
+  // Distinct (question, student) pairs only — no per-attempt detail rows (was take:3000).
   const wrongStudentRows =
     questionIds.length > 0
-      ? await prisma.submissionDetail.findMany({
-          where: {
-            isCorrect: false,
-            questionId: { in: questionIds },
-            question: { type: { not: 'ESSAY' } },
-            submission: { test: { classId } },
-          },
-          select: {
-            questionId: true,
-            submission: { select: { studentId: true } },
-          },
-          take: 3000,
-        })
+      ? await prisma.$queryRaw<QuestionStudentRow[]>`
+          SELECT DISTINCT sd.question_id, s.student_id
+          FROM core.submission_details sd
+          INNER JOIN core.submissions s ON s.id = sd.submission_id
+          INNER JOIN core.tests t ON t.id = s.test_id
+          INNER JOIN core.questions q ON q.id = sd.question_id
+          WHERE t.class_id = ${classId}::uuid
+            AND sd.is_correct = false
+            AND q.type <> 'ESSAY'::core."QuestionType"
+            AND sd.question_id IN (${Prisma.join(
+              questionIds.map((id) => Prisma.sql`${id}::uuid`),
+            )})
+        `
       : []
 
-  const studentIdsForGaps = [
-    ...new Set(wrongStudentRows.map((r) => r.submission.studentId)),
-  ]
+  const studentIdsForGaps = [...new Set(wrongStudentRows.map((r) => r.student_id))]
   const gapStudents =
     studentIdsForGaps.length > 0
       ? await prisma.user.findMany({
@@ -358,10 +393,10 @@ async function getClassGapMapDataUncached(
 
   const studentsByQuestion = new Map<string, Set<string>>()
   for (const row of wrongStudentRows) {
-    if (!studentsByQuestion.has(row.questionId)) {
-      studentsByQuestion.set(row.questionId, new Set())
+    if (!studentsByQuestion.has(row.question_id)) {
+      studentsByQuestion.set(row.question_id, new Set())
     }
-    studentsByQuestion.get(row.questionId)!.add(row.submission.studentId)
+    studentsByQuestion.get(row.question_id)!.add(row.student_id)
   }
 
   const criticalGaps: CriticalGap[] = questionWrongRows.slice(0, 4).map((row) => {

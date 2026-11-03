@@ -23,8 +23,55 @@ function formatRelativeTime(date: Date): string {
   return `Cập nhật ${days} ngày trước`
 }
 
-type CachedStudentDash = Omit<StudentDashboardData, 'zenoUpdatedAt'> & {
+export type StudentShellStats = {
+  masteryScore: number
+  streakDays: number
+}
+
+type CachedStudentDash = Omit<
+  StudentDashboardData,
+  'zenoUpdatedAt' | 'masteryScore' | 'streakDays'
+> & {
   zenoUpdatedAtIso: string | null
+}
+
+/**
+ * Lean chrome stats (mastery avg + streak dates only). Shared by layout shell
+ * and dashboard page via unstable_cache; busted with studentDash/knowledge on submit.
+ */
+async function getStudentShellStatsUncached(userId: string): Promise<StudentShellStats> {
+  const [agg, streakSubs] = await Promise.all([
+    prisma.studentKnowledgeState.aggregate({
+      where: { studentId: userId },
+      _avg: { pMastery: true },
+      _count: { _all: true },
+    }),
+    prisma.submission.findMany({
+      where: { studentId: userId },
+      select: { submittedAt: true },
+      orderBy: { submittedAt: 'desc' },
+      take: 90,
+    }),
+  ])
+
+  const masteryScore =
+    agg._count._all > 0 && agg._avg.pMastery != null
+      ? Math.round(Number(agg._avg.pMastery) * 100) / 10
+      : 0
+
+  return {
+    masteryScore,
+    streakDays: computeStreakDays(streakSubs.map((s) => s.submittedAt)),
+  }
+}
+
+export async function getStudentShellStats(userId: string): Promise<StudentShellStats> {
+  const cached = cachedQuery(getStudentShellStatsUncached, {
+    keyParts: ['student-shell-stats'],
+    tags: [CacheTags.studentDash(userId), CacheTags.knowledge(userId)],
+    revalidate: CacheTTL.studentShell,
+  })
+  return cached(userId)
 }
 
 async function getStudentDashboardDataUncached(
@@ -61,14 +108,11 @@ async function getStudentDashboardDataUncached(
         )
       : 0
 
-  const masteryScore = Math.round((masteryPercent / 100) * 10 * 10) / 10
   const completedQuizzes = submissions.length
   const studyHours =
     Math.round(
       (submissions.reduce((sum, item) => sum + item.timeSpentSeconds, 0) / 3600) * 10,
     ) / 10
-
-  const streakDays = computeStreakDays(submissions.map((s) => s.submittedAt))
 
   const weakTopics = knowledgeStates
     .filter((state) => Number(state.pMastery) < MASTERY_STATUS_MASTERED)
@@ -116,11 +160,9 @@ async function getStudentDashboardDataUncached(
     studentName: firstName,
     initials: getInitials(fullName),
     classLabel,
-    masteryScore,
     masteryPercent,
     completedQuizzes,
     studyHours,
-    streakDays,
     adaptiveChapter: adaptiveTitle,
     adaptiveTitle,
     adaptiveDescription,
@@ -140,7 +182,7 @@ async function getStudentDashboardDataUncached(
   }
 }
 
-/** Cached per student (~45s). Relative "updated at" is formatted after cache hit. */
+/** Cached per student (~45s). Mastery/streak come from shared shell-stats cache. */
 export async function getStudentDashboardData(
   userId: string,
   classId: string,
@@ -156,11 +198,16 @@ export async function getStudentDashboardData(
     ],
     revalidate: CacheTTL.studentDash,
   })
-  const data = await cached(userId, classId, fullName, classLabel)
+  const [data, shellStats] = await Promise.all([
+    cached(userId, classId, fullName, classLabel),
+    getStudentShellStats(userId),
+  ])
   const { zenoUpdatedAtIso, ...rest } = data
   const updated = asDate(zenoUpdatedAtIso)
   return {
     ...rest,
+    masteryScore: shellStats.masteryScore,
+    streakDays: shellStats.streakDays,
     zenoUpdatedAt: updated ? formatRelativeTime(updated) : 'Chưa có dữ liệu AI',
   }
 }

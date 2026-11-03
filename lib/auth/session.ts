@@ -3,15 +3,13 @@
 import { cache } from 'react'
 import type { UserRole } from '@prisma/client'
 import prisma from '@/lib/prisma'
+import { getVerifiedAuthIdentity } from '@/lib/auth/claims'
 import { createClient } from '@/lib/supabase/server'
 import type { SessionUser } from '@/lib/auth/types'
 
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
+  const { identity, error } = await getVerifiedAuthIdentity(supabase)
 
   if (error?.code === 'refresh_token_not_found') {
     try {
@@ -22,9 +20,9 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     return null
   }
 
-  if (!user?.email) return null
+  if (!identity) return null
 
-  const dbUser = await prisma.user.findUnique({ where: { id: user.id } })
+  const dbUser = await prisma.user.findUnique({ where: { id: identity.id } })
 
   if (dbUser) {
     return {
@@ -35,14 +33,15 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     }
   }
 
-  const role = (user.user_metadata?.role as UserRole | undefined) ?? 'student'
+  const role =
+    (identity.userMetadata.role as UserRole | undefined) ?? 'student'
   const fullName =
-    (user.user_metadata?.full_name as string | undefined) ??
-    user.email.split('@')[0]
+    (identity.userMetadata.full_name as string | undefined) ??
+    identity.email.split('@')[0]
 
   const profile = {
-    id: user.id,
-    email: user.email,
+    id: identity.id,
+    email: identity.email,
     fullName,
     role,
   }

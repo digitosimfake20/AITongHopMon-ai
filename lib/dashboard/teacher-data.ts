@@ -6,6 +6,12 @@ import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normali
 import { cachedQuery } from '@/lib/cache/cached-query'
 import { CacheTags, CacheTTL } from '@/lib/cache/tags'
 
+type TopicWrongAgg = {
+  topic: string
+  wrong_count: number
+  student_count: number
+}
+
 async function getTeacherDashboardDataUncached(
   teacherId: string,
   classId: string,
@@ -13,103 +19,93 @@ async function getTeacherDashboardDataUncached(
   className: string,
   studentCount: number,
 ): Promise<TeacherDashboardData> {
-  const tests = await prisma.test.findMany({
-    where: { classId },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      submissions: {
-        select: { score: true, submittedAt: true },
-      },
-    },
-  })
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const allScores = tests.flatMap((test) =>
-    test.submissions.map((submission) => Number(submission.score)),
-  )
+  const [scoreAgg, testCount, recentSubmissionCount, topicWrongRows, lowScorers, quizPackages] =
+    await Promise.all([
+      prisma.submission.aggregate({
+        where: { test: { classId } },
+        _avg: { score: true },
+      }),
+      prisma.test.count({ where: { classId } }),
+      prisma.submission.count({
+        where: { test: { classId }, submittedAt: { gte: weekAgo } },
+      }),
+      prisma.$queryRaw<TopicWrongAgg[]>`
+        SELECT
+          COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác') AS topic,
+          COUNT(*)::int AS wrong_count,
+          COUNT(DISTINCT s.student_id)::int AS student_count
+        FROM core.submission_details sd
+        INNER JOIN core.submissions s ON s.id = sd.submission_id
+        INNER JOIN core.tests t ON t.id = s.test_id
+        INNER JOIN core.questions q ON q.id = sd.question_id
+        WHERE t.class_id = ${classId}::uuid
+          AND sd.is_correct = false
+          AND q.type <> 'ESSAY'::core."QuestionType"
+        GROUP BY COALESCE(NULLIF(TRIM(q.topic), ''), 'Chủ đề khác')
+        ORDER BY wrong_count DESC
+        LIMIT 12
+      `,
+      prisma.submission.groupBy({
+        by: ['studentId'],
+        where: { test: { classId } },
+        _avg: { score: true },
+      }),
+      getQuizPackagesForClass(classId),
+    ])
 
   const classAverage =
-    allScores.length > 0
-      ? Math.round((allScores.reduce((sum, score) => sum + score, 0) / allScores.length) * 10) / 10
+    scoreAgg._avg.score != null
+      ? Math.round(Number(scoreAgg._avg.score) * 10) / 10
       : 0
 
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const recentSubmissions = tests.flatMap((test) =>
-    test.submissions.filter((submission) => submission.submittedAt >= weekAgo),
-  )
-  const weeklyTarget = studentCount * Math.max(tests.length, 1)
+  const weeklyTarget = studentCount * Math.max(testCount, 1)
   const weeklyCompletionRate =
     weeklyTarget > 0
-      ? Math.min(100, Math.round((recentSubmissions.length / weeklyTarget) * 100))
+      ? Math.min(100, Math.round((recentSubmissionCount / weeklyTarget) * 100))
       : 0
-  // Fetch all wrong answers for this class (capped to avoid OOM on large datasets)
-  const wrongDetails = await prisma.submissionDetail.findMany({
-    where: {
-      isCorrect: false,
-      submission: { test: { classId } },
-      question: { type: { not: 'ESSAY' } },
-    },
-    select: {
-      questionId: true,
-      submission: { select: { studentId: true } },
-    },
-    take: 2000,
-  })
-
-  // Build topic map from unique questionIds
-  const uniqueQIds = [...new Set(wrongDetails.map((d) => d.questionId))]
-  const topicQuestions =
-    uniqueQIds.length > 0
-      ? await prisma.question.findMany({
-          where: { id: { in: uniqueQIds } },
-          select: { id: true, topic: true },
-        })
-      : []
-  const topicByQId = new Map(topicQuestions.map((q) => [q.id, q.topic]))
 
   // Aggregate by canonical topicKey (dedupe casing / whitespace variants)
   const byTopicKey = new Map<
     string,
-    { label: string; wrongCount: number; studentIds: Set<string> }
+    { label: string; wrongCount: number; studentIds: number }
   >()
-  for (const d of wrongDetails) {
-    const raw = topicByQId.get(d.questionId) ?? 'Chủ đề khác'
-    const label = normalizeTopicName(raw)
+  for (const row of topicWrongRows) {
+    const label = normalizeTopicName(row.topic)
     const key = topicToNodeId(label)
     if (!byTopicKey.has(key)) {
-      byTopicKey.set(key, { label, wrongCount: 0, studentIds: new Set() })
+      byTopicKey.set(key, { label, wrongCount: 0, studentIds: 0 })
     }
     const entry = byTopicKey.get(key)!
-    entry.wrongCount++
-    entry.studentIds.add(d.submission.studentId)
+    entry.wrongCount += row.wrong_count
+    // Distinct students per raw topic; summing across variants is a slight overcount
+    // vs exact set-union, acceptable for the top-5 weakness chips.
+    entry.studentIds += row.student_count
   }
 
   const classWeaknesses = [...byTopicKey.values()]
     .sort((a, b) => b.wrongCount - a.wrongCount)
     .slice(0, 5)
     .map((stats) => {
-      const pct = studentCount > 0 ? Math.round((stats.studentIds.size / studentCount) * 100) : 0
+      const affected = Math.min(stats.studentIds, studentCount)
+      const pct = studentCount > 0 ? Math.round((affected / studentCount) * 100) : 0
       return {
         id: topicToNodeId(stats.label),
         label: stats.label,
         wrongCount: stats.wrongCount,
         studentPercent: pct,
         wrongPercent: pct,
-        sampleNote: `${stats.wrongCount} lượt sai — ${stats.studentIds.size}/${studentCount} học sinh gặp khó`,
+        sampleNote: `${stats.wrongCount} lượt sai — ${affected}/${studentCount} học sinh gặp khó`,
       }
     })
 
-  const lowScorers = (
-    await prisma.submission.groupBy({
-      by: ['studentId'],
-      where: { test: { classId } },
-      _avg: { score: true },
-    })
-  )
+  const atRiskAgg = lowScorers
     .filter((item) => item._avg.score !== null && Number(item._avg.score) < 5)
     .sort((a, b) => Number(a._avg.score) - Number(b._avg.score))
     .slice(0, 3)
 
-  const studentIds = lowScorers.map((item) => item.studentId)
+  const studentIds = atRiskAgg.map((item) => item.studentId)
   const students =
     studentIds.length > 0
       ? await prisma.user.findMany({
@@ -119,7 +115,7 @@ async function getTeacherDashboardDataUncached(
       : []
 
   const studentMap = new Map(students.map((student) => [student.id, student.fullName]))
-  const atRiskStudents = lowScorers.map((item) => {
+  const atRiskStudents = atRiskAgg.map((item) => {
     const name = studentMap.get(item.studentId) ?? 'Học sinh'
     const avg = item._avg.score ? Number(item._avg.score).toFixed(1) : '—'
     return {
@@ -130,7 +126,6 @@ async function getTeacherDashboardDataUncached(
     }
   })
 
-  const quizPackages = await getQuizPackagesForClass(classId)
   const assignedQuizzes = quizPackages.map((pkg) => {
     const totalSubmitted = pkg.tests.reduce((sum, test) => sum + test.submittedCount, 0)
     const gradedScores = pkg.tests.filter((test) => test.submittedCount > 0).map((test) => test.averageScore)
@@ -163,7 +158,7 @@ async function getTeacherDashboardDataUncached(
   }
 }
 
-/** Cached per class (~90s). Bust via bustClassCaches / invalidateAfterSubmit. */
+/** Cached per class. Bust via bustClassCaches / invalidateAfterSubmit. */
 export async function getTeacherDashboardData(
   teacherId: string,
   classId: string,
