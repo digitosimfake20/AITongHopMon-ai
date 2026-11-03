@@ -2,17 +2,22 @@ import { Check } from 'lucide-react'
 import { Section } from '@/components/layout/section'
 import { WORKFLOW_STEPS } from '@/lib/content'
 import type { WorkflowStep } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 export function WorkflowSection() {
   return (
     <Section
       id="how-it-works"
       title="Ba bước trong một tiết"
-      description="Đăng ký xong, nhiều giáo viên giao quiz đầu trong mười phút."
+      description="Đăng ký xong là giao được quiz đầu trong mười phút."
     >
-      <ol className="grid gap-4 md:grid-cols-3">
+      <ol className="relative grid gap-8 md:grid-cols-3 md:gap-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 right-0 top-5 hidden h-px bg-border md:block"
+        />
         {WORKFLOW_STEPS.map((step) => (
-          <li key={step.id}>
+          <li key={step.id} className="relative">
             <StepCard step={step} />
           </li>
         ))}
@@ -29,22 +34,26 @@ function StepCard({ step }: StepCardProps) {
   const Icon = step.icon
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-border bg-card p-6 transition-colors duration-200 hover:border-foreground/25">
-      <div className="flex items-center justify-between">
-        <span className="flex size-9 items-center justify-center rounded-md bg-foreground text-background">
+    <div className="relative flex h-full flex-col">
+      <div className="relative z-10 flex items-center gap-3">
+        <span
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background font-mono text-sm font-semibold text-foreground',
+          )}
+        >
+          {step.step}
+        </span>
+        <span className="flex size-9 items-center justify-center rounded-md bg-foreground text-background md:hidden">
           <Icon className="size-4.5" aria-hidden="true" />
         </span>
-        <span className="font-mono text-xs font-medium tabular-nums text-muted-foreground">
-          {step.step}/3
-        </span>
       </div>
-      <h3 className="mt-5 text-base font-semibold text-card-foreground">
+      <h3 className="mt-5 text-base font-semibold text-foreground">
         {step.title}
       </h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {step.description}
       </p>
-      <ul className="mt-5 space-y-2.5 border-t border-border pt-5">
+      <ul className="mt-5 space-y-2.5">
         {step.bullets.map((bullet) => (
           <li key={bullet} className="flex items-start gap-2.5">
             <Check

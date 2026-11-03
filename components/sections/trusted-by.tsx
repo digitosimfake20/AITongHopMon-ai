@@ -1,7 +1,7 @@
 import { TRUSTED_BY } from '@/lib/content'
 
 export function TrustedBy() {
-  const items = [...TRUSTED_BY, ...TRUSTED_BY]
+  if (TRUSTED_BY.length === 0) return null
 
   return (
     <section
@@ -11,19 +11,22 @@ export function TrustedBy() {
       <p className="text-center text-xs font-medium tracking-wide text-muted-foreground">
         Đang dùng trong lớp tại
       </p>
-      <div className="relative mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-        <ul className="animate-marquee flex w-max items-center gap-12 pr-12">
-          {items.map((name, index) => (
+      {TRUSTED_BY.length === 1 ? (
+        <p className="mt-3 text-center text-sm font-medium text-muted-foreground">
+          {TRUSTED_BY[0]}
+        </p>
+      ) : (
+        <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-10 gap-y-2 px-4">
+          {TRUSTED_BY.map((name) => (
             <li
-              key={`${name}-${index}`}
-              className="whitespace-nowrap text-sm font-medium text-muted-foreground/80"
-              aria-hidden={index >= TRUSTED_BY.length}
+              key={name}
+              className="whitespace-nowrap text-sm font-medium text-muted-foreground"
             >
               {name}
             </li>
           ))}
         </ul>
-      </div>
+      )}
     </section>
   )
 }

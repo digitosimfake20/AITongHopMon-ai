@@ -1,10 +1,14 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Laptop } from 'lucide-react'
+import { Laptop, Pause, Play } from 'lucide-react'
+import { useState } from 'react'
 import { ScoreView } from '@/components/hero/score-view'
 import { TeacherView } from '@/components/hero/teacher-view'
-import { useDemoSequence } from '@/components/hero/use-demo-sequence'
+import {
+  useDemoSequence,
+  usePrefersReducedMotion,
+} from '@/components/hero/use-demo-sequence'
 import { useInView } from '@/hooks/use-in-view'
 import { DEMO_QUESTIONS } from '@/lib/content'
 import type { DemoStage } from '@/lib/types'
@@ -49,10 +53,13 @@ function QuizStagePlaceholder() {
 
 export function ProductDemo() {
   const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.25 })
+  const reducedMotion = usePrefersReducedMotion()
+  const [paused, setPaused] = useState(false)
   const { stage, questionIndex, selectedOptionId, revealed, loop } =
-    useDemoSequence(inView)
+    useDemoSequence(inView, { paused, reducedMotion })
 
   const question = DEMO_QUESTIONS[questionIndex] ?? DEMO_QUESTIONS[0]
+  const showControls = !reducedMotion
 
   return (
     <div ref={ref} className="relative">
@@ -69,9 +76,26 @@ export function ProductDemo() {
               mathz.app
             </div>
           </div>
-          <span className="hidden shrink-0 text-[10px] font-medium tracking-wide text-muted-foreground sm:inline">
-            {STAGE_LABELS[stage]}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="hidden text-[10px] font-medium tracking-wide text-muted-foreground sm:inline">
+              {STAGE_LABELS[stage]}
+            </span>
+            {showControls ? (
+              <button
+                type="button"
+                onClick={() => setPaused((value) => !value)}
+                aria-label={paused ? 'Phát demo' : 'Tạm dừng demo'}
+                aria-pressed={paused}
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {paused ? (
+                  <Play className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <Pause className="size-3.5" aria-hidden="true" />
+                )}
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="relative h-[27rem] overflow-hidden sm:h-[29rem]">
@@ -90,7 +114,9 @@ export function ProductDemo() {
               )
             ) : null}
             {stage === 'score' ? <ScoreView /> : null}
-            {stage === 'teacher' ? <TeacherView /> : null}
+            {stage === 'teacher' ? (
+              <TeacherView animateTyping={!reducedMotion && !paused} />
+            ) : null}
           </div>
         </div>
       </div>
@@ -105,12 +131,14 @@ export function ProductDemo() {
             className={cn(
               'h-1 rounded-full transition-all duration-500',
               stage === item ? 'w-8 bg-foreground' : 'w-4 bg-border',
+              reducedMotion && 'transition-none',
             )}
           />
         ))}
       </div>
       <p className="sr-only">
-        Xem trước động: học sinh làm quiz, nhận điểm 80%, giáo viên đọc tóm tắt AI về lớp.
+        Xem trước: học sinh làm quiz, nhận điểm 80%, giáo viên đọc tóm tắt AI về
+        lớp.
       </p>
     </div>
   )

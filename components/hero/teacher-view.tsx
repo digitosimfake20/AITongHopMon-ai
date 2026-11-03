@@ -14,23 +14,43 @@ const ROWS = [
   { id: 'r4', name: 'Nguyễn Văn D', score: 75, tone: 'good' as const },
 ]
 
+const TONE_LABEL: Record<(typeof ROWS)[number]['tone'], string> = {
+  good: 'Ổn',
+  watch: 'Cần theo dõi',
+}
+
 const TYPING_SPEED = 18
 
-export function TeacherView() {
-  const [typed, setTyped] = useState('')
+interface TeacherViewProps {
+  /** When false, show the full summary immediately (reduced motion / paused). */
+  animateTyping?: boolean
+}
+
+export function TeacherView({ animateTyping = true }: TeacherViewProps) {
+  const [typed, setTyped] = useState(animateTyping ? '' : SUMMARY)
 
   useEffect(() => {
-    const start = window.setTimeout(() => {
+    if (!animateTyping) {
+      setTyped(SUMMARY)
+      return
+    }
+
+    setTyped('')
+    let intervalId = 0
+    const startId = window.setTimeout(() => {
       let index = 0
-      const interval = window.setInterval(() => {
+      intervalId = window.setInterval(() => {
         index += 2
         setTyped(SUMMARY.slice(0, index))
-        if (index >= SUMMARY.length) window.clearInterval(interval)
+        if (index >= SUMMARY.length) window.clearInterval(intervalId)
       }, TYPING_SPEED)
     }, 700)
 
-    return () => window.clearTimeout(start)
-  }, [])
+    return () => {
+      window.clearTimeout(startId)
+      window.clearInterval(intervalId)
+    }
+  }, [animateTyping])
 
   return (
     <div className="flex h-full flex-col gap-4 p-5 sm:p-6">
@@ -49,7 +69,7 @@ export function TeacherView() {
         </span>
       </header>
 
-      <div className="animate-slide-up-fade rounded-xl border border-border bg-secondary/60 p-4">
+      <div className="rounded-xl border border-border bg-secondary/60 p-4 motion-safe:animate-slide-up-fade">
         <div className="mb-2 flex items-center gap-2">
           <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-background">
             <Sparkles className="size-3.5" aria-hidden="true" />
@@ -58,15 +78,14 @@ export function TeacherView() {
             AI tóm tắt
           </span>
         </div>
-        <p
-          className="text-left text-[13px] leading-relaxed text-card-foreground"
-          aria-live="polite"
-        >
+        <p className="text-left text-[13px] leading-relaxed text-card-foreground">
           {typed}
-          <span
-            className="animate-caret ml-0.5 inline-block h-3.5 w-px translate-y-0.5 bg-primary"
-            aria-hidden="true"
-          />
+          {animateTyping && typed.length < SUMMARY.length ? (
+            <span
+              className="ml-0.5 inline-block h-3.5 w-px translate-y-0.5 bg-primary motion-safe:animate-caret"
+              aria-hidden="true"
+            />
+          ) : null}
         </p>
       </div>
 
@@ -74,13 +93,14 @@ export function TeacherView() {
         {ROWS.map((row, index) => (
           <li
             key={row.id}
-            className="animate-slide-up-fade flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"
+            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 motion-safe:animate-slide-up-fade"
             style={{ animationDelay: `${index * 110}ms` }}
           >
             <span className="truncate text-xs text-card-foreground">
               {row.name}
             </span>
             <div className="flex items-center gap-2.5">
+              <span className="sr-only">{TONE_LABEL[row.tone]}</span>
               <div className="h-1.5 w-16 overflow-hidden rounded-full bg-secondary sm:w-24">
                 <div
                   className={cn(
@@ -90,6 +110,14 @@ export function TeacherView() {
                   style={{ width: `${row.score}%` }}
                 />
               </div>
+              <span
+                className={cn(
+                  'hidden text-[10px] font-medium sm:inline',
+                  row.tone === 'good' ? 'text-muted-foreground' : 'text-destructive',
+                )}
+              >
+                {TONE_LABEL[row.tone]}
+              </span>
               <span className="w-8 text-right font-mono text-xs tabular-nums text-foreground">
                 {row.score}%
               </span>

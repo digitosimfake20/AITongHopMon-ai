@@ -1,103 +1,40 @@
-'use client'
-
 import { Check } from 'lucide-react'
-import { useState } from 'react'
 import { Section } from '@/components/layout/section'
 import { LinkButton } from '@/components/ui/link-button'
 import { PRICING_PLANS } from '@/lib/content'
-import type { BillingPeriod, PricingPlan } from '@/lib/types'
+import type { PricingPlan } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export function PricingSection() {
-  const [period, setPeriod] = useState<BillingPeriod>('yearly')
-
   return (
     <Section
       id="pricing"
-      title="Một lớp miễn phí. Mở rộng khi tổ cần."
-      description="Mọi gói đều chấm tức thì và có báo cáo. Nâng cấp khi tổ chia sẻ ngân hàng đề."
+      title="Dùng miễn phí cho một lớp; nâng cấp khi tổ chia sẻ ngân hàng đề."
+      description="Starter và Pro đều chấm tức thì và có báo cáo. Gói Toàn trường theo nhu cầu trường."
     >
-      <div className="flex justify-center">
-        <BillingToggle period={period} onChange={setPeriod} />
-      </div>
-
-      <ul className="mt-10 grid items-start gap-4 lg:grid-cols-3">
+      <ul className="mt-2 grid items-start gap-4 lg:grid-cols-3">
         {PRICING_PLANS.map((plan) => (
           <li key={plan.id}>
-            <PlanCard plan={plan} period={period} />
+            <PlanCard plan={plan} />
           </li>
         ))}
       </ul>
 
       <p className="mt-8 text-center text-xs text-muted-foreground">
-        Trường công và chính sách đặc biệt: liên hệ để trao đổi.
+        Trường công và chính sách đặc biệt: đăng ký giáo viên để trao đổi.
       </p>
     </Section>
   )
 }
 
-interface BillingToggleProps {
-  period: BillingPeriod
-  onChange: (period: BillingPeriod) => void
-}
-
-function BillingToggle({ period, onChange }: BillingToggleProps) {
-  const options: { id: BillingPeriod; label: string }[] = [
-    { id: 'monthly', label: 'Theo tháng' },
-    { id: 'yearly', label: 'Theo năm' },
-  ]
-
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Chu kỳ thanh toán"
-      className="inline-flex items-center gap-1 rounded-xl border border-border bg-card p-1"
-    >
-      {options.map((option) => {
-        const active = period === option.id
-        return (
-          <button
-            key={option.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(option.id)}
-            className={cn(
-              'rounded-lg px-3.5 py-1.5 text-xs font-medium transition-colors duration-200',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]',
-              active
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 interface PlanCardProps {
   plan: PricingPlan
-  period: BillingPeriod
 }
 
-function PlanCard({ plan, period }: PlanCardProps) {
-  const isYearly = period === 'yearly'
-  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice
+function PlanCard({ plan }: PlanCardProps) {
   const isNumericPrice = plan.id !== 'school' && plan.id !== 'starter'
-  // Yearly total must use /năm — never reuse the monthly unit string.
-  const unit = isNumericPrice
-    ? isYearly
-      ? 'VNĐ / giáo viên / năm'
-      : 'VNĐ / giáo viên / tháng'
-    : plan.unit
-  const monthlyEquivalent =
-    isNumericPrice && isYearly && plan.yearlyPrice > 0
-      ? Math.round(plan.yearlyPrice / 12)
-      : null
-
+  const price = plan.monthlyPrice
+  const unit = isNumericPrice ? 'VNĐ / giáo viên / tháng' : plan.unit
   return (
     <div
       className={cn(
@@ -122,19 +59,11 @@ function PlanCard({ plan, period }: PlanCardProps) {
 
       <div className="mt-6">
         {isNumericPrice ? (
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-bold tracking-tight text-foreground">
-                {price.toLocaleString('vi-VN')}
-              </span>
-              <span className="ml-1 text-xs text-muted-foreground">{unit}</span>
-            </div>
-            {monthlyEquivalent !== null ? (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Tương đương {monthlyEquivalent.toLocaleString('vi-VN')} VNĐ / giáo
-                viên / tháng khi trả theo năm
-              </p>
-            ) : null}
+          <div className="flex items-baseline gap-1">
+            <span className="text-4xl font-bold tracking-tight text-foreground">
+              {price.toLocaleString('vi-VN')}
+            </span>
+            <span className="ml-1 text-xs text-muted-foreground">{unit}</span>
           </div>
         ) : (
           <span className="text-3xl font-semibold tracking-tight text-foreground">

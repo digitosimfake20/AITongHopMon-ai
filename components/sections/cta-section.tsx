@@ -9,9 +9,9 @@ export function CtaSection() {
           <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
             Chạy bài kiểm tra tiếp theo trên Mathz
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-pretty leading-relaxed text-background/70">
-            Một lớp miễn phí. Dùng câu hỏi của bạn hoặc để AI soạn. Điểm và tóm
-            tắt sẵn trước khi hết tiết.
+          <p className="mx-auto mt-4 max-w-lg text-pretty leading-relaxed text-background/80">
+            Một lớp miễn phí: dùng câu của bạn hoặc để AI soạn, rồi đọc điểm và
+            tóm tắt trước khi hết tiết.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <LinkButton
@@ -24,12 +24,12 @@ export function CtaSection() {
             <LinkButton
               href="/signup/student"
               variant="outline"
-              className="h-11 border-background/35 bg-transparent px-5 text-[15px] text-background hover:bg-background/10 hover:text-background dark:border-background/35 dark:bg-transparent dark:hover:bg-background/10"
+              className="h-11 border-background/55 bg-transparent px-5 text-[15px] text-background hover:bg-background/10 hover:text-background dark:border-background/55 dark:bg-transparent dark:hover:bg-background/10"
             >
               Đăng ký học sinh
             </LinkButton>
           </div>
-          <p className="mt-4 text-xs text-background/55">
+          <p className="mt-4 text-xs text-background/75">
             Không cần thẻ tín dụng · Dữ liệu học đường tách biệt
           </p>
         </div>

@@ -77,7 +77,7 @@ export function QuizView({
         <MathText text={question.prompt} />
       </div>
 
-      <ul className="flex flex-col gap-2.5" aria-label="Answer options">
+      <ul className="flex flex-col gap-2.5" aria-label="Các đáp án">
         {question.options.map((option, index) => {
           const isSelected = selectedOptionId === option.id
           const isCorrectReveal = revealed && isSelected && option.correct
@@ -121,7 +121,7 @@ export function QuizView({
 
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-4">
         <span className="text-[11px] text-muted-foreground">
-          Answers save automatically
+          Câu trả lời tự lưu
         </span>
         <span
           className={cn(
@@ -131,7 +131,7 @@ export function QuizView({
               : 'bg-secondary text-muted-foreground',
           )}
         >
-          {questionIndex + 1 === totalQuestions ? 'Submit' : 'Next question'}
+          {questionIndex + 1 === totalQuestions ? 'Nộp bài' : 'Câu tiếp'}
         </span>
       </div>
     </div>

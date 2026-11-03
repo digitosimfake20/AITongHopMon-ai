@@ -16,7 +16,7 @@ export function StudentSignupSection() {
             aria-hidden="true"
           />
           <h3 className="mt-4 text-xl font-semibold text-foreground">
-            Có mã lớp rồi?
+            Nhập mã lớp để vào đúng lớp của thầy cô.
           </h3>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             Tạo tài khoản học sinh, rồi nhập mã trên trang onboarding để vào đúng lớp.

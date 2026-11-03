@@ -24,7 +24,7 @@ export function HeroSection() {
           </h1>
 
           <p className="mt-5 text-balance text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
-            Quiz Toán tự chấm. Biết ngay ai đang kẹt.
+            Quiz Toán tự chấm và chỉ ra học sinh đang kẹt ngay sau khi nộp.
           </p>
 
           <p className="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
