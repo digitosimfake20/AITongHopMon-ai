@@ -53,7 +53,7 @@ export function AtRiskStudentsCard({ students }: AtRiskStudentsCardProps) {
         nativeButton={false}
         render={<Link href="/teacher/students?filter=at-risk" />}
       >
-        Xem danh sách đầy đủ
+        Xem học sinh cần chú ý
       </Button>
     </article>
   )

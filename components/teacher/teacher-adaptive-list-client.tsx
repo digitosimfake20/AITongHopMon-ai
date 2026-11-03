@@ -73,7 +73,7 @@ export function TeacherAdaptiveListClient({
                 }
               >
                 <BarChart3 className="size-4" />
-                Xem chi tiết học sinh
+                Xem tiến trình học sinh
               </Button>
             </article>
           ))}

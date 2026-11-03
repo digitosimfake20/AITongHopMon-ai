@@ -298,45 +298,56 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
       {showAddRow && (
         <div className="flex flex-wrap items-end gap-2 rounded-xl border border-zeno/25 bg-zeno/10 p-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-medium text-slate-500">STT</label>
+            <label htmlFor="roster-add-stt" className="text-xs font-medium text-muted-foreground">
+              STT
+            </label>
             <input
+              id="roster-add-stt"
               type="number"
               min={1}
               value={newRow.stt}
               onChange={(e) => setNewRow((p) => ({ ...p, stt: e.target.value }))}
-              className="w-16 rounded-lg border border-input bg-background px-2 py-1.5 text-sm"
+              className="min-h-11 w-16 rounded-lg border border-input bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="1"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-medium text-slate-500">Mã học sinh</label>
+            <label htmlFor="roster-add-code" className="text-xs font-medium text-muted-foreground">
+              Mã học sinh
+            </label>
             <input
+              id="roster-add-code"
               value={newRow.studentCode}
               onChange={(e) => setNewRow((p) => ({ ...p, studentCode: e.target.value }))}
-              className="w-32 rounded-lg border border-input bg-background px-2 py-1.5 text-sm"
+              className="min-h-11 w-32 rounded-lg border border-input bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="HS001"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-medium text-slate-500">Họ và tên *</label>
+            <label htmlFor="roster-add-name" className="text-xs font-medium text-muted-foreground">
+              Họ và tên *
+            </label>
             <input
+              id="roster-add-name"
               value={newRow.fullName}
               onChange={(e) => setNewRow((p) => ({ ...p, fullName: e.target.value }))}
-              className="w-48 rounded-lg border border-input bg-background px-2 py-1.5 text-sm"
+              className="min-h-11 w-48 rounded-lg border border-input bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               placeholder="Nguyễn Văn A"
             />
           </div>
           <button
+            type="button"
             onClick={addRow}
             disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg bg-zeno px-3 py-1.5 text-sm font-medium text-zeno-foreground hover:bg-zeno/90 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-zeno px-3 py-1.5 text-sm font-medium text-zeno-foreground hover:bg-zeno/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
           >
-            {isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+            {isPending ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Plus className="size-3.5" aria-hidden />}
             Thêm
           </button>
           <button
+            type="button"
             onClick={() => setShowAddRow(false)}
-            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+            className="inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Đóng
           </button>
@@ -345,57 +356,58 @@ export function RosterManager({ classId, initialRoster }: RosterManagerProps) {
 
       {/* ── Roster table ─────────────────────────────────────────────────── */}
       {displayRows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center dark:border-slate-700">
-          <Upload className="mx-auto size-10 text-slate-300" />
-          <p className="mt-3 text-sm text-slate-500">
-            Chưa có danh sách học sinh. Upload file Excel hoặc thêm thủ công.
+        <div className="rounded-xl border border-dashed border-border p-10 text-center">
+          <Upload className="mx-auto size-10 text-muted-foreground/40" aria-hidden />
+          <p className="mt-3 text-sm text-muted-foreground">
+            Chưa có danh sách học sinh. Tải file Excel hoặc thêm thủ công.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-sm">
+            <caption className="sr-only">Danh sách học sinh trong lớp</caption>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                <th className="px-3 py-2.5 text-left font-medium text-slate-500">STT</th>
-                <th className="px-3 py-2.5 text-left font-medium text-slate-500">Mã HS</th>
-                <th className="px-3 py-2.5 text-left font-medium text-slate-500">Họ và Tên</th>
-                <th className="px-3 py-2.5 text-left font-medium text-slate-500">Tài khoản</th>
-                <th className="px-3 py-2.5 text-center font-medium text-slate-500">Thao tác</th>
+              <tr className="border-b border-border bg-muted/40">
+                <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">STT</th>
+                <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Mã HS</th>
+                <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Họ và tên</th>
+                <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">Tài khoản</th>
+                <th className="px-3 py-2.5 text-center font-medium text-muted-foreground">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-border">
               {displayRows.map((row) => (
                 <tr
                   key={row.id}
-                  className={`transition-colors ${previewRows ? 'bg-amber-50/40 dark:bg-amber-950/10' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'}`}
+                  className={`transition-colors ${previewRows ? 'bg-amber-50/40 dark:bg-amber-950/10' : 'hover:bg-muted/40'}`}
                 >
-                  <td className="px-3 py-2 font-mono text-slate-400">{row.stt}</td>
-                  <td className="px-3 py-2 font-mono text-xs text-slate-500">{row.studentCode}</td>
+                  <td className="px-3 py-2 font-mono text-muted-foreground">{row.stt}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{row.studentCode}</td>
 
-                  {/* Name cell — editable */}
                   <td className="px-3 py-2">
                     {editingId === row.id ? (
                       <input
+                        id={`roster-edit-name-${row.id}`}
                         autoFocus
+                        aria-label={`Họ và tên ${row.fullName}`}
                         value={editValues.fullName}
                         onChange={(e) => setEditValues((p) => ({ ...p, fullName: e.target.value }))}
-                        className="w-full rounded border border-teal-400 bg-white px-2 py-1 text-sm focus:outline-none dark:bg-slate-900"
+                        className="min-h-11 w-full rounded border border-teal-400 bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       />
                     ) : (
-                      <span className="font-medium text-slate-700 dark:text-slate-200">
+                      <span className="font-medium text-foreground">
                         {row.fullName}
                       </span>
                     )}
                   </td>
 
-                  {/* Linked account */}
                   <td className="px-3 py-2">
                     {row.linkedUserId ? (
-                      <span className="rounded-md bg-success/15 px-2 py-0.5 text-[11px] font-medium text-success">
+                      <span className="rounded-md bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
                         {row.linkedUserName ?? 'Đã liên kết'}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400">Chưa có</span>
+                      <span className="text-xs text-muted-foreground">Chưa có</span>
                     )}
                   </td>
 

@@ -52,34 +52,42 @@ function RemedialPanel({
       <Button
         size="sm"
         variant="outline"
-        className="gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
+        className="min-h-11 gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
         onClick={handleGenerate}
         disabled={loading}
+        aria-expanded={open}
+        aria-controls={`remedial-panel-${topic.replace(/\s+/g, '-')}`}
       >
         {loading ? (
-          <Loader2 className="size-3.5 animate-spin" />
+          <Loader2 className="size-3.5 animate-spin" aria-hidden />
         ) : (
-          <Sparkles className="size-3.5" />
+          <Sparkles className="size-3.5" aria-hidden />
         )}
-        Gợi ý Phụ đạo
-        {result && !loading && (open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />)}
+        Gợi ý phụ đạo
+        {result && !loading && (open ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />)}
       </Button>
 
       {open && (
-        <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <div
+          id={`remedial-panel-${topic.replace(/\s+/g, '-')}`}
+          className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4"
+        >
+          <div role="status" aria-live="polite" className="sr-only">
+            {loading ? 'Đang tạo gợi ý phụ đạo' : error ? error : result ? 'Đã có gợi ý phụ đạo' : ''}
+          </div>
           {loading && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Đang tạo gợi ý...
+              <Loader2 className="size-4 animate-spin" aria-hidden /> Đang tạo gợi ý...
             </p>
           )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
           {result && (
             <div className="space-y-3">
               <p className="text-sm leading-relaxed text-foreground">{result.summary}</p>
               <ul className="space-y-2">
                 {result.activities.map((act, i) => (
                   <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm">
-                    {ACTIVITY_ICON[act.type] ?? <BookOpen className="size-3.5 shrink-0 text-muted-foreground" />}
+                    {ACTIVITY_ICON[act.type] ?? <BookOpen className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />}
                     <div>
                       <p className="font-medium text-foreground">{act.title}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">{act.description}</p>
