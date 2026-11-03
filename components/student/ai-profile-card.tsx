@@ -143,7 +143,8 @@ export function AiProfileCard({
             type="button"
             onClick={() => handleGenerateQuiz(false)}
             disabled={isPending}
-            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-zeno px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-busy={isPending || undefined}
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-zeno px-4 py-2.5 text-sm font-medium text-zeno-foreground transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? (
               <>
@@ -161,13 +162,18 @@ export function AiProfileCard({
             type="button"
             onClick={() => handleGenerateQuiz(true)}
             disabled={isPending}
-            className="min-h-11 rounded-xl border border-zeno/40 px-4 py-2.5 text-sm font-medium text-zeno hover:bg-zeno/10 disabled:opacity-60"
+            aria-busy={isPending || undefined}
+            className="min-h-11 rounded-xl border border-zeno/40 px-4 py-2.5 text-sm font-medium text-zeno hover:bg-zeno/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:opacity-60"
           >
             Lưu vào &quot;Làm sau&quot;
           </button>
         </div>
 
-        {error && <p className="mt-2 text-center text-xs text-rose-600">{error}</p>}
+        {error ? (
+          <p role="alert" className="mt-2 text-center text-xs text-destructive">
+            {error}
+          </p>
+        ) : null}
       </div>
 
       {pendingQuiz ? (
@@ -207,7 +213,7 @@ function StatBadge({
 }) {
   return (
     <div className={`flex flex-col gap-0.5 rounded-xl ${colorMap[color]} px-3 py-2`}>
-      <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+      <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
         {icon}
         {label}
       </div>

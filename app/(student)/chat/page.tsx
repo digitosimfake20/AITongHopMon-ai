@@ -7,10 +7,22 @@ import {
 } from '@/components/chat/zeno-chat-modal'
 
 const STARTERS = [
-  'Giải thích cho tôi phép nhân phân thức',
-  'Tại sao $\\frac{a}{0}$ không xác định?',
-  'Hướng dẫn giải phương trình bậc 2',
-  'Ôn lại kiến thức hàm số bậc nhất',
+  {
+    label: 'Giải thích phép nhân phân thức',
+    prompt: 'Giải thích cho tôi phép nhân phân thức',
+  },
+  {
+    label: 'Tại sao a/0 không xác định?',
+    prompt: 'Tại sao a/0 không xác định?',
+  },
+  {
+    label: 'Hướng dẫn giải phương trình bậc 2',
+    prompt: 'Hướng dẫn giải phương trình bậc 2',
+  },
+  {
+    label: 'Ôn hàm số bậc nhất',
+    prompt: 'Ôn lại kiến thức hàm số bậc nhất',
+  },
 ]
 
 function openZenoChat(prompt: string) {
@@ -42,15 +54,15 @@ export default function ChatPage() {
       </div>
 
       <ul className="mt-2 grid max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-        {STARTERS.map((prompt) => (
-          <li key={prompt}>
+        {STARTERS.map((starter) => (
+          <li key={starter.label}>
             <button
               type="button"
-              onClick={() => openZenoChat(prompt)}
+              onClick={() => openZenoChat(starter.prompt)}
               className="flex min-h-11 w-full items-start gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-left transition-colors hover:border-zeno/40 hover:bg-zeno/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno"
             >
               <MessageSquareDashed className="mt-0.5 size-4 shrink-0 text-zeno" aria-hidden />
-              <span className="text-sm text-foreground/80">{prompt}</span>
+              <span className="text-sm text-foreground/80">{starter.label}</span>
             </button>
           </li>
         ))}

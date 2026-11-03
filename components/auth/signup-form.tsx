@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { signUpAction } from '@/lib/auth/actions'
@@ -16,10 +16,13 @@ interface SignupFormProps {
 export function SignupForm({ role }: SignupFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const errorId = useId()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     const formData = new FormData(e.currentTarget)
     formData.set('role', role)
     const result = await signUpAction(formData)
@@ -29,10 +32,15 @@ export function SignupForm({ role }: SignupFormProps) {
       return
     }
     if (result && !result.success) {
-      toast.error(result.error ?? 'Đăng ký thất bại. Thử lại hoặc dùng email khác.')
+      const message = result.error ?? 'Đăng ký thất bại. Thử lại hoặc dùng email khác.'
+      setError(message)
+      toast.error(message)
       setIsLoading(false)
     }
   }
+
+  const fieldClass =
+    'min-h-11 w-full rounded-lg border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive aria-invalid:ring-destructive/30'
 
   return (
     <AuthShell
@@ -45,7 +53,12 @@ export function SignupForm({ role }: SignupFormProps) {
       }
       onBack={() => router.push('/signup')}
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isLoading || undefined}>
+        {error ? (
+          <p id={errorId} role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
         <div>
           <label htmlFor="fullName" className="mb-2 block text-sm font-semibold">
             Họ và tên
@@ -56,7 +69,9 @@ export function SignupForm({ role }: SignupFormProps) {
             required
             autoComplete="name"
             placeholder="Nguyễn Văn A"
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={fieldClass}
           />
         </div>
         <div>
@@ -72,7 +87,9 @@ export function SignupForm({ role }: SignupFormProps) {
             placeholder={
               role === 'student' ? 'hocsinh@fpt.edu.vn' : 'thayco@truong.edu.vn'
             }
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={fieldClass}
           />
         </div>
         <div>
@@ -87,7 +104,9 @@ export function SignupForm({ role }: SignupFormProps) {
             minLength={8}
             autoComplete="new-password"
             placeholder="Ít nhất 8 ký tự"
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={fieldClass}
           />
         </div>
         <div>
@@ -100,16 +119,18 @@ export function SignupForm({ role }: SignupFormProps) {
             type="password"
             required
             autoComplete="new-password"
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-4 py-3 text-base focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={fieldClass}
           />
         </div>
-        <Button type="submit" disabled={isLoading} className="h-11 w-full">
+        <Button type="submit" disabled={isLoading} className="h-11 w-full" aria-busy={isLoading || undefined}>
           {isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Đã có tài khoản?{' '}
-        <Link href={`/login/${role}`} className="font-semibold text-foreground underline-offset-4 hover:underline">
+        <Link href={`/login/${role}`} className="font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           Đăng nhập
         </Link>
       </p>

@@ -104,7 +104,7 @@ export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListCl
         </p>
         <Link
           href="/adaptive"
-          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-zeno px-4 text-sm font-medium text-white hover:opacity-90"
+          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-zeno px-4 text-sm font-medium text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2"
         >
           Luyện theo lỗ hổng
         </Link>
