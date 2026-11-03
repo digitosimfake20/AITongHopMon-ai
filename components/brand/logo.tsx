@@ -47,7 +47,6 @@ export function Logo({
             height={size}
             className="h-auto w-auto max-h-7 rounded-sm object-contain opacity-75"
             style={{ width: size, height: 'auto' }}
-            priority
           />
         </>
       ) : null}

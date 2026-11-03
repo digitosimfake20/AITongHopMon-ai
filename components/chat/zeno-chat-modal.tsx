@@ -4,8 +4,14 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bot, Send, X, Loader2, MessageSquare } from 'lucide-react'
 import { sendZenoMessageAction, getChatHistoryAction } from '@/app/actions/chat-zeno'
 import type { ChatMessageDisplay } from '@/app/actions/chat-zeno'
+import {
+  ZENO_CHAT_OPEN_EVENT,
+  type ZenoChatOpenDetail,
+} from '@/components/chat/zeno-chat-events'
 import 'katex/dist/katex.min.css'
 import katex from 'katex'
+
+export { ZENO_CHAT_OPEN_EVENT, type ZenoChatOpenDetail } from '@/components/chat/zeno-chat-events'
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -15,11 +21,6 @@ const FOCUSABLE_SELECTOR = [
   'select:not([disabled])',
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
-
-/** Custom event so chat page starters can open + prefill the shell modal. */
-export const ZENO_CHAT_OPEN_EVENT = 'zeno-chat-open'
-
-export type ZenoChatOpenDetail = { prompt?: string }
 
 function getFocusable(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
@@ -92,15 +93,18 @@ interface ZenoChatModalProps {
   sessionId?: string
   /** Open immediately on mount (used when user clicked the lazy FAB before the chunk loaded). */
   defaultOpen?: boolean
+  /** Prefill composer when opened via FAB / zeno-chat-open before the chunk mounted. */
+  initialPrompt?: string
 }
 
 export function ZenoChatModal({
   sessionId: initialSessionId,
   defaultOpen = false,
+  initialPrompt,
 }: ZenoChatModalProps) {
   const [open, setOpen] = useState(defaultOpen)
   const [messages, setMessages] = useState<ChatMessageDisplay[]>([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialPrompt ?? '')
   const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)

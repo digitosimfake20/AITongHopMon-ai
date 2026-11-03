@@ -3,8 +3,6 @@
 import dynamic from 'next/dynamic'
 import { Laptop, Pause, Play } from 'lucide-react'
 import { useState } from 'react'
-import { ScoreView } from '@/components/hero/score-view'
-import { TeacherView } from '@/components/hero/teacher-view'
 import {
   useDemoSequence,
   usePrefersReducedMotion,
@@ -14,13 +12,38 @@ import { DEMO_QUESTIONS } from '@/lib/content'
 import type { DemoStage } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-/** KaTeX + react-katex live only in this chunk — loaded when the demo enters view. */
+/**
+ * Stage views (incl. KaTeX in QuizView) stay out of the initial landing
+ * bundle — loaded client-side only when the demo is in view / needs that stage.
+ */
 const QuizView = dynamic(
   () =>
     import('@/components/hero/quiz-view').then((m) => ({ default: m.QuizView })),
   {
     ssr: false,
     loading: () => <QuizStagePlaceholder />,
+  },
+)
+
+const ScoreView = dynamic(
+  () =>
+    import('@/components/hero/score-view').then((m) => ({
+      default: m.ScoreView,
+    })),
+  {
+    ssr: false,
+    loading: () => <GenericStagePlaceholder />,
+  },
+)
+
+const TeacherView = dynamic(
+  () =>
+    import('@/components/hero/teacher-view').then((m) => ({
+      default: m.TeacherView,
+    })),
+  {
+    ssr: false,
+    loading: () => <GenericStagePlaceholder />,
   },
 )
 
@@ -47,6 +70,19 @@ function QuizStagePlaceholder() {
         <div className="h-12 animate-pulse rounded-xl bg-secondary" />
         <div className="h-12 animate-pulse rounded-xl bg-secondary" />
       </div>
+    </div>
+  )
+}
+
+function GenericStagePlaceholder() {
+  return (
+    <div
+      className="flex h-full flex-col items-center justify-center gap-4 p-5 sm:p-7"
+      aria-hidden="true"
+    >
+      <div className="size-28 animate-pulse rounded-full bg-secondary" />
+      <div className="h-4 w-40 animate-pulse rounded-md bg-secondary" />
+      <div className="h-3 w-56 animate-pulse rounded-md bg-secondary" />
     </div>
   )
 }
@@ -100,23 +136,21 @@ export function ProductDemo() {
 
         <div className="relative h-[27rem] overflow-hidden sm:h-[29rem]">
           <div key={`${stage}-${loop}`} className="absolute inset-0">
-            {stage === 'quiz' ? (
-              inView ? (
-                <QuizView
-                  question={question}
-                  questionIndex={questionIndex}
-                  totalQuestions={DEMO_QUESTIONS.length}
-                  selectedOptionId={selectedOptionId}
-                  revealed={revealed}
-                />
-              ) : (
-                <QuizStagePlaceholder />
-              )
-            ) : null}
-            {stage === 'score' ? <ScoreView /> : null}
-            {stage === 'teacher' ? (
+            {!inView ? (
+              <QuizStagePlaceholder />
+            ) : stage === 'quiz' ? (
+              <QuizView
+                question={question}
+                questionIndex={questionIndex}
+                totalQuestions={DEMO_QUESTIONS.length}
+                selectedOptionId={selectedOptionId}
+                revealed={revealed}
+              />
+            ) : stage === 'score' ? (
+              <ScoreView />
+            ) : (
               <TeacherView animateTyping={!reducedMotion && !paused} />
-            ) : null}
+            )}
           </div>
         </div>
       </div>

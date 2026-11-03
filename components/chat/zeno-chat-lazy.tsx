@@ -3,10 +3,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Bot } from 'lucide-react'
+import {
+  ZENO_CHAT_OPEN_EVENT,
+  type ZenoChatOpenDetail,
+} from '@/components/chat/zeno-chat-events'
 
 /**
- * Student-shell entry for Zeno: keeps katex + modal JS out of the static
- * layout graph. Prefetches on idle; mounts the heavy island on idle or first open.
+ * Student-shell entry for Zeno: keeps katex + modal JS out of the layout
+ * graph until the user opens chat (FAB or zeno-chat-open event).
  */
 function ZenoFabPlaceholder({
   onOpen,
@@ -47,41 +51,28 @@ const ZenoChatModal = dynamic(
 export function ZenoChatLazy() {
   const [mountModal, setMountModal] = useState(false)
   const [openOnMount, setOpenOnMount] = useState(false)
+  const [initialPrompt, setInitialPrompt] = useState<string | undefined>()
 
-  useEffect(() => {
-    let cancelled = false
-    const mount = () => {
-      if (!cancelled) setMountModal(true)
-    }
-
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
-      cancelIdleCallback?: (id: number) => void
-    }
-
-    if (typeof w.requestIdleCallback === 'function') {
-      const id = w.requestIdleCallback(mount, { timeout: 3500 })
-      return () => {
-        cancelled = true
-        w.cancelIdleCallback?.(id)
-      }
-    }
-
-    const t = setTimeout(mount, 1800)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [])
-
-  const handleEarlyOpen = useCallback(() => {
+  const openModal = useCallback((prompt?: string) => {
+    if (prompt) setInitialPrompt(prompt)
     setOpenOnMount(true)
     setMountModal(true)
   }, [])
 
+  useEffect(() => {
+    function onOpenRequest(event: Event) {
+      const detail = (event as CustomEvent<ZenoChatOpenDetail>).detail
+      openModal(detail?.prompt)
+    }
+    window.addEventListener(ZENO_CHAT_OPEN_EVENT, onOpenRequest)
+    return () => window.removeEventListener(ZENO_CHAT_OPEN_EVENT, onOpenRequest)
+  }, [openModal])
+
   if (!mountModal) {
-    return <ZenoFabPlaceholder onOpen={handleEarlyOpen} />
+    return <ZenoFabPlaceholder onOpen={() => openModal()} />
   }
 
-  return <ZenoChatModal defaultOpen={openOnMount} />
+  return (
+    <ZenoChatModal defaultOpen={openOnMount} initialPrompt={initialPrompt} />
+  )
 }
