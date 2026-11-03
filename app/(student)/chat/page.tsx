@@ -4,7 +4,7 @@ import { Bot, MessageSquareDashed } from 'lucide-react'
 import {
   ZENO_CHAT_OPEN_EVENT,
   type ZenoChatOpenDetail,
-} from '@/components/chat/zeno-chat-modal'
+} from '@/components/chat/zeno-chat-events'
 
 const STARTERS = [
   {
