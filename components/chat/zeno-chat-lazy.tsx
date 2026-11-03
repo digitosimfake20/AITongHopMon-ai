@@ -22,12 +22,12 @@ function ZenoFabPlaceholder({
       disabled={busy || !onOpen}
       aria-busy={busy || undefined}
       aria-label="Mở chat Zeno"
-      className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:opacity-90"
+      className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-zeno text-zeno-foreground shadow-lg transition-transform hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:opacity-90"
     >
       <Bot className="size-6" aria-hidden />
       <span className="absolute -right-0.5 -top-0.5 flex size-3.5" aria-hidden>
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
-        <span className="relative inline-flex size-3.5 rounded-full bg-teal-500" />
+        <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-zeno opacity-75" />
+        <span className="relative inline-flex size-3.5 rounded-full bg-zeno ring-2 ring-background" />
       </span>
     </button>
   )

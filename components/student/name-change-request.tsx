@@ -27,7 +27,7 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
   )
 
   function handleSubmit() {
-    if (!target) { toast.error('Vui lòng chọn tên cần đổi sang'); return }
+    if (!target) { toast.error('Chọn tên cần đổi sang'); return }
     startTransition(async () => {
       const result = await requestNameChangeAction({
         classId,
@@ -35,7 +35,7 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
         reason: reason.trim(),
       })
       if (result.success) {
-        toast.success('Đã gửi yêu cầu đổi tên. Vui lòng đợi giáo viên duyệt.')
+        toast.success('Đã gửi yêu cầu đổi tên. Chờ giáo viên duyệt.')
         setOpen(false)
         setTarget(null)
         setReason('')
@@ -77,7 +77,7 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
         <strong className="rounded bg-rose-100 px-2 py-0.5 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
           {currentEntry.fullName}
         </strong>
-        . Hãy chọn tên đúng của bạn bên dưới.
+        . Chọn tên đúng của bạn bên dưới.
       </p>
 
       <div className="relative mb-3">
@@ -100,9 +100,10 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
           <button
             key={e.id}
             type="button"
+            aria-pressed={target?.id === e.id}
             onClick={() => setTarget(e.id === target?.id ? null : e)}
             className={[
-              'flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors',
+              'flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2',
               target?.id === e.id
                 ? 'border-zeno bg-zeno/10 font-medium text-zeno'
                 : 'border-border bg-card hover:border-zeno/40',
@@ -135,7 +136,7 @@ export function NameChangeRequest({ classId, currentEntry, allEntries }: NameCha
         type="button"
         onClick={handleSubmit}
         disabled={!target || isPending}
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zeno py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zeno py-2.5 text-sm font-semibold text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:opacity-60"
       >
         {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ArrowRightLeft className="size-4" aria-hidden />}
         {target

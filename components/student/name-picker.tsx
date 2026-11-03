@@ -68,7 +68,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
           placeholder="Tìm tên..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-zeno"
+          className="min-h-11 w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno"
         />
       </div>
 
@@ -78,14 +78,22 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
           const isLinkedByMe = entry.linkedUserId === currentUserId
           const isSelected = selected === entry.id
 
+          const linkedLabel = isLinkedByOther
+            ? `${entry.fullName}, đã được học sinh khác chọn`
+            : isLinkedByMe
+              ? `${entry.fullName}, bạn đã liên kết`
+              : entry.fullName
+
           return (
             <button
               key={entry.id}
               type="button"
               disabled={isLinkedByOther}
+              aria-pressed={isLinkedByOther ? undefined : isSelected || isLinkedByMe}
+              aria-label={linkedLabel}
               onClick={() => !isLinkedByOther && setSelected(isSelected ? null : entry.id)}
               className={[
-                'flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
+                'flex min-h-11 items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2',
                 isLinkedByOther
                   ? 'cursor-not-allowed border-border bg-muted opacity-50'
                   : isLinkedByMe
@@ -103,7 +111,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
                 <p className="truncate text-sm font-medium text-foreground">
                   {entry.fullName}
                 </p>
-                <p className="text-[11px] text-muted-foreground">{entry.studentCode}</p>
+                <p className="text-xs text-muted-foreground">{entry.studentCode}</p>
               </div>
 
               {isLinkedByMe && <UserCheck className="size-4 shrink-0 text-emerald-500" aria-hidden />}
@@ -123,7 +131,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
           type="button"
           onClick={handleConfirm}
           disabled={isPending}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zeno py-3 font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-zeno py-3 font-semibold text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2 disabled:opacity-60"
         >
           {isPending ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
