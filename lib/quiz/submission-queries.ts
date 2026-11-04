@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { canReadSubmission } from '@/lib/quiz/submission-access'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,7 +51,7 @@ export async function getSubmissionResult(
   const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
     include: {
-      test: { select: { title: true, timeLimitMinutes: true, difficultyLevel: true } },
+      test: { select: { title: true, timeLimitMinutes: true, difficultyLevel: true, classId: true } },
       student: { select: { fullName: true } },
       details: {
         include: {
@@ -72,9 +73,21 @@ export async function getSubmissionResult(
   })
 
   if (!submission) return null
-  // Students can only view their own results; teachers can view any result
-  const isTeacher = caller.role === 'teacher' || caller.role === 'admin'
-  if (!isTeacher && submission.studentId !== caller.id) return null
+
+  const classroom = await prisma.classroom.findFirst({
+    where: { id: submission.test.classId },
+    select: { teacherId: true },
+  })
+  if (
+    !canReadSubmission({
+      role: caller.role,
+      callerId: caller.id,
+      studentId: submission.studentId,
+      classTeacherId: classroom?.teacherId ?? null,
+    })
+  ) {
+    return null
+  }
 
   const questionResults: QuestionResultRow[] = submission.details.map((d) => ({
     questionId: d.questionId,

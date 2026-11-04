@@ -8,6 +8,7 @@ import {
   MASTERY_STATUS_PROGRESSING,
   type MasteryLabelStatus,
 } from '@/lib/knowledge/mastery-labels'
+import { filterBktToClassNodes } from '@/lib/quiz/class-bkt'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -166,6 +167,30 @@ function behaviorAggQuery(studentId: string, classId: string) {
   `
 }
 
+function questionIdsOnTest(questionIds: unknown): string[] {
+  if (!Array.isArray(questionIds)) return []
+  const ids: string[] = []
+  for (const id of questionIds) {
+    if (typeof id === 'string' && id.length > 0) ids.push(id)
+  }
+  return ids
+}
+
+/** Knowledge-node ids (`Question.topicKey`) that appear on this class's tests. */
+async function classTopicNodeIds(classId: string): Promise<Set<string>> {
+  const tests = await prisma.test.findMany({
+    where: { classId },
+    select: { questionIds: true },
+  })
+  const questionIds = [...new Set(tests.flatMap((test) => questionIdsOnTest(test.questionIds)))]
+  if (questionIds.length === 0) return new Set()
+  const questions = await prisma.question.findMany({
+    where: { id: { in: questionIds } },
+    select: { topicKey: true },
+  })
+  return new Set(questions.map((question) => question.topicKey))
+}
+
 function topicAggQuery(studentId: string, classId: string) {
   return prisma.$queryRaw<TopicAggRow[]>`
     SELECT
@@ -289,6 +314,7 @@ export async function getStudentDetail(
     orderBy: { submittedAt: 'desc' },
   })
   const behaviorRows = await behaviorAggQuery(studentId, classId)
+  const classNodeIds = await classTopicNodeIds(classId)
   const [bktStates, topicRows] = await Promise.all([
     prisma.studentKnowledgeState.findMany({
       where: { studentId },
@@ -297,6 +323,7 @@ export async function getStudentDetail(
     }),
     topicAggQuery(studentId, classId),
   ])
+  const classBktStates = filterBktToClassNodes(bktStates, classNodeIds)
 
   const student = membership.student
   const behavior = behaviorRows[0] ?? {
@@ -306,8 +333,8 @@ export async function getStudentDetail(
     correct_steady: 0,
   }
   const topicMastery =
-    bktStates.length > 0
-      ? buildTopicMasteryFromBkt(bktStates)
+    classBktStates.length > 0
+      ? buildTopicMasteryFromBkt(classBktStates)
       : buildTopicMasteryFromSubmissions(topicRows)
 
   const weakTopics = topicMastery
