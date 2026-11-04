@@ -14,6 +14,8 @@ const systemQuestionSchema = z.object({
   type: questionTypeSchema.default('MULTIPLE_CHOICE'),
   content: z.string().min(1, 'Nội dung câu hỏi không được trống'),
   topic: z.string().optional(),
+  /** Normalized slug stamped at ingest for practice-bank SQL filters. */
+  topicKey: z.string().optional(),
   options: z.array(z.string()).optional(),
   subQuestions: z
     .array(

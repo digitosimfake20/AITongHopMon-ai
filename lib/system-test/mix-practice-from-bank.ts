@@ -1,9 +1,13 @@
+import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { publishSystemTestSchema } from '@/lib/validations/system-test'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import type { z } from 'zod'
 
 type ParsedQuestion = z.infer<typeof publishSystemTestSchema.shape.questions>[number]
+
+/** Cap full JSON rows shipped to Node — DB prefilters by topic first. */
+export const PRACTICE_BANK_CANDIDATE_LIMIT = 24
 
 function shuffle<T>(arr: T[]): T[] {
   const copy = [...arr]
@@ -30,6 +34,93 @@ export function topicMatches(questionTopic: string, weakTopics: string[]): boole
   })
 }
 
+/** Build ILIKE / equality needles from weak topic titles + optional topicKeys. */
+export function buildPracticeTopicNeedles(
+  weakTopics: string[],
+  topicKeys?: string[],
+): string[] {
+  const needles = new Set<string>()
+  for (const t of weakTopics) {
+    const name = normalizeTopicName(t).toLowerCase()
+    if (name) needles.add(name)
+    needles.add(topicToNodeId(t))
+  }
+  for (const key of topicKeys ?? []) {
+    const k = key.trim().toLowerCase()
+    if (k) needles.add(k)
+  }
+  return [...needles].filter(Boolean)
+}
+
+function topicMatchSql(needles: string[]): Prisma.Sql {
+  if (needles.length === 0) return Prisma.sql`TRUE`
+  const clauses = needles.map((needle) => {
+    const pattern = `%${needle}%`
+    return Prisma.sql`(
+      lower(coalesce(tg.topic, '')) LIKE ${pattern}
+      OR lower(coalesce(st.title, '')) LIKE ${pattern}
+      OR EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(CASE
+          WHEN jsonb_typeof(st.questions::jsonb) = 'array' THEN st.questions::jsonb
+          ELSE '[]'::jsonb
+        END) AS q
+        WHERE lower(coalesce(q->>'topic', '')) LIKE ${pattern}
+           OR lower(coalesce(q->>'topicKey', '')) LIKE ${pattern}
+           OR lower(coalesce(q->>'topic_key', '')) = ${needle}
+      )
+    )`
+  })
+  return Prisma.sql`(${Prisma.join(clauses, ' OR ')})`
+}
+
+type BankRow = {
+  id: string
+  title: string
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | null
+  questions: unknown
+  group_topic: string | null
+}
+
+async function fetchPracticeBankCandidates(needles: string[]): Promise<BankRow[]> {
+  return prisma.$queryRaw<BankRow[]>`
+    SELECT
+      st.id,
+      st.title,
+      st.difficulty::text AS difficulty,
+      st.questions,
+      tg.topic AS group_topic
+    FROM core.system_tests st
+    LEFT JOIN core.test_groups tg ON tg.id = st.group_id
+    WHERE st.difficulty IN (
+      'EASY'::core."DifficultyLevel",
+      'MEDIUM'::core."DifficultyLevel"
+    )
+      AND ${topicMatchSql(needles)}
+    ORDER BY st.created_at DESC
+    LIMIT ${PRACTICE_BANK_CANDIDATE_LIMIT}
+  `
+}
+
+async function fetchFallbackBankRows(): Promise<BankRow[]> {
+  return prisma.$queryRaw<BankRow[]>`
+    SELECT
+      st.id,
+      st.title,
+      st.difficulty::text AS difficulty,
+      st.questions,
+      tg.topic AS group_topic
+    FROM core.system_tests st
+    LEFT JOIN core.test_groups tg ON tg.id = st.group_id
+    WHERE st.difficulty IN (
+      'EASY'::core."DifficultyLevel",
+      'MEDIUM'::core."DifficultyLevel"
+    )
+    ORDER BY st.created_at DESC
+    LIMIT 5
+  `
+}
+
 export interface MixedPracticeResult {
   questions: ParsedQuestion[]
   sourceTitles: string[]
@@ -39,23 +130,18 @@ export interface MixedPracticeResult {
 
 export async function collectPracticeQuestionsFromBank(
   weakTopics: string[],
-  options?: { targetCount?: number },
+  options?: { targetCount?: number; topicKeys?: string[] },
 ): Promise<MixedPracticeResult> {
   const targetCount = options?.targetCount ?? 6
   const easyTarget = Math.ceil(targetCount / 2)
   const mediumTarget = targetCount - easyTarget
   const primaryWeakTopic = weakTopics[0] ?? 'Chủ đề chung'
+  const needles = buildPracticeTopicNeedles(weakTopics, options?.topicKeys)
 
-  const systemTests = await prisma.systemTest.findMany({
-    where: {
-      difficulty: { in: ['EASY', 'MEDIUM'] },
-    },
-    include: {
-      group: { select: { topic: true, title: true, subject: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 80,
-  })
+  const systemTests =
+    needles.length > 0
+      ? await fetchPracticeBankCandidates(needles)
+      : await fetchFallbackBankRows()
 
   const easyPool: ParsedQuestion[] = []
   const mediumPool: ParsedQuestion[] = []
@@ -65,8 +151,7 @@ export async function collectPracticeQuestionsFromBank(
     const parsed = publishSystemTestSchema.shape.questions.safeParse(systemTest.questions)
     if (!parsed.success) continue
 
-    const fallbackTopic =
-      systemTest.group?.topic?.trim() || systemTest.title
+    const fallbackTopic = systemTest.group_topic?.trim() || systemTest.title
 
     for (const question of parsed.data) {
       const questionTopic = question.topic?.trim() || fallbackTopic
@@ -96,12 +181,7 @@ export async function collectPracticeQuestionsFromBank(
   }
 
   if (picked.length === 0) {
-    const fallbackTests = await prisma.systemTest.findMany({
-      where: { difficulty: { in: ['EASY', 'MEDIUM'] } },
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-    })
-
+    const fallbackTests = await fetchFallbackBankRows()
     for (const systemTest of fallbackTests) {
       const parsed = publishSystemTestSchema.shape.questions.safeParse(systemTest.questions)
       if (!parsed.success) continue

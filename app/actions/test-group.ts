@@ -23,6 +23,7 @@ import {
   type PublishTestGroupInput,
 } from '@/lib/validations/test-group'
 import { systemTestQuestionsToTierDraft, type TestDraft } from '@/lib/system-test/test-draft'
+import { stampQuestionTopicKeys } from '@/lib/system-test/stamp-topic-keys'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,14 +134,18 @@ export async function publishTestGroupAction(
       ]
 
       for (const tier of tiers) {
+        const stampedQuestions = stampQuestionTopicKeys(
+          tier.payload.questions,
+          data.topic.trim() || data.title.trim(),
+        )
         await tx.systemTest.create({
           data: {
             title: `${data.title.trim()} — ${tier.difficulty === 'EASY' ? 'Dễ' : tier.difficulty === 'MEDIUM' ? 'TB' : 'Khó'}`,
             subject: data.subject.trim() || 'Toán',
             grade: data.grade.trim() || '8',
             durationMinutes: tier.payload.durationMinutes,
-            questionCount: tier.payload.questions.length,
-            questions: tier.payload.questions as Prisma.InputJsonValue,
+            questionCount: stampedQuestions.length,
+            questions: stampedQuestions as Prisma.InputJsonValue,
             isSystem: true,
             groupId: createdGroup.id,
             difficulty: tier.difficulty,
@@ -614,7 +619,11 @@ export async function updateTestGroupAction(
     const tierUpdates = tiers.map((tier) => {
       const tierLabel =
         tier.difficulty === 'EASY' ? 'Dễ' : tier.difficulty === 'MEDIUM' ? 'TB' : 'Khó'
-      const questionsChanged = !jsonEqual(tier.payload.questions, tier.existing.questions)
+      const stampedQuestions = stampQuestionTopicKeys(
+        tier.payload.questions,
+        data.topic.trim() || data.title.trim(),
+      )
+      const questionsChanged = !jsonEqual(stampedQuestions, tier.existing.questions)
       const durationChanged = tier.payload.durationMinutes !== tier.existing.durationMinutes
 
       return prismaDirect.systemTest.update({
@@ -626,8 +635,8 @@ export async function updateTestGroupAction(
           ...(durationChanged ? { durationMinutes: tier.payload.durationMinutes } : {}),
           ...(questionsChanged
             ? {
-                questionCount: tier.payload.questions.length,
-                questions: tier.payload.questions as Prisma.InputJsonValue,
+                questionCount: stampedQuestions.length,
+                questions: stampedQuestions as Prisma.InputJsonValue,
               }
             : {}),
         },
