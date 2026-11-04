@@ -29,6 +29,7 @@
 |---|---|
 | `ffbb54b15dc3b4eb024aaaa6e8821a7dd3904209` | perf(ai): batch post-submit pipeline DB RTTs |
 | `f33e7bdf5a2ada9dfd134d49b83eacfc8c5439cf` | docs: add Phase E post-submit pipeline report |
+| `8ccc8d8eb3bd7ca46b30531320bc5e04aaf4033b` | docs: record Phase E report SHA |
 
 ## Verify / timing
 
