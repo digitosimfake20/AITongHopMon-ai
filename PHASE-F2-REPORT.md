@@ -31,6 +31,7 @@
 |---|---|
 | `27bf6ebc85ce2c2abed8c1443b4ac9db2aa94413` | perf(quiz-take): merge take queries and defer KaTeX |
 | `025c81c2853980f8a0b72382ef708c32c26702ff` | docs: add Phase F2 quiz-take report |
+| `3fd332cb516ee300f0cb6a64a34b7f9ca0895ccd` | docs: record Phase F2 report SHA |
 
 ## Verify / Navigation Timing
 
