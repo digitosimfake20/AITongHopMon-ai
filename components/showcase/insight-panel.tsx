@@ -1,7 +1,4 @@
-'use client'
-
 import { AlertTriangle, CircleCheck, Sparkles } from 'lucide-react'
-import { useInView } from '@/hooks/use-in-view'
 import { cn } from '@/lib/utils'
 
 interface TopicRow {
@@ -18,17 +15,10 @@ const TOPICS: TopicRow[] = [
   { id: 'enzymes', label: 'Bất phương trình', value: 71, status: 'solid' },
 ]
 
+/** Static marketing panel — no IntersectionObserver island on the landing path. */
 export function InsightPanel() {
-  const { ref, inView } = useInView<HTMLDivElement>({
-    once: true,
-    threshold: 0.3,
-  })
-
   return (
-    <div
-      ref={ref}
-      className="rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.24)] sm:p-6"
-    >
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-28px_rgba(0,0,0,0.24)] sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-card-foreground">
@@ -45,7 +35,7 @@ export function InsightPanel() {
       </div>
 
       <ul className="mt-5 space-y-3.5">
-        {TOPICS.map((topic, index) => (
+        {TOPICS.map((topic) => (
           <li key={topic.id} className="space-y-1.5">
             <div className="flex items-center justify-between gap-3 text-xs">
               <span className="flex items-center gap-1.5 text-card-foreground">
@@ -72,13 +62,10 @@ export function InsightPanel() {
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
               <div
                 className={cn(
-                  'h-full rounded-full transition-[width] duration-1000 ease-out',
+                  'h-full rounded-full',
                   topic.status === 'solid' ? 'bg-primary' : 'bg-destructive',
                 )}
-                style={{
-                  width: inView ? `${topic.value}%` : '0%',
-                  transitionDelay: `${index * 120}ms`,
-                }}
+                style={{ width: `${topic.value}%` }}
               />
             </div>
           </li>

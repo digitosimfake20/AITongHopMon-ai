@@ -1,19 +1,10 @@
-'use client'
-
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { LayoutGrid, LogOut, Star } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { DashboardGreeting } from '@/components/dashboard/dashboard-greeting'
 import { signOutAction } from '@/lib/auth/actions'
-
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Chào buổi sáng'
-  if (hour < 18) return 'Chào buổi chiều'
-  return 'Chào buổi tối'
-}
 
 interface DashboardHeaderProps {
   studentName: string
@@ -26,20 +17,10 @@ export function DashboardHeader({
   initials,
   masteryScore,
 }: DashboardHeaderProps) {
-  const pathname = usePathname()
-  const isOverview = pathname === '/dashboard'
-  const greeting = `${getGreeting()}, ${studentName}!`
-  const greetingClass =
-    'text-xl font-semibold tracking-tight text-foreground sm:text-2xl'
-
   return (
     <header className="flex flex-col gap-4 border-b border-border bg-background/85 px-4 py-5 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
       <div>
-        {isOverview ? (
-          <h1 className={greetingClass}>{greeting}</h1>
-        ) : (
-          <p className={greetingClass}>{greeting}</p>
-        )}
+        <DashboardGreeting studentName={studentName} />
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
           Hôm nay làm bài kiểm tra nào trước?
         </p>
