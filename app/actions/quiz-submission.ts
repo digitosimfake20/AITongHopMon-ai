@@ -179,10 +179,12 @@ export async function submitQuizAction(
   const testId = input.testId
   const classId = test.classId
 
-  // Bust dashboards / quiz bank immediately so next navigation is fresh
+  // Bust dashboards / quiz bank / classGap (via submissions tag) immediately
+  // so next navigation is fresh — Phase D/E cache-tag contract.
   invalidateAfterSubmit(classId, user.id)
 
   after(async () => {
+    const afterT0 = Date.now()
     try {
       await runPostSubmissionAIPipeline(user.id, pipelineDetails, {
         skipAiCanonicalization: isPractice,
@@ -229,6 +231,10 @@ export async function submitQuizAction(
       invalidateAfterSubmit(classId, user.id)
     } catch (err) {
       console.error('[submitQuizAction] post-submit work failed:', err)
+    } finally {
+      console.info(
+        `[submitQuizAction] after() done submission=${submissionId} practice=${isPractice ? 1 : 0} ms=${Date.now() - afterT0}`,
+      )
     }
   })
 

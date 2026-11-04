@@ -76,6 +76,10 @@ export async function runPostSubmissionAIPipeline(
     officialStats?: import('@/lib/knowledge/scored-submission-stats').SubmissionOfficialStats
   },
 ): Promise<void> {
+  const t0 = Date.now()
+  let topicCount = 0
+  let llmEnrich = false
+
   try {
     const uniqueLabels = [...new Set(details.map((d) => normalizeTopicName(d.topic)))]
     const subject = details[0]?.subject || 'Toán'
@@ -117,66 +121,79 @@ export async function runPostSubmissionAIPipeline(
       })
     }
 
-    // ── 2. Upsert KnowledgeNodes + StudentKnowledgeStates ─────────────────────
+    const batches = [...byNodeId.values()]
+    topicCount = batches.length
+
+    // ── 2. Batch-read prior mastery (1 RTT) then upsert nodes + states ─────────
+    // Skip per-topic findUnique: upsert create path uses default 0.2; update path
+    // needs prior pMastery for correct BKT — load once via findMany.
+    const nodeIds = batches.map((b) => b.nodeId)
+    const existingStates =
+      nodeIds.length > 0
+        ? await prisma.studentKnowledgeState.findMany({
+            where: { studentId, nodeId: { in: nodeIds } },
+            select: { nodeId: true, pMastery: true },
+          })
+        : []
+    const priorMastery = new Map(
+      existingStates.map((s) => [s.nodeId, Number(s.pMastery)] as const),
+    )
+
+    if (batches.length > 0) {
+      await Promise.all(
+        batches.map((batch) =>
+          prisma.knowledgeNode.upsert({
+            where: { id: batch.nodeId },
+            create: {
+              id: batch.nodeId,
+              subject: batch.subject,
+              title: batch.topicName,
+              difficultyLevel: 1,
+            },
+            update: {
+              title: batch.topicName,
+            },
+          }),
+        ),
+      )
+    }
+
     const planBatches: TopicBatchForPlan[] = []
+    if (batches.length > 0) {
+      const masteryRows = await Promise.all(
+        batches.map(async (batch) => {
+          const currentMastery = priorMastery.get(batch.nodeId) ?? 0.2
+          const mastery = computeTopicMasteryUpdate(currentMastery, batch.answers)
 
-    for (const batch of byNodeId.values()) {
-      await prisma.knowledgeNode.upsert({
-        where: { id: batch.nodeId },
-        create: {
-          id: batch.nodeId,
-          subject: batch.subject,
-          title: batch.topicName,
-          difficultyLevel: 1,
-        },
-        update: {
-          title: batch.topicName,
-        },
-      })
+          await prisma.studentKnowledgeState.upsert({
+            where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
+            create: {
+              studentId,
+              nodeId: batch.nodeId,
+              pMastery: mastery,
+              lastPracticedAt: new Date(),
+            },
+            update: {
+              pMastery: mastery,
+              lastPracticedAt: new Date(),
+            },
+          })
 
-      const existing = await prisma.studentKnowledgeState.findUnique({
-        where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
-      })
-      const currentMastery = existing ? Number(existing.pMastery) : 0.2
-
-      const mastery = computeTopicMasteryUpdate(currentMastery, batch.answers)
-
-      await prisma.studentKnowledgeState.upsert({
-        where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
-        create: {
-          studentId,
-          nodeId: batch.nodeId,
-          pMastery: mastery,
-          lastPracticedAt: new Date(),
-        },
-        update: {
-          pMastery: mastery,
-          lastPracticedAt: new Date(),
-        },
-      })
-
-      planBatches.push({
-        topicName: batch.topicName,
-        topicKey: batch.nodeId,
-        pMastery: mastery,
-        answers: batch.answers,
-      })
+          return {
+            topicName: batch.topicName,
+            topicKey: batch.nodeId,
+            pMastery: mastery,
+            answers: batch.answers,
+          } satisfies TopicBatchForPlan
+        }),
+      )
+      planBatches.push(...masteryRows)
     }
 
-    // ── 3. Action plan → Submission.aiFeedbackSummary ─────────────────────────
+    // ── 3. Deterministic plan on hot path (LLM enrich deferred) ───────────────
     let plan = buildStudentActionPlan(planBatches, options?.officialStats)
-    if (!options?.skipLlmEnrich && !options?.skipAiCanonicalization) {
-      plan = await enrichActionPlanWithLLM(plan)
-    }
 
-    if (options?.submissionId) {
-      await prisma.submission.update({
-        where: { id: options.submissionId },
-        data: { aiFeedbackSummary: JSON.stringify(plan) },
-      })
-    }
-
-    // ── 4. Cognitive signals (auto-scored items only — ESSAY is unscored) ─────
+    // ── 4. Cognitive signals + prefetch profile/memory (parallel reads) ───────
     const scoredDetails = details.filter((d) => contributesToMasteryUpdate(d.type))
     const timed = scoredDetails.filter((d) => d.timeSpentSeconds > 0)
     const avgSpeed =
@@ -185,10 +202,14 @@ export async function runPostSubmissionAIPipeline(
     const fastWrong = timed.filter((d) => !d.isCorrect && d.timeSpentSeconds < 15).length
     const carelessRate = timed.length > 0 ? fastWrong / timed.length : 0
 
-    const allStates = await prisma.studentKnowledgeState.findMany({
-      where: { studentId },
-      include: { node: { select: { title: true } } },
-    })
+    const [allStates, existingProfile, existingMem] = await Promise.all([
+      prisma.studentKnowledgeState.findMany({
+        where: { studentId },
+        include: { node: { select: { title: true } } },
+      }),
+      prisma.studentCognitiveProfile.findUnique({ where: { studentId } }),
+      prisma.globalAgentMemory.findUnique({ where: { studentId } }),
+    ])
 
     const strengths = allStates
       .filter((s) => isStrengthMastery(Number(s.pMastery)))
@@ -209,44 +230,16 @@ export async function runPostSubmissionAIPipeline(
 
     const persona = computePersona(avgSpeed, carelessRate, avgMastery)
 
-    // ── 5. Upsert StudentCognitiveProfile ─────────────────────────────────────
-    const existing = await prisma.studentCognitiveProfile.findUnique({
-      where: { studentId },
-    })
     const EMA = 0.3
-    const blendedSpeed = existing
-      ? Number(existing.avgSpeedPerQuestion) * (1 - EMA) + avgSpeed * EMA
+    const blendedSpeed = existingProfile
+      ? Number(existingProfile.avgSpeedPerQuestion) * (1 - EMA) + avgSpeed * EMA
       : avgSpeed
-    const blendedCareless = existing
-      ? Number(existing.carelessErrorRate) * (1 - EMA) + carelessRate * EMA
+    const blendedCareless = existingProfile
+      ? Number(existingProfile.carelessErrorRate) * (1 - EMA) + carelessRate * EMA
       : carelessRate
 
-    await prisma.studentCognitiveProfile.upsert({
-      where: { studentId },
-      create: {
-        studentId,
-        personaType: persona,
-        avgSpeedPerQuestion: blendedSpeed,
-        carelessErrorRate: blendedCareless,
-        strengthsSummary: strengths,
-        weaknessesSummary: weaknesses,
-      },
-      update: {
-        personaType: persona,
-        avgSpeedPerQuestion: blendedSpeed,
-        carelessErrorRate: blendedCareless,
-        strengthsSummary: strengths,
-        weaknessesSummary: weaknesses,
-      },
-    })
-
-    // ── 6. GlobalAgentMemory — keep log + curated keyInsights for UI ───────────
     const memorySnippet = `[${new Date().toLocaleDateString('vi-VN')}] Bài kiểm tra vừa nộp. Điểm yếu hiện tại: ${weaknesses.slice(0, 3).join(', ') || 'Chưa xác định'}. Persona: ${persona}.`
     const curated = curatedInsightFromPlan(plan)
-
-    const existing_mem = await prisma.globalAgentMemory.findUnique({
-      where: { studentId },
-    })
 
     const keyInsights = {
       weaknesses,
@@ -258,27 +251,84 @@ export async function runPostSubmissionAIPipeline(
       updatedAt: new Date().toISOString(),
     }
 
-    if (existing_mem) {
-      const combined = `${existing_mem.longTermSummary}\n${memorySnippet}`.slice(-1500)
-      await prisma.globalAgentMemory.update({
+    // ── 5. Persist plan + profile + memory (LLM not required) ────────────────
+    await Promise.all([
+      options?.submissionId
+        ? prisma.submission.update({
+            where: { id: options.submissionId },
+            data: { aiFeedbackSummary: JSON.stringify(plan) },
+          })
+        : Promise.resolve(),
+      prisma.studentCognitiveProfile.upsert({
         where: { studentId },
-        data: {
-          longTermSummary: combined,
-          keyInsights,
-          totalProcessedMessages: existing_mem.totalProcessedMessages + details.length,
-        },
-      })
-    } else {
-      await prisma.globalAgentMemory.create({
-        data: {
+        create: {
           studentId,
-          longTermSummary: memorySnippet,
-          keyInsights,
-          totalProcessedMessages: details.length,
+          personaType: persona,
+          avgSpeedPerQuestion: blendedSpeed,
+          carelessErrorRate: blendedCareless,
+          strengthsSummary: strengths,
+          weaknessesSummary: weaknesses,
         },
-      })
+        update: {
+          personaType: persona,
+          avgSpeedPerQuestion: blendedSpeed,
+          carelessErrorRate: blendedCareless,
+          strengthsSummary: strengths,
+          weaknessesSummary: weaknesses,
+        },
+      }),
+      existingMem
+        ? prisma.globalAgentMemory.update({
+            where: { studentId },
+            data: {
+              longTermSummary: `${existingMem.longTermSummary}\n${memorySnippet}`.slice(-1500),
+              keyInsights,
+              totalProcessedMessages: existingMem.totalProcessedMessages + details.length,
+            },
+          })
+        : prisma.globalAgentMemory.create({
+            data: {
+              studentId,
+              longTermSummary: memorySnippet,
+              keyInsights,
+              totalProcessedMessages: details.length,
+            },
+          }),
+    ])
+
+    // ── 6. LLM polish after BKT / profile / deterministic feedback ───────────
+    // Practice / offline already skip; keep that. Enrich is off the critical
+    // after() budget for mastery + dashboard signals.
+    if (!options?.skipLlmEnrich && !options?.skipAiCanonicalization) {
+      llmEnrich = true
+      plan = await enrichActionPlanWithLLM(plan)
+      const curatedEnriched = curatedInsightFromPlan(plan)
+      await Promise.all([
+        options?.submissionId
+          ? prisma.submission.update({
+              where: { id: options.submissionId },
+              data: { aiFeedbackSummary: JSON.stringify(plan) },
+            })
+          : Promise.resolve(),
+        prisma.globalAgentMemory.update({
+          where: { studentId },
+          data: {
+            keyInsights: {
+              ...keyInsights,
+              curatedInsight: curatedEnriched,
+              nextPracticeTopics: plan.nextStep?.topicTitles ?? [],
+              weakTopicKeys: plan.nextStep?.topicKeys ?? [],
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        }),
+      ])
     }
   } catch (err) {
     console.error('[AI Pipeline] Error:', err)
+  } finally {
+    console.info(
+      `[AI Pipeline] done student=${studentId} topics=${topicCount} llm=${llmEnrich ? 1 : 0} ms=${Date.now() - t0}`,
+    )
   }
 }
