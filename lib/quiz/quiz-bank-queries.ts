@@ -56,10 +56,19 @@ async function getQuizBankForStudentUncached(
   classId: string,
   studentId: string,
 ): Promise<QuizBankItem[]> {
-  const [tests, classTests, adaptiveClassTests] = await prisma.$transaction([
+  // One round-trip for class catalog + packages (was 2 serial transactions + adaptive hop).
+  const [tests, classTests, adaptiveClassTests, packages] = await prisma.$transaction([
     prisma.test.findMany({
       where: { classId },
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        timeLimitMinutes: true,
+        difficultyLevel: true,
+        questionIds: true,
+        createdAt: true,
+      },
     }),
     prisma.classTest.findMany({
       where: { classId, isAdaptive: false },
@@ -75,13 +84,38 @@ async function getQuizBankForStudentUncached(
     }),
     prisma.classTest.findMany({
       where: { classId, isAdaptive: true },
-      include: {
+      select: {
+        id: true,
+        easyTestId: true,
+        mediumTestId: true,
+        hardTestId: true,
+        startTime: true,
+        endTime: true,
+        allowReview: true,
+        passScoreThreshold: true,
         testGroup: { select: { title: true, subject: true, topic: true } },
         mediumTest: { select: { id: true, timeLimitMinutes: true, questionIds: true } },
         adaptiveSessions: {
           where: { studentId },
           take: 1,
+          select: {
+            round1SubmissionId: true,
+            round2TestId: true,
+            round2Difficulty: true,
+            round2SubmissionId: true,
+          },
         },
+      },
+    }),
+    prisma.quizPackage.findMany({
+      where: { classId },
+      select: {
+        id: true,
+        mode: true,
+        standardTestId: true,
+        easyTestId: true,
+        mediumTestId: true,
+        hardTestId: true,
       },
     }),
   ])
@@ -100,45 +134,44 @@ async function getQuizBankForStudentUncached(
     classTests.filter((ct) => ct.testId).map((ct) => [ct.testId!, ct]),
   )
 
-  const [submissions, packages] = await prisma.$transaction([
-    prisma.submission.findMany({
-      where: { testId: { in: regularTests.map((t) => t.id) }, studentId },
-      orderBy: { submittedAt: 'desc' },
-      select: { id: true, testId: true, score: true, attemptNumber: true, submittedAt: true },
-    }),
-    prisma.quizPackage.findMany({
-      where: { classId },
-      select: {
-        id: true,
-        mode: true,
-        standardTestId: true,
-        easyTestId: true,
-        mediumTestId: true,
-        hardTestId: true,
-      },
-    }),
-  ])
+  const submissionTestIds = [
+    ...new Set([...regularTests.map((t) => t.id), ...adaptiveTestIds]),
+  ]
 
-  const adaptiveSubmissions =
-    adaptiveTestIds.size > 0
+  const allSubmissions =
+    submissionTestIds.length > 0
       ? await prisma.submission.findMany({
-          where: {
-            studentId,
-            testId: { in: Array.from(adaptiveTestIds) },
+          where: { studentId, testId: { in: submissionTestIds } },
+          orderBy: { submittedAt: 'desc' },
+          select: {
+            id: true,
+            testId: true,
+            score: true,
+            attemptNumber: true,
+            submittedAt: true,
           },
-          select: { id: true, testId: true, score: true },
         })
       : []
 
-  const latestSub = new Map<string, (typeof submissions)[number]>()
+  const regularIdSet = new Set(regularTests.map((t) => t.id))
+  const latestSub = new Map<(typeof allSubmissions)[number]['testId'], (typeof allSubmissions)[number]>()
   const attemptCounts = new Map<string, number>()
-  for (const s of submissions) {
-    attemptCounts.set(s.testId, (attemptCounts.get(s.testId) ?? 0) + 1)
-    if (!latestSub.has(s.testId)) latestSub.set(s.testId, s)
-  }
+  const adaptiveScoreBySubId = new Map<string, number>()
+  const scoreByTestId = new Map<string, number>()
 
-  const adaptiveScoreBySubId = new Map(adaptiveSubmissions.map((s) => [s.id, Number(s.score)]))
-  const scoreByTestId = new Map(adaptiveSubmissions.map((s) => [s.testId, Number(s.score)]))
+  for (const s of allSubmissions) {
+    if (regularIdSet.has(s.testId)) {
+      attemptCounts.set(s.testId, (attemptCounts.get(s.testId) ?? 0) + 1)
+      if (!latestSub.has(s.testId)) latestSub.set(s.testId, s)
+    }
+    if (adaptiveTestIds.has(s.testId)) {
+      adaptiveScoreBySubId.set(s.id, Number(s.score))
+      // allSubmissions is newest-first — keep the latest score per adaptive test.
+      if (!scoreByTestId.has(s.testId)) {
+        scoreByTestId.set(s.testId, Number(s.score))
+      }
+    }
+  }
 
   const testToPackage = new Map<string, { id: string; mode: 'STANDARD' | 'ADAPTIVE_PACKAGE' }>()
   for (const pkg of packages) {

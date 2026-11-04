@@ -148,38 +148,58 @@ export async function getQuizPackageForEdit(
   return { id: pkg.id, title: pkg.title, description: pkg.description, mode: pkg.mode, classId: pkg.classId, tests }
 }
 
+type PackageListPurpose = 'full' | 'dash'
+
 type PackageTestMeta = {
   id: string
   title: string
   difficultyLevel: DifficultyLevel
-  questionIds: unknown
+  questionIds?: unknown
   timeLimitMinutes: number
 }
 
 function summarizeTestFromAgg(
   test: PackageTestMeta | null | undefined,
   stats: { submittedCount: number; averageScore: number } | undefined,
+  purpose: PackageListPurpose,
 ): QuizPackageTestSummary | null {
   if (!test) return null
   return {
     id: test.id,
     title: test.title,
     difficultyLevel: test.difficultyLevel,
-    questionCount: Array.isArray(test.questionIds) ? test.questionIds.length : 0,
+    // Dash cards never render questionCount — skip shipping questionIds JSON.
+    questionCount:
+      purpose === 'dash'
+        ? 0
+        : Array.isArray(test.questionIds)
+          ? test.questionIds.length
+          : 0,
     timeLimitMinutes: test.timeLimitMinutes,
     submittedCount: stats?.submittedCount ?? 0,
     averageScore: stats?.averageScore ?? 0,
   }
 }
 
-async function getQuizPackagesForClassUncached(classId: string) {
-  const testSelect = {
-    id: true,
-    title: true,
-    difficultyLevel: true,
-    questionIds: true,
-    timeLimitMinutes: true,
-  } as const
+async function getQuizPackagesForClassUncached(
+  classId: string,
+  purpose: PackageListPurpose,
+) {
+  const testSelect =
+    purpose === 'dash'
+      ? ({
+          id: true,
+          title: true,
+          difficultyLevel: true,
+          timeLimitMinutes: true,
+        } as const)
+      : ({
+          id: true,
+          title: true,
+          difficultyLevel: true,
+          questionIds: true,
+          timeLimitMinutes: true,
+        } as const)
 
   const packages = await prisma.quizPackage.findMany({
     where: { classId },
@@ -230,11 +250,29 @@ async function getQuizPackagesForClassUncached(classId: string) {
   return packages.map((pkg) => {
     const tests =
       pkg.mode === 'STANDARD'
-        ? [summarizeTestFromAgg(pkg.standardTest, statsByTestId.get(pkg.standardTest?.id ?? ''))]
+        ? [
+            summarizeTestFromAgg(
+              pkg.standardTest,
+              statsByTestId.get(pkg.standardTest?.id ?? ''),
+              purpose,
+            ),
+          ]
         : [
-            summarizeTestFromAgg(pkg.easyTest, statsByTestId.get(pkg.easyTest?.id ?? '')),
-            summarizeTestFromAgg(pkg.mediumTest, statsByTestId.get(pkg.mediumTest?.id ?? '')),
-            summarizeTestFromAgg(pkg.hardTest, statsByTestId.get(pkg.hardTest?.id ?? '')),
+            summarizeTestFromAgg(
+              pkg.easyTest,
+              statsByTestId.get(pkg.easyTest?.id ?? ''),
+              purpose,
+            ),
+            summarizeTestFromAgg(
+              pkg.mediumTest,
+              statsByTestId.get(pkg.mediumTest?.id ?? ''),
+              purpose,
+            ),
+            summarizeTestFromAgg(
+              pkg.hardTest,
+              statsByTestId.get(pkg.hardTest?.id ?? ''),
+              purpose,
+            ),
           ]
 
     return {
@@ -248,17 +286,20 @@ async function getQuizPackagesForClassUncached(classId: string) {
   })
 }
 
-export async function getQuizPackagesForClass(classId: string): Promise<QuizPackageSummary[]> {
+export async function getQuizPackagesForClass(
+  classId: string,
+  purpose: PackageListPurpose = 'full',
+): Promise<QuizPackageSummary[]> {
   const { cachedQuery } = await import('@/lib/cache/cached-query')
   const { CacheTags, CacheTTL } = await import('@/lib/cache/tags')
   const { asDateRequired } = await import('@/lib/cache/revive')
 
   const cached = cachedQuery(getQuizPackagesForClassUncached, {
-    keyParts: ['packages'],
+    keyParts: ['packages', purpose],
     tags: [CacheTags.packages(classId), CacheTags.submissions(classId)],
     revalidate: CacheTTL.packages,
   })
-  const rows = await cached(classId)
+  const rows = await cached(classId, purpose)
   return rows.map((pkg) => ({
     ...pkg,
     createdAt: asDateRequired(pkg.createdAt),

@@ -5,11 +5,13 @@ import { cachedQuery } from '@/lib/cache/cached-query'
 import { CacheTags, CacheTTL } from '@/lib/cache/tags'
 import { asDate } from '@/lib/cache/revive'
 import { computeStreakDays } from '@/lib/dashboard/streak'
-import {
-  MASTERY_STATUS_MASTERED,
-  MASTERY_STATUS_PROGRESSING,
-} from '@/lib/knowledge/mastery-labels'
+import { MASTERY_STATUS_MASTERED } from '@/lib/knowledge/mastery-labels'
 import { assignmentsFromQuizBank } from '@/lib/dashboard/student-assignments'
+import {
+  mapWeakTopics,
+  masteryPercentFromAvg,
+  studyHoursFromSeconds,
+} from '@/lib/dashboard/student-dashboard-metrics'
 import { getQuizBankForStudent } from '@/lib/quiz/quiz-bank-queries'
 
 function formatRelativeTime(date: Date): string {
@@ -80,52 +82,60 @@ async function getStudentDashboardDataUncached(
   fullName: string,
   classLabel: string,
 ): Promise<CachedStudentDash> {
-  const [submissions, knowledgeStates, cognitiveProfile, globalMemory, quizBank] =
+  const [submissionAgg, masteryAgg, weakStates, cognitiveProfile, globalMemory, quizBank] =
     await Promise.all([
-      prisma.submission.findMany({
+      prisma.submission.aggregate({
         where: {
           studentId: userId,
           test: { classId },
         },
-        select: { timeSpentSeconds: true, submittedAt: true },
+        _count: { _all: true },
+        _sum: { timeSpentSeconds: true },
+      }),
+      prisma.studentKnowledgeState.aggregate({
+        where: { studentId: userId },
+        _avg: { pMastery: true },
+        _count: { _all: true },
       }),
       prisma.studentKnowledgeState.findMany({
-        where: { studentId: userId },
-        include: { node: true },
+        where: {
+          studentId: userId,
+          pMastery: { lt: MASTERY_STATUS_MASTERED },
+        },
         orderBy: { pMastery: 'asc' },
+        take: 5,
+        select: {
+          nodeId: true,
+          pMastery: true,
+          node: { select: { title: true } },
+        },
       }),
-      prisma.studentCognitiveProfile.findUnique({ where: { studentId: userId } }),
-      prisma.globalAgentMemory.findUnique({ where: { studentId: userId } }),
+      prisma.studentCognitiveProfile.findUnique({
+        where: { studentId: userId },
+        select: {
+          personaType: true,
+          avgSpeedPerQuestion: true,
+          carelessErrorRate: true,
+          strengthsSummary: true,
+          weaknessesSummary: true,
+        },
+      }),
+      prisma.globalAgentMemory.findUnique({
+        where: { studentId: userId },
+        select: { keyInsights: true, updatedAt: true },
+      }),
       getQuizBankForStudent(classId, userId),
     ])
 
-  const masteryPercent =
-    knowledgeStates.length > 0
-      ? Math.round(
-          (knowledgeStates.reduce((sum, state) => sum + Number(state.pMastery), 0) /
-            knowledgeStates.length) *
-            100,
-        )
-      : 0
+  const masteryPercent = masteryPercentFromAvg(
+    masteryAgg._avg.pMastery != null ? Number(masteryAgg._avg.pMastery) : null,
+    masteryAgg._count._all,
+  )
 
-  const completedQuizzes = submissions.length
-  const studyHours =
-    Math.round(
-      (submissions.reduce((sum, item) => sum + item.timeSpentSeconds, 0) / 3600) * 10,
-    ) / 10
+  const completedQuizzes = submissionAgg._count._all
+  const studyHours = studyHoursFromSeconds(submissionAgg._sum.timeSpentSeconds ?? 0)
 
-  const weakTopics = knowledgeStates
-    .filter((state) => Number(state.pMastery) < MASTERY_STATUS_MASTERED)
-    .slice(0, 5)
-    .map((state) => ({
-      id: state.nodeId,
-      label: state.node.title,
-      accuracy: Math.round(Number(state.pMastery) * 100),
-      severity:
-        Number(state.pMastery) < MASTERY_STATUS_PROGRESSING
-          ? ('weak' as const)
-          : ('moderate' as const),
-    }))
+  const weakTopics = mapWeakTopics(weakStates)
 
   const topWeak = weakTopics[0]?.label
   const adaptiveTitle = topWeak
