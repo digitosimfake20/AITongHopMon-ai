@@ -17,6 +17,7 @@ import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
 import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
 import { scoreTrueFalseGroup } from '@/lib/quiz/score-true-false'
+import { maxPointsFromQuestions, scoreOutOfTen } from '@/lib/quiz/score-out-of-ten'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
 import { assessQuestionTiming } from '@/lib/quiz/question-timing'
 
@@ -122,7 +123,9 @@ export async function submitQuizAction(
     timeLimitSeconds,
     reportedSeconds: input.totalTimeSpentSeconds,
   })
-  const finalScore = Math.min(10, Math.round(totalScore * 100) / 100)
+  // Normalize to /10 so practice mixes (N×1pt) and teacher packages (sum≈10) share one scale.
+  const maxPoints = maxPointsFromQuestions(questionIds.map((id) => qMap.get(id)))
+  const finalScore = scoreOutOfTen(totalScore, maxPoints)
 
   const timingPreview = assessQuestionTiming({
     perQuestionSeconds: input.answers.map((a) => a.timeSpentSeconds),
