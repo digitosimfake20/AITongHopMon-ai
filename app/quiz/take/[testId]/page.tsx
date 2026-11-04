@@ -8,6 +8,10 @@ interface PageProps {
   params: Promise<{ testId: string }>
 }
 
+/**
+ * Thin RSC entry: auth + merged getQuizForTaking (2 RTTs).
+ * KaTeX stays out of the intro path via QuizTakeClient → dynamic QuizTaker.
+ */
 export default async function QuizTakePage({ params }: PageProps) {
   const { testId } = await params
 
