@@ -8,6 +8,22 @@
 import prisma from '@/lib/prisma'
 import { decryptMessage } from './chat-crypto'
 
+function personaPedagogyHint(personaType: string | undefined): string {
+  switch (personaType) {
+    case 'Nhanh nhạy nhưng ẩu':
+      return 'Học sinh hay làm nhanh và mắc lỗi cẩu thả. Hãy nhẹ nhàng nhắc em kiểm tra lại dấu, đơn vị và bước tính trước khi kết luận.'
+    case 'Cẩn thận - Ngâm lâu':
+      return 'Học sinh suy nghĩ rất chậm và cẩn thận. Khuyến khích em tự tin hơn và đưa ra gợi ý nhỏ để tháo gỡ bế tắc nhanh hơn.'
+    case 'Thành thạo':
+      return 'Học sinh thành thạo tốt. Hãy đưa ra câu hỏi nâng cao, khuyến khích tư duy sâu hơn và liên hệ kiến thức.'
+    case 'Chắc chắn, tốc độ tốt':
+      return 'Học sinh làm chắc và tốc độ ổn. Giữ nhịp luyện tập, thỉnh thoảng thêm bài hơi khó để mở rộng.'
+    default:
+      return 'Hãy giải thích từng bước rõ ràng, kiên nhẫn và động viên học sinh.'
+  }
+}
+
+/** Full memory-backed system prompt (profile + long-term + recent chunk summaries). */
 export async function buildZenoSystemPrompt(studentId: string): Promise<string> {
   // ── Parallel fetch of all context sources ────────────────────────────────
   const [user, profile, memory, recentChunks] = await prisma.$transaction([
@@ -70,28 +86,7 @@ export async function buildZenoSystemPrompt(studentId: string): Promise<string> 
         .join('\n---\n')
     : 'Chưa có tóm tắt cuộc trò chuyện gần đây.'
 
-  // ── Persona-specific pedagogical hint ────────────────────────────────────
-  let personaHint = ''
-  if (profile) {
-    switch (profile.personaType) {
-      case 'Nhanh nhạy nhưng ẩu':
-        personaHint = 'Học sinh hay làm nhanh và mắc lỗi cẩu thả. Hãy nhẹ nhàng nhắc em kiểm tra lại dấu, đơn vị và bước tính trước khi kết luận.'
-        break
-      case 'Cẩn thận - Ngâm lâu':
-        personaHint = 'Học sinh suy nghĩ rất chậm và cẩn thận. Khuyến khích em tự tin hơn và đưa ra gợi ý nhỏ để tháo gỡ bế tắc nhanh hơn.'
-        break
-      case 'Thành thạo':
-        personaHint = 'Học sinh thành thạo tốt. Hãy đưa ra câu hỏi nâng cao, khuyến khích tư duy sâu hơn và liên hệ kiến thức.'
-        break
-      case 'Chắc chắn, tốc độ tốt':
-        personaHint = 'Học sinh làm chắc và tốc độ ổn. Giữ nhịp luyện tập, thỉnh thoảng thêm bài hơi khó để mở rộng.'
-        break
-      default:
-        personaHint = 'Hãy giải thích từng bước rõ ràng, kiên nhẫn và động viên học sinh.'
-    }
-  } else {
-    personaHint = 'Hãy giải thích từng bước rõ ràng, kiên nhẫn và động viên học sinh.'
-  }
+  const personaHint = personaPedagogyHint(profile?.personaType)
 
   // ── Assemble final prompt ─────────────────────────────────────────────────
   return `Bạn là Zeno — gia sư AI thông minh, đồng cảm, là người bạn học đáng tin cậy dành cho học sinh lớp 6-9.
@@ -112,6 +107,30 @@ ${recentChunkSection}
 4. Ngắn gọn, hỗ trợ, khuyến khích học sinh tự giải quyết vấn đề thay vì đưa đáp án ngay.
 5. Nếu học sinh hỏi bài ngoài phạm vi Toán 8, hãy nhẹ nhàng hướng lại.
 6. Trả lời bằng tiếng Việt trừ khi học sinh viết bằng tiếng Anh.`
+}
+
+/**
+ * Lightweight system prompt for short turns — skips long-term memory + chunk
+ * summaries (two DB reads) while keeping name/persona for pedagogy.
+ */
+export async function buildZenoSystemPromptLight(studentId: string): Promise<string> {
+  const [user, profile] = await prisma.$transaction([
+    prisma.user.findUnique({
+      where: { id: studentId },
+      select: { fullName: true },
+    }),
+    prisma.studentCognitiveProfile.findUnique({
+      where: { studentId },
+      select: { personaType: true },
+    }),
+  ])
+
+  const studentName = user?.fullName ?? 'Học sinh'
+  const personaHint = personaPedagogyHint(profile?.personaType)
+
+  return `Bạn là Zeno — gia sư AI Toán cho học sinh lớp 6-9. Học sinh: ${studentName}.
+${personaHint}
+Trình bày công thức bằng LaTeX ($inline$ / $$display$$). Ngắn gọn, khuyến khích tự giải. Trả lời tiếng Việt trừ khi học sinh dùng tiếng Anh.`
 }
 
 // ---------------------------------------------------------------------------
