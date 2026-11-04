@@ -28,7 +28,7 @@
 | Commit | Summary |
 |---|---|
 | `ffbb54b15dc3b4eb024aaaa6e8821a7dd3904209` | perf(ai): batch post-submit pipeline DB RTTs |
-| *(this docs commit)* | docs: Phase E report |
+| `f33e7bdf5a2ada9dfd134d49b83eacfc8c5439cf` | docs: add Phase E post-submit pipeline report |
 
 ## Verify / timing
 
