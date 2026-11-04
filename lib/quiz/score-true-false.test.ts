@@ -25,4 +25,29 @@ describe('scoreTrueFalseGroup', () => {
       scoreTrueFalseGroup({ a: true, b: true, c: false, d: true }, MH_NK_CORRECT, 1),
     ).toBe(1)
   })
+
+  it('returns 0 for missing correctStr or zero matches', () => {
+    expect(scoreTrueFalseGroup({ a: true }, null, 1)).toBe(0)
+    expect(
+      scoreTrueFalseGroup({ a: false, b: false, c: true, d: false }, MH_NK_CORRECT, 1),
+    ).toBe(0)
+  })
+
+  it('applies partial credit bands for 1–3 matches', () => {
+    // only a correct → 1/4
+    expect(
+      scoreTrueFalseGroup({ a: true, b: false, c: true, d: false }, MH_NK_CORRECT, 1),
+    ).toBe(0.1)
+    // a,b correct → 2/4
+    expect(
+      scoreTrueFalseGroup({ a: true, b: true, c: true, d: false }, MH_NK_CORRECT, 1),
+    ).toBe(0.25)
+  })
+
+  it('scales partial credit by maxPoints', () => {
+    // a,b match only → 2/4 → 0.25 * maxPoints
+    expect(
+      scoreTrueFalseGroup({ a: true, b: true, c: true, d: false }, MH_NK_CORRECT, 2),
+    ).toBe(0.5)
+  })
 })

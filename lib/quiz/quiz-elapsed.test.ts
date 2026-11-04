@@ -85,6 +85,26 @@ describe('resolveElapsedSeconds', () => {
     expect(result.seconds).toBe(0)
     expect(result.source).toBe('unknown')
   })
+
+  it('uses reportedSeconds only when start is unusable and report is inside the limit', () => {
+    const result = resolveElapsedSeconds({
+      startedAtMs: null,
+      nowMs: Date.now(),
+      timeLimitSeconds: LIMIT,
+      reportedSeconds: 240.9,
+    })
+    expect(result).toEqual({ seconds: 240, source: 'reported' })
+  })
+
+  it('ignores negative wall-clock (clock skew) and falls through', () => {
+    const result = resolveElapsedSeconds({
+      startedAtMs: 10_000,
+      nowMs: 5_000,
+      timeLimitSeconds: LIMIT,
+      reportedSeconds: 90,
+    })
+    expect(result).toEqual({ seconds: 90, source: 'reported' })
+  })
 })
 
 describe('assessQuestionTiming', () => {
