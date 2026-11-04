@@ -29,6 +29,8 @@ export const CacheTTL = {
   teacherDash: 180,
   packages: 90,
   adaptive: 90,
+  /** Class roster + list aggregates; busted on roster/submit. */
+  students: 90,
   /** Was 180s; gap map is expensive — prefer tag bust over short soft expiry. */
   classGap: 300,
   quizBank: 60,

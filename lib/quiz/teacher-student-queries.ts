@@ -1,4 +1,7 @@
 import prisma from '@/lib/prisma'
+import { cachedQuery } from '@/lib/cache/cached-query'
+import { CacheTags, CacheTTL } from '@/lib/cache/tags'
+import { asDate } from '@/lib/cache/revive'
 import { getInitials } from '@/lib/utils/initials'
 import {
   masteryStatusFromP,
@@ -89,10 +92,17 @@ type TopicAggRow = {
 // Queries
 // ---------------------------------------------------------------------------
 
-export async function getStudentsForClass(classId: string): Promise<StudentListItem[]> {
+type StudentListCachedRow = Omit<StudentListItem, 'lastActive'> & {
+  lastActive: string | null
+}
+
+async function getStudentsForClassUncached(classId: string): Promise<StudentListCachedRow[]> {
   const members = await prisma.classMember.findMany({
     where: { classId },
-    include: { student: { select: { id: true, fullName: true, email: true } } },
+    select: {
+      studentId: true,
+      student: { select: { id: true, fullName: true, email: true } },
+    },
     orderBy: { joinedAt: 'asc' },
   })
 
@@ -120,9 +130,23 @@ export async function getStudentsForClass(classId: string): Promise<StudentListI
       initials: getInitials(m.student.fullName),
       quizCount: stats?._count.id ?? 0,
       avgScore: stats?._avg.score != null ? Number(stats._avg.score) : null,
-      lastActive: stats?._max.submittedAt ?? null,
+      lastActive: stats?._max.submittedAt?.toISOString() ?? null,
     }
   })
+}
+
+/** Slim roster list — cached; detail history stays on getStudentDetail (Phase G). */
+export async function getStudentsForClass(classId: string): Promise<StudentListItem[]> {
+  const cached = cachedQuery(getStudentsForClassUncached, {
+    keyParts: ['students-list'],
+    tags: [CacheTags.students(classId), CacheTags.submissions(classId)],
+    revalidate: CacheTTL.students,
+  })
+  const rows = await cached(classId)
+  return rows.map((s) => ({
+    ...s,
+    lastActive: asDate(s.lastActive),
+  }))
 }
 
 function behaviorAggQuery(studentId: string, classId: string) {

@@ -302,40 +302,15 @@ export async function listAdaptiveAssignmentsAction(
 
   const classroom = await prisma.classroom.findFirst({
     where: { id: classId, teacherId: user.id },
+    select: { id: true },
   })
   if (!classroom) return { success: false, error: 'Không tìm thấy lớp' }
 
-  const [assignments, memberCount] = await prisma.$transaction([
-    prisma.classTest.findMany({
-      where: { classId, isAdaptive: true },
-      include: {
-        testGroup: { select: { title: true, subject: true, topic: true } },
-        adaptiveSessions: {
-          where: { round2SubmissionId: { not: null } },
-          select: { id: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.classMember.count({ where: { classId } }),
-  ])
-
-  return {
-    success: true,
-    data: assignments.map((a) => ({
-      classTestId: a.id,
-      title: a.testGroup?.title ?? 'Cụm đề phân hóa',
-      subject: a.testGroup?.subject ?? 'Toán',
-      topic: a.testGroup?.topic ?? '',
-      classId: a.classId,
-      startTime: a.startTime.toISOString(),
-      endTime: a.endTime.toISOString(),
-      passScoreThreshold: a.passScoreThreshold,
-      lowScoreThreshold: a.lowScoreThreshold,
-      studentCompletedCount: a.adaptiveSessions.length,
-      studentTotalCount: memberCount,
-    })),
-  }
+  const { listAdaptiveAssignmentsForClass } = await import(
+    '@/lib/quiz/adaptive-list-queries'
+  )
+  const data = await listAdaptiveAssignmentsForClass(classId)
+  return { success: true, data }
 }
 
 // ---------------------------------------------------------------------------
