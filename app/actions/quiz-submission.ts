@@ -16,7 +16,7 @@ import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submi
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
 import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
-import { scoreTrueFalseGroup } from '@/lib/quiz/score-true-false'
+import { gradeTestAnswers, type GradedQuestion } from '@/lib/quiz/grade-submission'
 import { maxPointsFromQuestions, scoreOutOfTen } from '@/lib/quiz/score-out-of-ten'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
 import { assessQuestionTiming } from '@/lib/quiz/question-timing'
@@ -45,36 +45,6 @@ export interface SubmitQuizInput {
 }
 
 // ---------------------------------------------------------------------------
-// Scoring helpers
-// ---------------------------------------------------------------------------
-
-function scoreAnswer(
-  type: QuestionAnswerInput['type'],
-  studentAnswer: QuestionAnswerInput['answer'],
-  correctOption: string | null,
-  maxPoints: number,
-): { isCorrect: boolean; pointsEarned: number } {
-  switch (type) {
-    case 'MULTIPLE_CHOICE': {
-      const correct = (studentAnswer as string).toUpperCase() === (correctOption ?? '').toUpperCase()
-      return { isCorrect: correct, pointsEarned: correct ? maxPoints : 0 }
-    }
-    case 'TRUE_FALSE_GROUP': {
-      const ans = studentAnswer as Record<string, boolean>
-      const pts = scoreTrueFalseGroup(ans, correctOption, maxPoints)
-      return { isCorrect: pts >= maxPoints, pointsEarned: Math.round(pts * 100) / 100 }
-    }
-    case 'SHORT_ANSWER': {
-      const correct =
-        (studentAnswer as string).trim().toLowerCase() === (correctOption ?? '').trim().toLowerCase()
-      return { isCorrect: correct, pointsEarned: correct ? maxPoints : 0 }
-    }
-    case 'ESSAY':
-      return { isCorrect: false, pointsEarned: 0 }
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Server action
 // ---------------------------------------------------------------------------
 
@@ -100,21 +70,30 @@ export async function submitQuizAction(
     select: { id: true, type: true, correctOption: true, points: true, topic: true, subject: true },
   })
   const qMap = new Map(questions.map((q) => [q.id, q]))
+  const gradedQuestions: GradedQuestion[] = []
+  for (const id of questionIds) {
+    const q = qMap.get(id)
+    if (!q) continue
+    gradedQuestions.push({
+      id: q.id,
+      type: q.type,
+      correctOption: q.correctOption,
+      points: q.points,
+      topic: q.topic,
+      subject: q.subject,
+    })
+  }
+  const graded = gradeTestAnswers(gradedQuestions, input.answers)
 
   const attemptNumber = prevAttempts + 1
   const isPractice = isPracticeTestTitle(test.title)
 
   let totalScore = 0
   let correctCount = 0
-
-  const scoredAnswers = input.answers.map((a) => {
-    const q = qMap.get(a.questionId)
-    const maxPts = q?.points ?? 1
-    const scored = scoreAnswer(a.questionType, a.answer, q?.correctOption ?? null, maxPts)
-    if (scored.isCorrect) correctCount++
-    totalScore += scored.pointsEarned
-    return { answer: a, q, scored }
-  })
+  for (const row of graded) {
+    if (row.isCorrect) correctCount++
+    totalScore += row.pointsEarned
+  }
 
   const timeLimitSeconds = test.timeLimitMinutes * 60
   const elapsed = resolveElapsedSeconds({
@@ -127,28 +106,27 @@ export async function submitQuizAction(
   const maxPoints = maxPointsFromQuestions(questionIds.map((id) => qMap.get(id)))
   const finalScore = scoreOutOfTen(totalScore, maxPoints)
 
+  const perQuestionSeconds = graded.map((row) => row.timeSpentSeconds)
   const timingPreview = assessQuestionTiming({
-    perQuestionSeconds: input.answers.map((a) => a.timeSpentSeconds),
+    perQuestionSeconds,
     totalSeconds: elapsed.seconds,
     questionCount: questionIds.length,
   })
   const questionSeconds = (seconds: number) =>
     timingPreview.quality === 'estimated' ? 0 : seconds
 
-  const details: Prisma.SubmissionDetailCreateManySubmissionInput[] = scoredAnswers.map(
-    ({ answer: a, scored }) => ({
-      questionId: a.questionId,
-      selectedOption:
-        typeof a.answer === 'string' ? a.answer : JSON.stringify(a.answer),
-      studentAnswer:
-        typeof a.answer === 'string'
-          ? Prisma.JsonNull
-          : (a.answer as Prisma.InputJsonValue),
-      isCorrect: scored.isCorrect,
-      pointsEarned: scored.pointsEarned,
-      timeSpentSeconds: questionSeconds(a.timeSpentSeconds),
-    }),
-  )
+  const details: Prisma.SubmissionDetailCreateManySubmissionInput[] = graded.map((row) => ({
+    questionId: row.questionId,
+    selectedOption:
+      typeof row.answer === 'string' ? row.answer : JSON.stringify(row.answer),
+    studentAnswer:
+      typeof row.answer === 'string'
+        ? Prisma.JsonNull
+        : (row.answer as Prisma.InputJsonValue),
+    isCorrect: row.isCorrect,
+    pointsEarned: row.pointsEarned,
+    timeSpentSeconds: questionSeconds(row.timeSpentSeconds),
+  }))
 
   const submission = await prisma.submission.create({
     data: {
@@ -164,16 +142,14 @@ export async function submitQuizAction(
     },
   })
 
-  const pipelineDetails: SubmissionDetailForPipeline[] = scoredAnswers.map(
-    ({ answer: a, q, scored }) => ({
-      questionId: a.questionId,
-      topic: normalizeTopicName(q?.topic),
-      subject: q?.subject ?? 'Toán',
-      type: a.questionType,
-      isCorrect: scored.isCorrect,
-      timeSpentSeconds: questionSeconds(a.timeSpentSeconds),
-    }),
-  )
+  const pipelineDetails: SubmissionDetailForPipeline[] = graded.map((row) => ({
+    questionId: row.questionId,
+    topic: normalizeTopicName(row.topic),
+    subject: row.subject ?? 'Toán',
+    type: row.type,
+    isCorrect: row.isCorrect,
+    timeSpentSeconds: questionSeconds(row.timeSpentSeconds),
+  }))
 
   const submissionId = submission.id
   const testId = input.testId
@@ -207,7 +183,7 @@ export async function submitQuizAction(
 
       if (testId === classTest.mediumTestId) {
         const timing = assessQuestionTiming({
-          perQuestionSeconds: input.answers.map((a) => a.timeSpentSeconds),
+          perQuestionSeconds,
           totalSeconds: elapsed.seconds,
           questionCount: questionIds.length,
         })
