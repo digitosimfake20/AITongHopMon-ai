@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import { decryptMessage } from '@/lib/ai/chat-crypto'
+import { isChatSessionId } from '@/lib/ai/chat-limits'
 import {
   CHAT_HISTORY_TAKE,
   prepareZenoTurn,
@@ -42,17 +43,22 @@ export async function sendZenoMessageAction(input: {
     return { success: false, error: prep.error ?? 'Không thể chuẩn bị tin nhắn' }
   }
 
-  const openai = getOpenAIClient()
-  const completion = await openai.chat.completions.create({
-    model: OPENAI_MODEL_CHAT,
-    messages: prep.data.openaiMessages,
-    temperature: 0.7,
-    max_tokens: 1024,
-  })
-
-  const reply =
-    completion.choices[0]?.message?.content ??
-    'Xin lỗi, Zeno không thể trả lời lúc này. Hãy thử lại nhé!'
+  let reply: string
+  try {
+    const openai = getOpenAIClient()
+    const completion = await openai.chat.completions.create({
+      model: OPENAI_MODEL_CHAT,
+      messages: prep.data.openaiMessages,
+      temperature: 0.7,
+      max_tokens: 1024,
+    })
+    reply =
+      completion.choices[0]?.message?.content ??
+      'Xin lỗi, Zeno không thể trả lời lúc này. Hãy thử lại nhé!'
+  } catch (err) {
+    console.error('[Zeno] completion failed:', err)
+    return { success: false, error: 'Zeno tạm thời không trả lời được. Thử lại sau.' }
+  }
 
   const { messageCount } = await finalizeZenoTurn({
     studentId: prep.data.studentId,
@@ -98,10 +104,13 @@ export async function getChatSessionsAction(): Promise<ActionResult<ChatSessionS
 // ---------------------------------------------------------------------------
 
 export async function getChatHistoryAction(
-  sessionId: string,
+  sessionId: unknown,
 ): Promise<ActionResult<ChatMessageDisplay[]>> {
   const user = await getSessionUser()
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
+  if (!isChatSessionId(sessionId)) {
+    return { success: false, error: 'Phiên chat không tồn tại' }
+  }
 
   const session = await prisma.chatSession.findFirst({
     where: { id: sessionId, studentId: user.id },
@@ -111,12 +120,13 @@ export async function getChatHistoryAction(
 
   // Newest N first, then reverse for chronological UI order.
   const newest = await prisma.chatMessage.findMany({
-    where: { sessionId },
+    where: { sessionId: session.id },
     orderBy: { sequenceNumber: 'desc' },
     take: CHAT_HISTORY_TAKE,
     select: {
       id: true,
       sender: true,
+      sequenceNumber: true,
       encryptedContent: true,
       iv: true,
       authTag: true,
@@ -130,11 +140,19 @@ export async function getChatHistoryAction(
     decrypted.push({
       id: m.id,
       sender: m.sender === 'user' ? 'user' : 'assistant',
-      content: decryptMessage({
-        encryptedContent: m.encryptedContent,
-        iv: m.iv,
-        authTag: m.authTag,
-      }),
+      content: decryptMessage(
+        {
+          encryptedContent: m.encryptedContent,
+          iv: m.iv,
+          authTag: m.authTag,
+        },
+        {
+          sessionId: session.id,
+          studentId: user.id,
+          sequenceNumber: m.sequenceNumber,
+          sender: m.sender === 'user' ? 'user' : 'assistant',
+        },
+      ),
       createdAt: m.createdAt.toISOString(),
     })
   }

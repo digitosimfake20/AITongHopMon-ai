@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import { encryptMessage, decryptMessage } from '@/lib/ai/chat-crypto'
+import { chatMessageLengthError, isChatSessionId } from '@/lib/ai/chat-limits'
 import {
   buildZenoSystemPrompt,
   buildZenoSystemPromptLight,
@@ -42,21 +43,23 @@ function isShortTurn(message: string, sessionMessageCount: number): boolean {
 
 /** Auth, session resolve, persist user message, build OpenAI messages. */
 export async function prepareZenoTurn(input: {
-  sessionId?: string
+  sessionId?: unknown
   message: string
 }): Promise<ActionResult<ZenoTurnPrep>> {
   const user = await getSessionUser()
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
   if (user.role !== 'student') return { success: false, error: 'Chỉ học sinh mới có thể chat với Zeno' }
 
-  const message = input.message
-  if (!message.trim()) return { success: false, error: 'Tin nhắn không được để trống' }
+  const message = input.message.trim()
+  if (!message) return { success: false, error: 'Tin nhắn không được để trống' }
+  const lengthError = chatMessageLengthError(message)
+  if (lengthError) return { success: false, error: lengthError }
 
-  let sessionId = input.sessionId
+  let ownedSessionId: string
   let sessionMessageCount = 0
 
-  if (!sessionId) {
-    const newSession = await prisma.chatSession.create({
+  if (input.sessionId === undefined) {
+    const created = await prisma.chatSession.create({
       data: {
         studentId: user.id,
         subject: 'Toán 8',
@@ -64,27 +67,35 @@ export async function prepareZenoTurn(input: {
         messageCount: 0,
       },
     })
-    sessionId = newSession.id
+    ownedSessionId = created.id
+  } else if (!isChatSessionId(input.sessionId)) {
+    return { success: false, error: 'Phiên chat không tồn tại' }
   } else {
     const session = await prisma.chatSession.findFirst({
-      where: { id: sessionId, studentId: user.id },
+      where: { id: input.sessionId, studentId: user.id },
       select: { id: true, messageCount: true },
     })
     if (!session) return { success: false, error: 'Phiên chat không tồn tại' }
+    ownedSessionId = session.id
     sessionMessageCount = session.messageCount
   }
 
   const lastMsg = await prisma.chatMessage.findFirst({
-    where: { sessionId },
+    where: { sessionId: ownedSessionId },
     orderBy: { sequenceNumber: 'desc' },
     select: { sequenceNumber: true },
   })
   const nextSeq = (lastMsg?.sequenceNumber ?? 0) + 1
 
-  const encUserMsg = encryptMessage(message)
+  const encUserMsg = encryptMessage(message, {
+    sessionId: ownedSessionId,
+    studentId: user.id,
+    sequenceNumber: nextSeq,
+    sender: 'user',
+  })
   await prisma.chatMessage.create({
     data: {
-      sessionId,
+      sessionId: ownedSessionId,
       sender: 'user',
       sequenceNumber: nextSeq,
       encryptedContent: encUserMsg.encryptedContent,
@@ -96,16 +107,24 @@ export async function prepareZenoTurn(input: {
   const light = isShortTurn(message, sessionMessageCount)
   const contextLimit = light ? SHORT_TURN_CONTEXT_LIMIT : FULL_TURN_CONTEXT_LIMIT
 
-  const [systemPrompt, recentHistory] = await Promise.all([
-    light ? buildZenoSystemPromptLight(user.id) : buildZenoSystemPrompt(user.id),
-    buildRecentMessageContext(sessionId, contextLimit),
+  const [prompt, recentHistory] = await Promise.all([
+    light
+      ? buildZenoSystemPromptLight(user.id).then((system) => ({
+          system,
+          untrustedData: null as string | null,
+        }))
+      : buildZenoSystemPrompt(user.id),
+    buildRecentMessageContext(ownedSessionId, user.id, contextLimit),
   ])
 
   // recentHistory already includes the just-saved user message; avoid duplicating it.
   const historyWithoutCurrent = recentHistory.slice(0, -1)
 
   const openaiMessages: ZenoChatCompletionMessage[] = [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: prompt.system },
+    ...(prompt.untrustedData
+      ? [{ role: 'user' as const, content: prompt.untrustedData }]
+      : []),
     ...historyWithoutCurrent,
     { role: 'user', content: message },
   ]
@@ -114,7 +133,7 @@ export async function prepareZenoTurn(input: {
     success: true,
     data: {
       studentId: user.id,
-      sessionId,
+      sessionId: ownedSessionId,
       userMessage: message,
       assistantSeq: nextSeq + 1,
       openaiMessages,
@@ -132,7 +151,12 @@ export async function finalizeZenoTurn(input: {
 }): Promise<{ messageCount: number }> {
   const { studentId, sessionId, assistantSeq, reply } = input
 
-  const encAiMsg = encryptMessage(reply)
+  const encAiMsg = encryptMessage(reply, {
+    sessionId,
+    studentId,
+    sequenceNumber: assistantSeq,
+    sender: 'assistant',
+  })
   await prisma.chatMessage.create({
     data: {
       sessionId,
@@ -188,11 +212,19 @@ async function generateChunkSummary(
 
     const transcript = messages
       .map((m) => {
-        const text = decryptMessage({
-          encryptedContent: m.encryptedContent,
-          iv: m.iv,
-          authTag: m.authTag,
-        })
+        const text = decryptMessage(
+          {
+            encryptedContent: m.encryptedContent,
+            iv: m.iv,
+            authTag: m.authTag,
+          },
+          {
+            sessionId,
+            studentId,
+            sequenceNumber: m.sequenceNumber,
+            sender: m.sender === 'user' ? 'user' : 'assistant',
+          },
+        )
         return `${m.sender === 'user' ? 'HS' : 'Zeno'}: ${text}`
       })
       .join('\n')

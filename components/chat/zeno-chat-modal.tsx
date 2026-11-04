@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bot, Send, X, Loader2, MessageSquare } from 'lucide-react'
 import { getChatHistoryAction } from '@/app/actions/chat-zeno'
 import type { ChatMessageDisplay } from '@/app/actions/chat-zeno'
+import { MAX_CHAT_MESSAGE_CHARS } from '@/lib/ai/chat-limits'
 import {
   ZENO_CHAT_OPEN_EVENT,
   type ZenoChatOpenDetail,
@@ -421,6 +422,7 @@ export function ZenoChatModal({
                   onKeyDown={handleKeyDown}
                   placeholder="Hỏi Zeno về Toán…"
                   aria-label="Tin nhắn gửi Zeno"
+                  maxLength={MAX_CHAT_MESSAGE_CHARS}
                   className="flex-1 resize-none bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   style={{ maxHeight: '120px' }}
                   onInput={(e) => {
