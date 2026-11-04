@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { ShellMain, ShellNavProvider } from '@/components/shell/shell-nav'
 import { resolveStudentContext } from '@/lib/dashboard/context'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
@@ -61,7 +62,7 @@ export default function StudentLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <>
+    <ShellNavProvider>
       <div className="flex min-h-dvh bg-background">
         <Suspense fallback={<SidebarFallback />}>
           <StudentSidebarSlot />
@@ -75,15 +76,10 @@ export default function StudentLayout({
           <Suspense fallback={<HeaderFallback />}>
             <StudentHeaderSlot />
           </Suspense>
-          <main
-            id="main-content"
-            className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8"
-          >
-            {children}
-          </main>
+          <ShellMain>{children}</ShellMain>
         </div>
       </div>
       <ZenoChatLazy />
-    </>
+    </ShellNavProvider>
   )
 }
