@@ -1,0 +1,9 @@
+{
+  "description": "Default sustained profile: light concurrency on public + optional auth",
+  "vus": 5,
+  "durationSec": 30,
+  "rampSec": 5,
+  "thinkMs": 200,
+  "scenario": "mix",
+  "rsc": true
+}

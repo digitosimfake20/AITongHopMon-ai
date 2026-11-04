@@ -20,3 +20,9 @@ services/api/dist
 
 # Local self-hosted Supabase stack (secrets + volumes; see docker/supabase/)
 docker/supabase/.stack/
+
+# Load-test outputs (never commit cookies or run artifacts)
+loadtest/results/**
+!loadtest/results/.gitkeep
+loadtest/.env
+loadtest/.cookies*

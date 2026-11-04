@@ -1,0 +1,9 @@
+{
+  "description": "Local smoke: 1 VU, 5s, public only — no sustained load",
+  "vus": 1,
+  "durationSec": 5,
+  "rampSec": 0,
+  "thinkMs": 0,
+  "scenario": "public",
+  "rsc": false
+}
