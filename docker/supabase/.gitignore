@@ -1,0 +1,3 @@
+# Official self-hosted stack (copied by setup.sh) — secrets + volumes live here
+.stack/
+*.log

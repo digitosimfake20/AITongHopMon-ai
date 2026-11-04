@@ -1,6 +1,7 @@
 # Local dual-container stack for competition / Render split rehearsal.
 # Does NOT deploy anywhere — Vercel production is unchanged until you wire the API.
 # Project name comes from the directory (or COMPOSE_PROJECT_NAME) so parallel worktrees do not collide.
+# Self-hosted Supabase for DB testing is a separate Compose project: docker/supabase/README.md
 
 services:
   web:
