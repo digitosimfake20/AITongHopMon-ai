@@ -8,6 +8,24 @@ interface MathTextProps {
   className?: string
 }
 
+/**
+ * Vietnamese letters (with diacritics) must stay outside KaTeX math mode —
+ * otherwise KaTeX logs "Unrecognized Unicode character" / missing metrics (e.g. "ờ").
+ * Phase F2 (quiz-take KaTeX): this shared component is the preferred owner for
+ * delimiter/prose heuristics; avoid a parallel copy in quiz-taker.
+ */
+const VIETNAMESE_DIACRITIC =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/
+
+/** True only when `$…$` / `$$…$$` interior looks safe for KaTeX. */
+function isSafeMathInterior(inner: string): boolean {
+  const trimmed = inner.trim()
+  if (!trimmed) return false
+  // Keep Vietnamese prose as text (common OCR/GPT over-wrapping).
+  if (VIETNAMESE_DIACRITIC.test(trimmed)) return false
+  return true
+}
+
 /** Renders plain text mixed with `$inline$` and `$$block$$` LaTeX segments. */
 export function MathText({ text, className }: MathTextProps) {
   if (!text.trim()) {
@@ -20,19 +38,27 @@ export function MathText({ text, className }: MathTextProps) {
     <span className={className}>
       {parts.map((part, i) => {
         if (part.startsWith('$$') && part.endsWith('$$') && part.length > 4) {
+          const inner = part.slice(2, -2)
+          if (!isSafeMathInterior(inner)) {
+            return <span key={i}>{part}</span>
+          }
           return (
             <BlockMath
               key={i}
-              math={part.slice(2, -2)}
+              math={inner}
               renderError={() => <span className="text-destructive">{part}</span>}
             />
           )
         }
         if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+          const inner = part.slice(1, -1)
+          if (!isSafeMathInterior(inner)) {
+            return <span key={i}>{part}</span>
+          }
           return (
             <InlineMath
               key={i}
-              math={part.slice(1, -1)}
+              math={inner}
               renderError={() => <span className="text-destructive">{part}</span>}
             />
           )
