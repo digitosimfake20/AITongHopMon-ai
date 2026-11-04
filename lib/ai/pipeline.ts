@@ -44,8 +44,8 @@ export interface SubmissionDetailForPipeline {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Determine persona string from cognitive signals */
-function computePersona(
+/** Determine persona string from cognitive signals (exported for unit tests). */
+export function computePersona(
   avgSpeed: number,
   carelessRate: number,
   avgMastery: number,

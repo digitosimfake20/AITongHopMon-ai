@@ -14,7 +14,8 @@ function shuffle<T>(arr: T[]): T[] {
   return copy
 }
 
-function topicMatches(questionTopic: string, weakTopics: string[]): boolean {
+/** Match bank question topics to weak-topic keys (exported for unit tests). */
+export function topicMatches(questionTopic: string, weakTopics: string[]): boolean {
   const qKey = topicToNodeId(normalizeTopicName(questionTopic))
   return weakTopics.some((weak) => {
     const wKey = topicToNodeId(normalizeTopicName(weak))

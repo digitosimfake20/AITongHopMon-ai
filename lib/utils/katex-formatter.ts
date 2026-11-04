@@ -6,9 +6,10 @@
  */
 export function normalizeLatexDelimiters(text: string): string {
   return text
-    // Display math first (order matters — must run before inline)
-    .replace(/\\\[/g, '$$')
-    .replace(/\\\]/g, '$$')
+    // Display math first (order matters — must run before inline).
+    // Use a replacer fn: in String.replace, '$$' means a literal single '$'.
+    .replace(/\\\[/g, () => '$$')
+    .replace(/\\\]/g, () => '$$')
     // Inline math
     .replace(/\\\(/g, '$')
     .replace(/\\\)/g, '$')
