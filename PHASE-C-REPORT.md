@@ -11,7 +11,7 @@
 | Commit | Summary |
 |---|---|
 | `d0e56adc46ffaa608312bf675eaef613f8f0cf81` | perf(nav): disable RSC prefetch storm on secondary Links |
-| _(this docs commit)_ | docs: Phase C report with blocked post-fix medians |
+| `83f9d2fb9769d8cfbcadc654ead318297fef33b9` | docs: Phase C report with blocked post-fix medians |
 
 ## What changed
 
