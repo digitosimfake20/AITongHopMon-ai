@@ -15,6 +15,7 @@ import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normali
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 import { parseCachedAnalysis } from '@/lib/quiz/cached-ai-analysis'
 import { batchUpdateQuestionTopics } from '@/lib/quiz/batch-question-topics'
+import { filterTopicUpdates } from '@/lib/quiz/question-topic-updates'
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -146,11 +147,22 @@ OUTPUT JSON (chỉ JSON thuần):
   let parsed: { topics?: { questionId: string; topic: string }[] }
   try { parsed = JSON.parse(raw) } catch { parsed = {} }
 
-  const topicMap = new Map<string, string>()
+  const allowedIds = new Set(details.map((d) => d.questionId))
+  const parsedUpdates: { id: string; topic: string; topicKey: string }[] = []
   for (const item of parsed.topics ?? []) {
     if (item.questionId && item.topic) {
-      topicMap.set(item.questionId, normalizeTopicName(item.topic))
+      const topic = normalizeTopicName(item.topic)
+      parsedUpdates.push({
+        id: item.questionId,
+        topic,
+        topicKey: topicToNodeId(topic),
+      })
     }
+  }
+
+  const topicMap = new Map<string, string>()
+  for (const update of filterTopicUpdates(parsedUpdates, allowedIds)) {
+    topicMap.set(update.id, update.topic)
   }
 
   return topicMap
@@ -200,6 +212,7 @@ export async function analyzeSubmissionAction(
 
   // ── Auto-fix generic topics ────────────────────────────────────────────────
   // Build a mutable topic map — may be overridden by AI classification below
+  const allowedQuestionIds = new Set(submission.details.map((d) => d.questionId))
   const resolvedTopics = new Map(
     submission.details.map((d) => [
       d.questionId,
@@ -215,18 +228,22 @@ export async function analyzeSubmissionAction(
   const uniqueTopicLabels = [...new Set(resolvedTopics.values())]
   const canonicalMap = await ensureTopicsCanonicalized(uniqueTopicLabels, 'Toán')
 
-  // Batch-persist canonical topic/topicKey (one SQL RTT; skip unchanged rows)
-  const topicUpdates = [...resolvedTopics.entries()].map(([questionId, rawLabel]) => {
-    const canonical = canonicalMap.get(rawLabel) ?? {
-      topicName: rawLabel,
-      topicKey: topicToNodeId(rawLabel),
-    }
-    return {
-      id: questionId,
-      topic: canonical.topicName,
-      topicKey: canonical.topicKey,
-    }
-  })
+  // Batch-persist canonical topic/topicKey (one SQL RTT; skip unchanged rows).
+  // Only question ids on this submission may be written.
+  const topicUpdates = filterTopicUpdates(
+    [...resolvedTopics.entries()].map(([questionId, rawLabel]) => {
+      const canonical = canonicalMap.get(rawLabel) ?? {
+        topicName: rawLabel,
+        topicKey: topicToNodeId(rawLabel),
+      }
+      return {
+        id: questionId,
+        topic: canonical.topicName,
+        topicKey: canonical.topicKey,
+      }
+    }),
+    allowedQuestionIds,
+  )
   void batchUpdateQuestionTopics(topicUpdates).catch(() => null)
 
   // ── Compute topic mastery from canonical topics ─────────────────────────────
