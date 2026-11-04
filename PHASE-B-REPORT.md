@@ -30,6 +30,7 @@
 | Commit | Summary |
 |---|---|
 | `345e9583ddafe935eea5efd61968e1d228bf88f5` | perf(student): stream shell, fix #418 greeting, slim dash assignments |
+| `8035ee251209ab837e2b95176aa724920020f12f` | docs: record Phase B implementation SHA in report |
 
 ## Navigation Timing (≥5-sample medians)
 
