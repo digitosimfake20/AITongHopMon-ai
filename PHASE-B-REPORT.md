@@ -31,18 +31,26 @@
 |---|---|
 | `345e9583ddafe935eea5efd61968e1d228bf88f5` | perf(student): stream shell, fix #418 greeting, slim dash assignments |
 | `8035ee251209ab837e2b95176aa724920020f12f` | docs: record Phase B implementation SHA in report |
+| `abe8259a9355379761b26f7b55e955ffcb72e78f` | docs: list both Phase B SHAs in report |
+| _(this commit)_ | docs: mark post-fix medians blocked in Phase B report |
 
 ## Navigation Timing (≥5-sample medians)
 
-**Status:** **PENDING** parent/coordinator verify path.
+**Status:** **BLOCKED** — deferred by coordinator.
 
-- This worktree has **no** `.env` / `.env.local`; did not invent secrets.
-- Parent asked to hold finish until coordinator chooses: local `.env` vs preview vs defer medians.
-- Prod baseline (pre-fix, from `STUDENT-BROWSER.md`) remains the only measured reference until post-fix samples land.
+**Blocked reason:** This worktree has no `.env` / `.env.local`. Cannot run a local/preview app against these commits. Must not invent credentials. Timing these SHAs against production (`aitonghopmon-ai.vercel.app`) would measure the *pre-fix* deploy, not this branch — so post-fix medians are deferred.
 
-| Route | Samples | Median TTFB | Median DCL | Median FCP | Notes |
-|---|---:|---:|---:|---:|---|
-| — | — | — | — | — | Blocked pending verify path |
+Prod baseline (pre-fix, from `app-bottleneck-analysis/child-evidence/STUDENT-BROWSER.md`) remains the only measured reference:
+
+| Route | Doc TTFB | DCL | FCP / load | Source |
+|---|---:|---:|---:|---|
+| `/dashboard` (cold-ish) | 34 ms | 16062 ms | 16376 ms | STUDENT-BROWSER.md |
+| `/dashboard` (remeasure) | 40 ms | 3189 ms | FCP 3060 ms | STUDENT-BROWSER.md |
+| `/quizzes` | 35 ms | 4430 ms | FCP 4488 ms | STUDENT-BROWSER.md |
+| `/adaptive` | 34 ms | 6196 ms | FCP 6260 ms | STUDENT-BROWSER.md |
+| `/roadmap` | 35 ms | 5142 ms | FCP 5212 ms | STUDENT-BROWSER.md |
+
+Post-fix ≥5-sample medians: **not collected** (blocked as above).
 
 ## Tests
 
@@ -50,6 +58,6 @@
 
 ## Left / follow-ups
 
-1. Post-fix Navigation Timing (≥5 samples) once `.env` or preview is available — or mark permanently blocked if coordinator defers.
+1. Collect post-fix Navigation Timing (≥5 samples) when `.env` or a branch preview exists — do not attribute prod timings to these SHAs.
 2. Console check for zero #418 on student shell routes after deploy/preview.
 3. Phase C prefetch on `dashboard-sidebar.tsx` (untouched here).
