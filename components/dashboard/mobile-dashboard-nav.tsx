@@ -7,8 +7,8 @@ import { Logo } from '@/components/brand/logo'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { StreakWidget } from '@/components/dashboard/streak-widget'
+import { ShellNavLink } from '@/components/shell/shell-nav'
 import { DASHBOARD_NAV } from '@/lib/dashboard-nav'
-import { cn } from '@/lib/utils'
 
 interface MobileDashboardNavProps {
   classLabel: string
@@ -68,22 +68,16 @@ export function MobileDashboardNav({
               const Icon = item.icon
 
               return (
-                <Link
+                <ShellNavLink
                   key={item.id}
                   href={item.href}
-                  prefetch={false}
-                  onClick={() => setOpen(false)}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                    active
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-                  )}
+                  active={active}
+                  onNavigate={() => setOpen(false)}
+                  className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
                 >
                   <Icon className="size-4" aria-hidden />
                   {item.label}
-                </Link>
+                </ShellNavLink>
               )
             })}
           </nav>

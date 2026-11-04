@@ -6,10 +6,10 @@ import { LayoutGrid, Menu, X } from 'lucide-react'
 import { Logo } from '@/components/brand/logo'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { ShellNavLink } from '@/components/shell/shell-nav'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
 import type { TeacherNavItem } from '@/lib/teacher-types'
 import { withClassParam } from '@/lib/class/with-class-param'
-import { cn } from '@/lib/utils'
 
 function teacherNavHref(item: TeacherNavItem, classId: string): string {
   return withClassParam(item.href, classId)
@@ -59,22 +59,16 @@ export function MobileTeacherNav({ className, classId }: MobileTeacherNavProps) 
             const Icon = item.icon
 
               return (
-              <Link
+              <ShellNavLink
                 key={item.id}
                 href={teacherNavHref(item, classId)}
-                prefetch={false}
-                onClick={() => setOpen(false)}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
-                  active
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-secondary',
-                )}
+                active={active}
+                onNavigate={() => setOpen(false)}
+                className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium"
               >
                 <Icon className="size-4" aria-hidden />
                 {item.label}
-              </Link>
+              </ShellNavLink>
             )
           })}
           <Link
