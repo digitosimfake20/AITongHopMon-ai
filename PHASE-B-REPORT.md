@@ -32,7 +32,7 @@
 | `345e9583ddafe935eea5efd61968e1d228bf88f5` | perf(student): stream shell, fix #418 greeting, slim dash assignments |
 | `8035ee251209ab837e2b95176aa724920020f12f` | docs: record Phase B implementation SHA in report |
 | `abe8259a9355379761b26f7b55e955ffcb72e78f` | docs: list both Phase B SHAs in report |
-| _(this commit)_ | docs: mark post-fix medians blocked in Phase B report |
+| `f13a42eab810d350f1f205a218b31f331007b141` | docs: mark Phase B post-fix medians blocked |
 
 ## Navigation Timing (≥5-sample medians)
 
