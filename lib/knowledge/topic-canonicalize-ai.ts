@@ -36,6 +36,54 @@ OUTPUT JSON thuần:
 
 type AiGroup = { canonicalLabel: string; variants: string[] }
 
+export type InputTopicAlias = {
+  /** Label from this call's input set. Never a model-only variant. */
+  aliasKey: string
+  canonicalKey: string
+  canonicalLabel: string
+}
+
+/**
+ * Alias rows this call may write. Keys are input labels only.
+ * A canonical title outside the input set may still be the display name,
+ * but it is not an alias key. An empty or failed group list yields nothing.
+ */
+export function aliasesForInput(
+  groups: readonly { canonicalLabel?: string; variants?: readonly string[] }[] | null | undefined,
+  inputLabels: readonly string[],
+): InputTopicAlias[] {
+  if (!groups || groups.length === 0 || inputLabels.length === 0) return []
+
+  const allowedByNormalized = new Map<string, string>()
+  for (const raw of inputLabels) {
+    if (typeof raw !== 'string') continue
+    const normalized = normalizeTopicName(raw)
+    if (!allowedByNormalized.has(normalized)) allowedByNormalized.set(normalized, raw)
+  }
+  if (allowedByNormalized.size === 0) return []
+
+  const seen = new Set<string>()
+  const aliases: InputTopicAlias[] = []
+
+  for (const group of groups) {
+    if (!group || typeof group.canonicalLabel !== 'string') continue
+    const canonicalLabel = normalizeTopicName(group.canonicalLabel)
+    const canonicalKey = topicToNodeId(canonicalLabel)
+    if (!canonicalKey) continue
+
+    const variants = Array.isArray(group.variants) ? group.variants : []
+    for (const variant of variants) {
+      if (typeof variant !== 'string') continue
+      const inputLabel = allowedByNormalized.get(normalizeTopicName(variant))
+      if (!inputLabel || seen.has(inputLabel)) continue
+      seen.add(inputLabel)
+      aliases.push({ aliasKey: inputLabel, canonicalKey, canonicalLabel })
+    }
+  }
+
+  return aliases
+}
+
 export async function lookupCanonicalAlias(
   aliasKey: string,
 ): Promise<CanonicalTopic | null> {
@@ -70,7 +118,7 @@ export async function resolveTopicCanonical(
 async function groupTopicsWithAI(
   labels: string[],
   subject: string,
-): Promise<AiGroup[]> {
+): Promise<AiGroup[] | null> {
   if (labels.length === 0) return []
   if (!process.env.OPENAI_API_KEY) {
     return labels.map((label) => ({ canonicalLabel: label, variants: [label] }))
@@ -92,15 +140,27 @@ async function groupTopicsWithAI(
       ],
     })
 
-    const raw = completion.choices[0]?.message?.content ?? '{}'
-    const parsed = JSON.parse(raw) as { groups?: AiGroup[] }
-    const groups = parsed.groups ?? []
+    const raw = completion.choices[0]?.message?.content
+    if (!raw?.trim()) return null
+
+    let parsed: { groups?: AiGroup[] }
+    try {
+      parsed = JSON.parse(raw) as { groups?: AiGroup[] }
+    } catch {
+      return null
+    }
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.groups)) return null
+    const groups = parsed.groups
 
     const assigned = new Set<string>()
     const valid: AiGroup[] = []
     for (const g of groups) {
+      if (!g || typeof g !== 'object' || typeof g.canonicalLabel !== 'string') continue
       const canonical = normalizeTopicName(g.canonicalLabel)
-      const variants = (g.variants ?? []).map(normalizeTopicName).filter(Boolean)
+      const variants = (Array.isArray(g.variants) ? g.variants : [])
+        .filter((variant): variant is string => typeof variant === 'string')
+        .map(normalizeTopicName)
+        .filter(Boolean)
       if (!canonical || variants.length === 0) continue
       if (!variants.includes(canonical)) variants.unshift(canonical)
       for (const v of variants) {
@@ -118,7 +178,7 @@ async function groupTopicsWithAI(
     return valid.length > 0 ? valid : labels.map((l) => ({ canonicalLabel: l, variants: [l] }))
   } catch (err) {
     console.error('[topic-canonicalize-ai] AI grouping failed:', err)
-    return labels.map((label) => ({ canonicalLabel: label, variants: [label] }))
+    return null
   }
 }
 
@@ -129,6 +189,7 @@ async function groupTopicsWithAI(
  */
 async function persistCanonicalGroups(
   groups: AiGroup[],
+  inputLabels: readonly string[],
   subject: string,
   source: string,
 ): Promise<Map<string, CanonicalTopic>> {
@@ -141,21 +202,23 @@ async function persistCanonicalGroups(
     label: string
   }> = []
 
-  for (const group of groups) {
-    const canonicalLabel = normalizeTopicName(group.canonicalLabel)
-    const canonicalKey = topicToNodeId(canonicalLabel)
-    if (!canonicalLabel || !canonicalKey) continue
-
-    nodes.set(canonicalKey, { id: canonicalKey, title: canonicalLabel })
-
-    for (const variant of group.variants) {
-      const label = normalizeTopicName(variant)
-      if (!label) continue
-      const aliasKey = topicToNodeId(label)
-      aliases.push({ aliasKey, canonicalKey, canonicalLabel, label })
-      byLabel.set(label, { topicName: canonicalLabel, topicKey: canonicalKey })
-    }
+  const seenSlug = new Set<string>()
+  for (const draft of aliasesForInput(groups, inputLabels)) {
+    const label = normalizeTopicName(draft.aliasKey)
+    const aliasKey = topicToNodeId(label)
+    if (!label || !aliasKey || !draft.canonicalKey || seenSlug.has(aliasKey)) continue
+    seenSlug.add(aliasKey)
+    nodes.set(draft.canonicalKey, { id: draft.canonicalKey, title: draft.canonicalLabel })
+    aliases.push({
+      aliasKey,
+      canonicalKey: draft.canonicalKey,
+      canonicalLabel: draft.canonicalLabel,
+      label,
+    })
+    byLabel.set(label, { topicName: draft.canonicalLabel, topicKey: draft.canonicalKey })
   }
+
+  if (aliases.length === 0) return byLabel
 
   // Independent row upserts — Prisma queues on pool size 1; still beats nested awaits.
   await Promise.all(
@@ -225,10 +288,15 @@ export async function ensureTopicsCanonicalized(
 
   if (unresolved.length >= 2) {
     const groups = await groupTopicsWithAI(unresolved, subject)
-    const persisted = await persistCanonicalGroups(groups, subject, 'ai')
-
-    for (const label of unresolved) {
-      result.set(label, persisted.get(label) ?? resolveTopicCanonicalSync(label))
+    if (groups == null) {
+      for (const label of unresolved) {
+        result.set(label, resolveTopicCanonicalSync(label))
+      }
+    } else {
+      const persisted = await persistCanonicalGroups(groups, unresolved, subject, 'ai')
+      for (const label of unresolved) {
+        result.set(label, persisted.get(label) ?? resolveTopicCanonicalSync(label))
+      }
     }
   } else if (unresolved.length === 1) {
     const label = unresolved[0]!

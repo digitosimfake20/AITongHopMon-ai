@@ -78,7 +78,7 @@ export function QuizUploadZone({ onParsed, label }: QuizUploadZoneProps) {
             .docx · .pdf · .png / .jpg / .webp — hệ thống trích xuất câu hỏi từ tệp
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            PDF và ảnh: đọc công thức toán bằng nhận diện hình ảnh.
+            PDF và ảnh: mỗi trang là một ảnh, Gemini trả JSON. Kiểm tra câu trước khi lưu.
           </p>
           <button
             type="button"

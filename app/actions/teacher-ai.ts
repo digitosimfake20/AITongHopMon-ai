@@ -1,6 +1,8 @@
 'use server'
 
 import OpenAI from 'openai'
+import { requireTeacher } from '@/lib/auth/require-teacher'
+import { getSessionUser } from '@/lib/auth/session'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -22,6 +24,10 @@ export async function generateRemedialSuggestionAction(
   wrongCount: number,
   studentPercent: number,
 ): Promise<RemedialResult> {
+  const user = await getSessionUser()
+  const authError = requireTeacher(user)
+  if (authError) return { ok: false, error: authError }
+
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',

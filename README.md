@@ -58,6 +58,7 @@ Copy `.env.example` → `.env`, rồi điền:
 | `DATABASE_URL` | Postgres pooler port **6543** + `?pgbouncer=true` |
 | `DIRECT_URL` | Postgres session port **5432** (migrate / db push) |
 | `OPENAI_API_KEY` | Key OpenAI cho Zeno + phân tích |
+| `GEMINI_API_KEY` | Key Gemini cho nhập đề từ PDF/ảnh |
 | `CHAT_ENCRYPTION_KEY` | Random string dài (mã hóa chat) |
 
 Thiếu `OPENAI_API_KEY`: app vẫn chạy; chức năng AI tạm tắt.

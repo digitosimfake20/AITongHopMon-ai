@@ -74,7 +74,7 @@ export async function POST(req: Request): Promise<Response> {
         controller.enqueue(
           encodeSse({
             type: 'error',
-            error: err instanceof Error ? err.message : 'Lỗi khi stream phản hồi',
+            error: 'Zeno tạm thời không trả lời được. Thử lại sau.',
           }),
         )
       } finally {

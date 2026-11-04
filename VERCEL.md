@@ -24,6 +24,7 @@ Add these in **Vercel → Project → Settings → Environment Variables**:
 | `DATABASE_URL` | Production, Preview: Supavisor **transaction** mode (`pooler.supabase.com:6543?pgbouncer=true`) |
 | `DIRECT_URL` | Production, Preview: Supavisor **session** mode (`pooler.supabase.com:5432`) |
 | `OPENAI_API_KEY` | Production, Preview |
+| `GEMINI_API_KEY` | Production, Preview (PDF/ảnh → câu hỏi) |
 | `CHAT_ENCRYPTION_KEY` | Production, Preview |
 | `NEXT_PUBLIC_APP_URL` | Production = your Vercel URL |
 

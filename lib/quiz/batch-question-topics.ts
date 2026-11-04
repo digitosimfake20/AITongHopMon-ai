@@ -7,16 +7,25 @@ export type QuestionTopicUpdate = {
   topicKey: string
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
 /**
  * Persist topic/topicKey for many questions in one SQL round-trip.
- * Skips rows whose values are already current.
+ * Skips rows whose values are already current, and drops ids that are not
+ * UUID strings so they are never cast in the UPDATE.
  */
 export async function batchUpdateQuestionTopics(
   updates: QuestionTopicUpdate[],
 ): Promise<void> {
-  if (updates.length === 0) return
+  const safe = updates.filter((u) => isUuid(u.id))
+  if (safe.length === 0) return
 
-  const values = updates.map(
+  const values = safe.map(
     (u) => Prisma.sql`(${u.id}::uuid, ${u.topic}, ${u.topicKey})`,
   )
 
