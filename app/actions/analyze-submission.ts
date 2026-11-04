@@ -13,6 +13,8 @@ import {
 } from '@/lib/knowledge/scored-submission-stats'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
+import { parseCachedAnalysis } from '@/lib/quiz/cached-ai-analysis'
+import { batchUpdateQuestionTopics } from '@/lib/quiz/batch-question-topics'
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -98,10 +100,17 @@ OUTPUT JSON FORMAT (không có markdown, chỉ JSON thuần):
 }`
 
 /** Detect if all questions share the same topic (generic quiz-title repetition). */
-function isGenericTopicSet(details: Array<{ questionId: string; question: { topic: string } }>): boolean {
-  const unique = new Set(details.map((d) => d.question.topic?.trim().toLowerCase() || ''))
-  if (unique.size <= 1) return true   // all identical
-  return false
+function isGenericTopicSet(
+  details: Array<{ questionId: string; question: { topic: string; topicKey?: string } }>,
+): boolean {
+  const uniqueKeys = new Set(
+    details.map((d) => {
+      const key = d.question.topicKey?.trim()
+      if (key && key !== 'chua-de-khac') return key
+      return normalizeTopicName(d.question.topic).toLowerCase()
+    }),
+  )
+  return uniqueKeys.size <= 1
 }
 
 /** Ask GPT to assign granular 2-4 word sub-topics per question and persist to DB. */
@@ -149,6 +158,7 @@ OUTPUT JSON (chỉ JSON thuần):
 
 export async function analyzeSubmissionAction(
   submissionId: string,
+  options?: { force?: boolean },
 ): Promise<ActionResult<AIAnalysis>> {
   const user = await getSessionUser()
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
@@ -160,7 +170,15 @@ export async function analyzeSubmissionAction(
       details: {
         include: {
           question: {
-            select: { id: true, type: true, topic: true, content: true, correctOption: true, options: true },
+            select: {
+              id: true,
+              type: true,
+              topic: true,
+              topicKey: true,
+              content: true,
+              correctOption: true,
+              options: true,
+            },
           },
         },
       },
@@ -169,6 +187,14 @@ export async function analyzeSubmissionAction(
 
   if (!submission) return { success: false, error: 'Không tìm thấy bài nộp' }
   if (submission.studentId !== user.id) return { success: false, error: 'Không có quyền truy cập' }
+
+  // Prefer pipeline / prior analyze cache unless the student asked to refresh.
+  if (!options?.force) {
+    const cached = parseCachedAnalysis(submission.aiFeedbackSummary)
+    if (cached) {
+      return { success: true, data: cached }
+    }
+  }
 
   const openai = getOpenAIClient()
 
@@ -189,21 +215,19 @@ export async function analyzeSubmissionAction(
   const uniqueTopicLabels = [...new Set(resolvedTopics.values())]
   const canonicalMap = await ensureTopicsCanonicalized(uniqueTopicLabels, 'Toán')
 
-  // Persist canonical topicKey on questions (fire-and-forget)
-  Promise.all(
-    [...resolvedTopics.entries()].map(([questionId, rawLabel]) => {
-      const canonical = canonicalMap.get(rawLabel) ?? {
-        topicName: rawLabel,
-        topicKey: topicToNodeId(rawLabel),
-      }
-      return prisma.question
-        .update({
-          where: { id: questionId },
-          data: { topic: canonical.topicName, topicKey: canonical.topicKey },
-        })
-        .catch(() => null)
-    }),
-  ).catch(() => null)
+  // Batch-persist canonical topic/topicKey (one SQL RTT; skip unchanged rows)
+  const topicUpdates = [...resolvedTopics.entries()].map(([questionId, rawLabel]) => {
+    const canonical = canonicalMap.get(rawLabel) ?? {
+      topicName: rawLabel,
+      topicKey: topicToNodeId(rawLabel),
+    }
+    return {
+      id: questionId,
+      topic: canonical.topicName,
+      topicKey: canonical.topicKey,
+    }
+  })
+  void batchUpdateQuestionTopics(topicUpdates).catch(() => null)
 
   // ── Compute topic mastery from canonical topics ─────────────────────────────
   const topicMap = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()
