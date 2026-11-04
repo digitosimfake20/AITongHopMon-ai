@@ -2,6 +2,8 @@
 
 import OpenAI from 'openai'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
+import { requireTeacher } from '@/lib/auth/require-teacher'
+import { getSessionUser } from '@/lib/auth/session'
 import type { ParsedQuestion } from '@/lib/quiz/types'
 
 // ---------------------------------------------------------------------------
@@ -37,6 +39,10 @@ export async function generateStudentFeedbackAction(input: {
   weakTopics: string[]
   behaviorSignals: string[]
 }): Promise<StudentFeedbackResult> {
+  const user = await getSessionUser()
+  const authError = requireTeacher(user)
+  if (authError) return { ok: false, error: authError }
+
   const openai = getOpenAIClient()
 
   const weakTopicList = input.weakTopics.length > 0
@@ -96,6 +102,10 @@ export async function generatePersonalizedQuizAction(input: {
   studentName: string
   weakTopics: string[]
 }): Promise<PersonalizedQuizResult> {
+  const user = await getSessionUser()
+  const authError = requireTeacher(user)
+  if (authError) return { ok: false, error: authError }
+
   if (input.weakTopics.length === 0) {
     return { ok: false, error: 'Không có chủ đề yếu để tạo bài tập.' }
   }
