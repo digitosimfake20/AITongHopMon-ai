@@ -30,7 +30,7 @@
 | Commit | Summary |
 |---|---|
 | `27bf6ebc85ce2c2abed8c1443b4ac9db2aa94413` | perf(quiz-take): merge take queries and defer KaTeX |
-| _(this docs commit)_ | docs: add Phase F2 quiz-take report |
+| `025c81c2853980f8a0b72382ef708c32c26702ff` | docs: add Phase F2 quiz-take report |
 
 ## Verify / Navigation Timing
 
