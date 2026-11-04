@@ -25,7 +25,7 @@
 | Commit | Summary |
 |---|---|
 | `0c83981cf91efdb8e3d58233e512591ebba5c97c` | perf(zeno): stream chat tokens + cap history decrypt |
-| _(this commit)_ | docs: add Phase F1 streaming report |
+| `97a69dc050c9785002d20f5891466ca573e0b44d` | docs: add Phase F1 streaming report |
 
 ## Verify / timing
 
