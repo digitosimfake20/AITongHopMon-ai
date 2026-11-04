@@ -31,9 +31,9 @@ Skipped a `system_tests.topic_keys text[]` (or similar) column. Filtering uses j
 
 | Commit | Summary |
 |---|---|
-| _(filled after commit)_ | perf(practice): SQL topic filter + stamp topicKey at ingest |
-| _(filled after commit)_ | perf(analyze): prefer aiFeedbackSummary cache; batch topic updates |
-| _(filled after commit)_ | docs: add Phase F3 practice/analyze report |
+| `4b0519f1eadf60a86c9ccd2baed1e9bad5de43cb` | perf(practice): SQL topic filter + stamp topicKey at ingest |
+| `66276e2de40ce4998ce5665a9a606b468a209a3d` | perf(analyze): prefer aiFeedbackSummary cache; batch topic updates |
+| `dd24644b5a4c3e78621fea63e0cdbdc86c347d2e` | docs: add Phase F3 practice/analyze report |
 
 ## Verify / timing
 
