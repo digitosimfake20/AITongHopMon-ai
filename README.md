@@ -127,7 +127,29 @@ pnpm build        # build production
 pnpm db:push      # đẩy schema Prisma lên Supabase
 pnpm db:studio    # xem DB visual (Prisma Studio)
 pnpm lint         # check code
+pnpm loadtest:dry # smoke load test (public routes)
 ```
+
+---
+
+## Load testing
+
+Isolated harness under `loadtest/` (Node native `fetch`, not k6/Artillery — see [loadtest/README.md](./loadtest/README.md)).
+
+```bash
+# Dry smoke (no prod confirm)
+pnpm loadtest:dry
+# or: node loadtest/run.mjs --profile dry
+
+# Modest against local
+BASE_URL=http://localhost:3000 pnpm loadtest
+
+# Modest / aggressive against default Vercel host (costs / rate limits — confirm required)
+LOADTEST_CONFIRM_PROD=1 pnpm loadtest
+LOADTEST_CONFIRM_PROD=1 pnpm loadtest:aggressive
+```
+
+Auth hot paths need `LOADTEST_COOKIE` (browser Cookie header; never commit). Results go to gitignored `loadtest/results/`.
 
 ---
 

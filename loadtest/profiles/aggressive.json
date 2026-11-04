@@ -1,0 +1,9 @@
+{
+  "description": "Heavier soak — still capped; requires LOADTEST_CONFIRM_PROD=1 on default host",
+  "vus": 20,
+  "durationSec": 120,
+  "rampSec": 15,
+  "thinkMs": 50,
+  "scenario": "mix",
+  "rsc": true
+}
