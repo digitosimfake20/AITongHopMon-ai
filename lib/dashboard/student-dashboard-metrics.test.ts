@@ -31,4 +31,19 @@ describe('student-dashboard-metrics', () => {
     expect(isWeakMastery(0.84)).toBe(true)
     expect(isWeakMastery(0.85)).toBe(false)
   })
+
+  it('respects weak-topic limit and coerces string pMastery', () => {
+    const rows = Array.from({ length: 6 }, (_, i) => ({
+      nodeId: `n${i}`,
+      pMastery: '0.2',
+      node: { title: `T${i}` },
+    }))
+    expect(mapWeakTopics(rows, 3)).toHaveLength(3)
+    expect(mapWeakTopics(rows, 3)[0]).toMatchObject({ accuracy: 20, severity: 'weak' })
+  })
+
+  it('treats undefined avg as 0 percent', () => {
+    expect(masteryPercentFromAvg(undefined, 3)).toBe(0)
+    expect(masteryPercentFromAvg(0.856, 1)).toBe(86)
+  })
 })
