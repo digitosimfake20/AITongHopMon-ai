@@ -1,4 +1,5 @@
 import type { Assignment } from '@/lib/dashboard-types'
+import { STUDENT_DISPLAY_TIMEZONE } from '@/lib/dashboard/greeting'
 import type { QuizBankItem } from '@/lib/quiz/quiz-bank-queries'
 import {
   isPracticeQuizItem,
@@ -13,6 +14,7 @@ function formatDeadline(quiz: QuizBankItem): string | undefined {
       month: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: STUDENT_DISPLAY_TIMEZONE,
     }).format(quiz.endTime)}`
   }
   if (quiz.timeLimitMinutes > 0) {

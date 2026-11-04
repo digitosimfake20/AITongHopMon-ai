@@ -43,7 +43,11 @@ export const resolveStudentContext = cache(async (): Promise<{
   if (!user) redirect('/login')
   if (user.role !== 'student') redirect('/onboarding')
 
-  const classId = await resolveClassId('student', user.id)
+  // Shell stats are class-agnostic — overlap with class resolution / membership.
+  const [classId, shellStats] = await Promise.all([
+    resolveClassId('student', user.id),
+    getStudentShellStats(user.id),
+  ])
   const membership = await prisma.classMember.findFirst({
     where: { studentId: user.id, classId },
     include: { class: true },
@@ -51,8 +55,6 @@ export const resolveStudentContext = cache(async (): Promise<{
 
   if (!membership) redirect('/onboarding')
 
-  // Mastery/streak: shared cached lean loader (not full knowledge rows / dash payload).
-  const shellStats = await getStudentShellStats(user.id)
   const firstName = user.fullName.split(/\s+/)[0] ?? user.fullName
 
   return {
