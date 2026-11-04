@@ -1,0 +1,37 @@
+== soft student /dashboard x5
+  [0] wall=5231 rsc=3264 peers=1 418=False
+  [1] wall=6276 rsc=607 peers=8 418=False
+  [2] wall=4960 rsc=2954 peers=1 418=False
+  [3] wall=5593 rsc=3345 peers=1 418=False
+  [4] wall=5250 rsc=3151 peers=1 418=False
+== soft student /quizzes x5
+  [0] wall=5217 rsc=3207 peers=1 418=False
+  [1] wall=6374 rsc=2926 peers=10 418=False
+  [2] wall=6761 rsc=4609 peers=1 418=False
+  [3] wall=5115 rsc=2998 peers=1 418=False
+  [4] wall=9155 rsc=7171 peers=1 418=False
+== soft student /adaptive x5
+  [0] wall=6781 rsc=4620 peers=1 418=False
+  [1] wall=8226 rsc=4730 peers=20 418=False
+  [2] wall=8884 rsc=4712 peers=11 418=False
+  [3] wall=8948 rsc=4827 peers=11 418=False
+  [4] wall=13033 rsc=8859 peers=11 418=False
+== soft student /roadmap x5
+  [0] wall=7178 rsc=4639 peers=1 418=False
+  [1] wall=7394 rsc=4642 peers=1 418=False
+  [2] wall=7323 rsc=4637 peers=1 418=False
+  [3] wall=7318 rsc=4794 peers=1 418=False
+  [4] wall=10595 rsc=8168 peers=1 418=False
+== soft student /chat x5
+  [0] wall=3419 rsc=316 peers=1 418=False
+  [1] wall=3223 rsc=352 peers=1 418=False
+  [2] wall=3155 rsc=388 peers=1 418=False
+  [3] wall=3010 rsc=325 peers=1 418=False
+  [4] wall=3137 rsc=533 peers=1 418=False
+== student quiz-take intro
+  quiz intro [0] https://aitonghopmon-ai.vercel.app/quizzes ttfb=43 418=False
+  quiz intro [1] https://aitonghopmon-ai.vercel.app/quizzes ttfb=47 418=False
+  quiz intro [2] https://aitonghopmon-ai.vercel.app/quizzes ttfb=44 418=False
+  quiz intro [3] https://aitonghopmon-ai.vercel.app/quizzes ttfb=39 418=False
+  quiz intro [4] https://aitonghopmon-ai.vercel.app/quizzes ttfb=52 418=False
+Wrote /home/tommylong/orca/workspaces/AITongHopMon-ai/phase0-baseline/evidence/baseline_raw.json

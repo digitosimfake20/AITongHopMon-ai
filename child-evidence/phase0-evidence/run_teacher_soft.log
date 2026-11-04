@@ -1,0 +1,37 @@
+== soft teacher /teacher x5
+  [0] wall=3608 rsc=333 body=1052 peers=16
+  [1] wall=4379 rsc=527 body=1025 peers=26
+  [2] wall=2321 rsc=2579 body=187 peers=6
+  [3] wall=13974 rsc=None body=None peers=0
+  [4] wall=2194 rsc=506 body=154 peers=2
+== soft teacher /teacher/adaptive x5
+  [0] wall=8888 rsc=5284 body=1658 peers=11
+  [1] wall=9432 rsc=546 body=188 peers=32
+  [2] wall=9256 rsc=351 body=155 peers=9
+  [3] wall=9165 rsc=555 body=155 peers=7
+  [4] wall=7711 rsc=340 body=155 peers=7
+== soft teacher /teacher/students x5
+  [0] wall=7147 rsc=4834 body=4751 peers=1
+  [1] wall=6845 rsc=4592 body=4752 peers=1
+  [2] wall=6658 rsc=4442 body=4750 peers=2
+  [3] wall=6910 rsc=4438 body=4753 peers=1
+  [4] wall=6799 rsc=4478 body=4749 peers=1
+== soft teacher /teacher/assignments x5
+  [0] wall=7279 rsc=5204 body=1854 peers=1
+  [1] wall=5181 rsc=2990 body=1856 peers=1
+  [2] wall=5128 rsc=3009 body=1855 peers=1
+  [3] wall=6635 rsc=4326 body=1854 peers=1
+  [4] wall=5108 rsc=2897 body=1853 peers=1
+== soft teacher /teacher/gaps x5
+  [0] wall=5238 rsc=2801 body=4544 peers=1
+  [1] wall=4888 rsc=2754 body=4474 peers=1
+  [2] wall=5086 rsc=3001 body=4543 peers=1
+  [3] wall=4993 rsc=2826 body=4545 peers=1
+  [4] wall=4994 rsc=2859 body=4542 peers=1
+== soft teacher /teacher/test-bank x5
+  [0] wall=5020 rsc=2855 body=5027 peers=1
+  [1] wall=5204 rsc=2832 body=5025 peers=7
+  [2] wall=4718 rsc=2664 body=5026 peers=1
+  [3] wall=4958 rsc=2843 body=5025 peers=1
+  [4] wall=5077 rsc=2689 body=5026 peers=1
+Wrote /home/tommylong/orca/workspaces/AITongHopMon-ai/phase0-baseline/evidence/baseline_raw.json

@@ -1,0 +1,868 @@
+{
+  "student.hard.quiz_intro": {
+    "route": "/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+    "note": "Intro 'S\u1eb5n s\u00e0ng l\u00e0m b\u00e0i' \u2014 no answer submit",
+    "samples": [
+      {
+        "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+        "type": "navigate",
+        "ttfb": 150,
+        "responseEnd": 5603,
+        "dcl": 5639,
+        "load": 5672,
+        "fcp": 5740,
+        "duration": 5672,
+        "title": "Mathz | Quiz To\u00e1n AI v\u00e0 b\u00e1o c\u00e1o l\u1edbp t\u1ee9c th\u00ec",
+        "h1": "S\u1eb5n s\u00e0ng l\u00e0m b\u00e0i",
+        "react418": false,
+        "consoleErrors": [],
+        "goto_ok": true,
+        "i": 0
+      },
+      {
+        "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+        "type": "navigate",
+        "ttfb": 51,
+        "responseEnd": 4919,
+        "dcl": 4971,
+        "load": 5009,
+        "fcp": 5108,
+        "duration": 5009,
+        "title": "Mathz | Quiz To\u00e1n AI v\u00e0 b\u00e1o c\u00e1o l\u1edbp t\u1ee9c th\u00ec",
+        "h1": "S\u1eb5n s\u00e0ng l\u00e0m b\u00e0i",
+        "react418": false,
+        "consoleErrors": [],
+        "goto_ok": true,
+        "i": 1
+      },
+      {
+        "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+        "type": "navigate",
+        "ttfb": 50,
+        "responseEnd": 4520,
+        "dcl": 4587,
+        "load": 4627,
+        "fcp": 4692,
+        "duration": 4627,
+        "title": "Mathz | Quiz To\u00e1n AI v\u00e0 b\u00e1o c\u00e1o l\u1edbp t\u1ee9c th\u00ec",
+        "h1": "S\u1eb5n s\u00e0ng l\u00e0m b\u00e0i",
+        "react418": false,
+        "consoleErrors": [],
+        "goto_ok": true,
+        "i": 2
+      },
+      {
+        "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+        "type": "navigate",
+        "ttfb": 97,
+        "responseEnd": 4406,
+        "dcl": 4433,
+        "load": 4454,
+        "fcp": 4516,
+        "duration": 4454,
+        "title": "Mathz | Quiz To\u00e1n AI v\u00e0 b\u00e1o c\u00e1o l\u1edbp t\u1ee9c th\u00ec",
+        "h1": "S\u1eb5n s\u00e0ng l\u00e0m b\u00e0i",
+        "react418": false,
+        "consoleErrors": [],
+        "goto_ok": true,
+        "i": 3
+      },
+      {
+        "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+        "type": "navigate",
+        "ttfb": 82,
+        "responseEnd": 4561,
+        "dcl": 4600,
+        "load": 4627,
+        "fcp": 4732,
+        "duration": 4627,
+        "title": "Mathz | Quiz To\u00e1n AI v\u00e0 b\u00e1o c\u00e1o l\u1edbp t\u1ee9c th\u00ec",
+        "h1": "S\u1eb5n s\u00e0ng l\u00e0m b\u00e0i",
+        "react418": false,
+        "consoleErrors": [],
+        "goto_ok": true,
+        "i": 4
+      }
+    ],
+    "ttfb": {
+      "n": 5,
+      "raw": [
+        150.0,
+        51.0,
+        50.0,
+        97.0,
+        82.0
+      ],
+      "median": 82.0,
+      "p25": 51.0,
+      "p75": 97.0
+    },
+    "responseEnd": {
+      "n": 5,
+      "raw": [
+        5603.0,
+        4919.0,
+        4520.0,
+        4406.0,
+        4561.0
+      ],
+      "median": 4561.0,
+      "p25": 4520.0,
+      "p75": 4919.0
+    },
+    "dcl": {
+      "n": 5,
+      "raw": [
+        5639.0,
+        4971.0,
+        4587.0,
+        4433.0,
+        4600.0
+      ],
+      "median": 4600.0,
+      "p25": 4587.0,
+      "p75": 4971.0
+    },
+    "load": {
+      "n": 5,
+      "raw": [
+        5672.0,
+        5009.0,
+        4627.0,
+        4454.0,
+        4627.0
+      ],
+      "median": 4627.0,
+      "p25": 4627.0,
+      "p75": 5009.0
+    },
+    "fcp": {
+      "n": 5,
+      "raw": [
+        5740.0,
+        5108.0,
+        4692.0,
+        4516.0,
+        4732.0
+      ],
+      "median": 4732.0,
+      "p25": 4692.0,
+      "p75": 5108.0
+    },
+    "wall_duration": {
+      "n": 5,
+      "raw": [
+        5672.0,
+        5009.0,
+        4627.0,
+        4454.0,
+        4627.0
+      ],
+      "median": 4627.0,
+      "p25": 4627.0,
+      "p75": 5009.0
+    },
+    "react418_yes": 0
+  },
+  "student.react418_goto": {
+    "/dashboard": {
+      "samples": [
+        {
+          "i": 0,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/dashboard",
+          "ttfb": 62,
+          "dcl": 3516,
+          "load": 3526,
+          "fcp": 3576,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 1,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/dashboard",
+          "ttfb": 69,
+          "dcl": 5358,
+          "load": 5412,
+          "fcp": 5440,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 2,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/dashboard",
+          "ttfb": 50,
+          "dcl": 3417,
+          "load": 3473,
+          "fcp": 3464,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 3,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/dashboard",
+          "ttfb": 59,
+          "dcl": 4470,
+          "load": 4530,
+          "fcp": 4528,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 4,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/dashboard",
+          "ttfb": 52,
+          "dcl": 4500,
+          "load": 4586,
+          "fcp": 4580,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ],
+      "react418_yes": 5,
+      "react418_n": 5,
+      "ttfb": {
+        "n": 5,
+        "raw": [
+          62.0,
+          69.0,
+          50.0,
+          59.0,
+          52.0
+        ],
+        "median": 59.0,
+        "p25": 52.0,
+        "p75": 62.0
+      },
+      "dcl": {
+        "n": 5,
+        "raw": [
+          3516.0,
+          5358.0,
+          3417.0,
+          4470.0,
+          4500.0
+        ],
+        "median": 4470.0,
+        "p25": 3516.0,
+        "p75": 4500.0
+      },
+      "load": {
+        "n": 5,
+        "raw": [
+          3526.0,
+          5412.0,
+          3473.0,
+          4530.0,
+          4586.0
+        ],
+        "median": 4530.0,
+        "p25": 3526.0,
+        "p75": 4586.0
+      },
+      "fcp": {
+        "n": 5,
+        "raw": [
+          3576.0,
+          5440.0,
+          3464.0,
+          4528.0,
+          4580.0
+        ],
+        "median": 4528.0,
+        "p25": 3576.0,
+        "p75": 4580.0
+      }
+    },
+    "/quizzes": {
+      "samples": [
+        {
+          "i": 0,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/quizzes",
+          "ttfb": 97,
+          "dcl": 3517,
+          "load": 3565,
+          "fcp": 3568,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 1,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/quizzes",
+          "ttfb": 52,
+          "dcl": 3348,
+          "load": 3476,
+          "fcp": 3396,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 2,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/quizzes",
+          "ttfb": 122,
+          "dcl": 3242,
+          "load": 3302,
+          "fcp": 3288,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 3,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/quizzes",
+          "ttfb": 46,
+          "dcl": 3442,
+          "load": 3583,
+          "fcp": 3476,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 4,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/quizzes",
+          "ttfb": 70,
+          "dcl": 3556,
+          "load": 3653,
+          "fcp": 3588,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ],
+      "react418_yes": 5,
+      "react418_n": 5,
+      "ttfb": {
+        "n": 5,
+        "raw": [
+          97.0,
+          52.0,
+          122.0,
+          46.0,
+          70.0
+        ],
+        "median": 70.0,
+        "p25": 52.0,
+        "p75": 97.0
+      },
+      "dcl": {
+        "n": 5,
+        "raw": [
+          3517.0,
+          3348.0,
+          3242.0,
+          3442.0,
+          3556.0
+        ],
+        "median": 3442.0,
+        "p25": 3348.0,
+        "p75": 3517.0
+      },
+      "load": {
+        "n": 5,
+        "raw": [
+          3565.0,
+          3476.0,
+          3302.0,
+          3583.0,
+          3653.0
+        ],
+        "median": 3565.0,
+        "p25": 3476.0,
+        "p75": 3583.0
+      },
+      "fcp": {
+        "n": 5,
+        "raw": [
+          3568.0,
+          3396.0,
+          3288.0,
+          3476.0,
+          3588.0
+        ],
+        "median": 3476.0,
+        "p25": 3396.0,
+        "p75": 3568.0
+      }
+    },
+    "/adaptive": {
+      "samples": [
+        {
+          "i": 0,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/adaptive",
+          "ttfb": 70,
+          "dcl": 4753,
+          "load": 4826,
+          "fcp": 4816,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 1,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/adaptive",
+          "ttfb": 73,
+          "dcl": 5236,
+          "load": 5312,
+          "fcp": 5304,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 2,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/adaptive",
+          "ttfb": 47,
+          "dcl": 5159,
+          "load": 5295,
+          "fcp": 5192,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 3,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/adaptive",
+          "ttfb": 63,
+          "dcl": 5249,
+          "load": 5381,
+          "fcp": 5280,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 4,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/adaptive",
+          "ttfb": 49,
+          "dcl": 4909,
+          "load": 4984,
+          "fcp": 4956,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ],
+      "react418_yes": 5,
+      "react418_n": 5,
+      "ttfb": {
+        "n": 5,
+        "raw": [
+          70.0,
+          73.0,
+          47.0,
+          63.0,
+          49.0
+        ],
+        "median": 63.0,
+        "p25": 49.0,
+        "p75": 70.0
+      },
+      "dcl": {
+        "n": 5,
+        "raw": [
+          4753.0,
+          5236.0,
+          5159.0,
+          5249.0,
+          4909.0
+        ],
+        "median": 5159.0,
+        "p25": 4909.0,
+        "p75": 5236.0
+      },
+      "load": {
+        "n": 5,
+        "raw": [
+          4826.0,
+          5312.0,
+          5295.0,
+          5381.0,
+          4984.0
+        ],
+        "median": 5295.0,
+        "p25": 4984.0,
+        "p75": 5312.0
+      },
+      "fcp": {
+        "n": 5,
+        "raw": [
+          4816.0,
+          5304.0,
+          5192.0,
+          5280.0,
+          4956.0
+        ],
+        "median": 5192.0,
+        "p25": 4956.0,
+        "p75": 5280.0
+      }
+    },
+    "/roadmap": {
+      "samples": [
+        {
+          "i": 0,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/roadmap",
+          "ttfb": 58,
+          "dcl": 4881,
+          "load": 5019,
+          "fcp": 4980,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 1,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/roadmap",
+          "ttfb": 40,
+          "dcl": 6603,
+          "load": 6705,
+          "fcp": 7708,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 2,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/roadmap",
+          "ttfb": 95,
+          "dcl": 4835,
+          "load": 4888,
+          "fcp": 4892,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 3,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/roadmap",
+          "ttfb": 44,
+          "dcl": 5033,
+          "load": 5060,
+          "fcp": 5084,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 4,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/roadmap",
+          "ttfb": 41,
+          "dcl": 4828,
+          "load": 4877,
+          "fcp": 4872,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ],
+      "react418_yes": 5,
+      "react418_n": 5,
+      "ttfb": {
+        "n": 5,
+        "raw": [
+          58.0,
+          40.0,
+          95.0,
+          44.0,
+          41.0
+        ],
+        "median": 44.0,
+        "p25": 41.0,
+        "p75": 58.0
+      },
+      "dcl": {
+        "n": 5,
+        "raw": [
+          4881.0,
+          6603.0,
+          4835.0,
+          5033.0,
+          4828.0
+        ],
+        "median": 4881.0,
+        "p25": 4835.0,
+        "p75": 5033.0
+      },
+      "load": {
+        "n": 5,
+        "raw": [
+          5019.0,
+          6705.0,
+          4888.0,
+          5060.0,
+          4877.0
+        ],
+        "median": 5019.0,
+        "p25": 4888.0,
+        "p75": 5060.0
+      },
+      "fcp": {
+        "n": 5,
+        "raw": [
+          4980.0,
+          7708.0,
+          4892.0,
+          5084.0,
+          4872.0
+        ],
+        "median": 4980.0,
+        "p25": 4892.0,
+        "p75": 5084.0
+      }
+    },
+    "/chat": {
+      "samples": [
+        {
+          "i": 0,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/chat",
+          "ttfb": 47,
+          "dcl": 3583,
+          "load": 3640,
+          "fcp": 3636,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 1,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/chat",
+          "ttfb": 50,
+          "dcl": 3179,
+          "load": 3297,
+          "fcp": 3288,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 2,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/chat",
+          "ttfb": 51,
+          "dcl": 3236,
+          "load": 3282,
+          "fcp": 3336,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 3,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/chat",
+          "ttfb": 50,
+          "dcl": 3726,
+          "load": 3819,
+          "fcp": 3764,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "i": 4,
+          "react418": true,
+          "url": "https://aitonghopmon-ai.vercel.app/chat",
+          "ttfb": 45,
+          "dcl": 3500,
+          "load": 3525,
+          "fcp": 3540,
+          "consoleErrors": [
+            "Uncaught Error: Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ],
+      "react418_yes": 5,
+      "react418_n": 5,
+      "ttfb": {
+        "n": 5,
+        "raw": [
+          47.0,
+          50.0,
+          51.0,
+          50.0,
+          45.0
+        ],
+        "median": 50.0,
+        "p25": 47.0,
+        "p75": 50.0
+      },
+      "dcl": {
+        "n": 5,
+        "raw": [
+          3583.0,
+          3179.0,
+          3236.0,
+          3726.0,
+          3500.0
+        ],
+        "median": 3500.0,
+        "p25": 3236.0,
+        "p75": 3583.0
+      },
+      "load": {
+        "n": 5,
+        "raw": [
+          3640.0,
+          3297.0,
+          3282.0,
+          3819.0,
+          3525.0
+        ],
+        "median": 3525.0,
+        "p25": 3297.0,
+        "p75": 3640.0
+      },
+      "fcp": {
+        "n": 5,
+        "raw": [
+          3636.0,
+          3288.0,
+          3336.0,
+          3764.0,
+          3540.0
+        ],
+        "median": 3540.0,
+        "p25": 3336.0,
+        "p75": 3636.0
+      }
+    },
+    "/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590": {
+      "samples": [
+        {
+          "i": 0,
+          "react418": false,
+          "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+          "ttfb": 50,
+          "dcl": 4641,
+          "load": 4744,
+          "fcp": 4768,
+          "consoleErrors": []
+        },
+        {
+          "i": 1,
+          "react418": false,
+          "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+          "ttfb": 47,
+          "dcl": 4472,
+          "load": 4528,
+          "fcp": 4580,
+          "consoleErrors": []
+        },
+        {
+          "i": 2,
+          "react418": false,
+          "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+          "ttfb": 40,
+          "dcl": 4831,
+          "load": 4881,
+          "fcp": 4948,
+          "consoleErrors": []
+        },
+        {
+          "i": 3,
+          "react418": false,
+          "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+          "ttfb": 69,
+          "dcl": 4515,
+          "load": 4561,
+          "fcp": 4632,
+          "consoleErrors": []
+        },
+        {
+          "i": 4,
+          "react418": false,
+          "url": "https://aitonghopmon-ai.vercel.app/quiz/take/27077e76-5ec7-4ea6-85ea-0abeebae6590",
+          "ttfb": 109,
+          "dcl": 4856,
+          "load": 4904,
+          "fcp": 4976,
+          "consoleErrors": []
+        }
+      ],
+      "react418_yes": 0,
+      "react418_n": 5,
+      "ttfb": {
+        "n": 5,
+        "raw": [
+          50.0,
+          47.0,
+          40.0,
+          69.0,
+          109.0
+        ],
+        "median": 50.0,
+        "p25": 47.0,
+        "p75": 69.0
+      },
+      "dcl": {
+        "n": 5,
+        "raw": [
+          4641.0,
+          4472.0,
+          4831.0,
+          4515.0,
+          4856.0
+        ],
+        "median": 4641.0,
+        "p25": 4515.0,
+        "p75": 4831.0
+      },
+      "load": {
+        "n": 5,
+        "raw": [
+          4744.0,
+          4528.0,
+          4881.0,
+          4561.0,
+          4904.0
+        ],
+        "median": 4744.0,
+        "p25": 4561.0,
+        "p75": 4881.0
+      },
+      "fcp": {
+        "n": 5,
+        "raw": [
+          4768.0,
+          4580.0,
+          4948.0,
+          4632.0,
+          4976.0
+        ],
+        "median": 4768.0,
+        "p25": 4632.0,
+        "p75": 4948.0
+      }
+    }
+  },
+  "finished_at": "2026-11-04T09:36:33Z"
+}
