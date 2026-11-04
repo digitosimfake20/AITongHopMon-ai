@@ -6,7 +6,8 @@ import { PDFParse } from 'pdf-parse'
 import type { ActionResult } from '@/lib/auth/types'
 import { requireTeacher } from '@/lib/auth/require-teacher'
 import { getSessionUser } from '@/lib/auth/session'
-import { getOpenAIClient, OPENAI_MODEL_CHAT, OPENAI_MODEL_VISION } from '@/lib/ai/openai'
+import { extractQuestionsWithGemini } from '@/lib/ai/gemini-vision'
+import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import { fitPdfPage } from '@/lib/quiz/pdf-viewport'
 import type { ExtractedQuestion, ExtractedSubQuestion, QuestionType } from '@/lib/quiz/types'
 import { normalizeLatexDelimiters } from '@/lib/utils/katex-formatter'
@@ -455,36 +456,9 @@ async function getImagesFromFile(file: File): Promise<ImagePayload[]> {
 // =============================================================================
 
 async function callVisionAPI(images: ImagePayload[]): Promise<{ questions?: unknown }> {
-  const openai = getOpenAIClient()
-
-  const imageContent = images.map(({ base64, mimeType }) => ({
-    type: 'image_url' as const,
-    image_url: {
-      url: `data:${mimeType};base64,${base64}`,
-      detail: 'high' as const,
-    },
-  }))
-
-  const completion = await openai.chat.completions.create({
-    model: OPENAI_MODEL_VISION,
-    response_format: { type: 'json_object' },
-    temperature: 0.1,
-    max_tokens: 8000,
-    messages: [
-      { role: 'system', content: VISION_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: [
-          ...imageContent,
-          { type: 'text' as const, text: 'Extract all questions from these exam pages.' },
-        ],
-      },
-    ],
-  }, { timeout: 30_000 })
-
-  const raw = completion.choices[0]?.message?.content
-  if (!raw) throw new Error('AI không trả về kết quả')
-  return JSON.parse(raw) as { questions?: unknown }
+  // One image per page (or one uploaded picture) goes to Gemini. The editor
+  // still holds the JSON until the teacher saves.
+  return extractQuestionsWithGemini(images, VISION_SYSTEM_PROMPT)
 }
 
 async function callTextAPI(text: string): Promise<{ questions?: unknown }> {
@@ -629,7 +603,7 @@ export async function parseQuizFileAction(
 
   try {
     if (VISION_EXTS.has(ext)) {
-      // Vision path — PDF pages → images OR direct image → GPT-4o Vision
+      // Vision path — one picture per PDF page, or the uploaded image, → Gemini JSON
       const images = await getImagesFromFile(file)
       if (images.length === 0) throw new Error('Không thể trích xuất hình ảnh từ tệp')
       parsedRaw = await callVisionAPI(images)
