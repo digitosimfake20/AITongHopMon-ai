@@ -4,7 +4,10 @@ import JSZip from 'jszip'
 import mammoth from 'mammoth'
 import { PDFParse } from 'pdf-parse'
 import type { ActionResult } from '@/lib/auth/types'
+import { requireTeacher } from '@/lib/auth/require-teacher'
+import { getSessionUser } from '@/lib/auth/session'
 import { getOpenAIClient, OPENAI_MODEL_CHAT, OPENAI_MODEL_VISION } from '@/lib/ai/openai'
+import { fitPdfPage } from '@/lib/quiz/pdf-viewport'
 import type { ExtractedQuestion, ExtractedSubQuestion, QuestionType } from '@/lib/quiz/types'
 import { normalizeLatexDelimiters } from '@/lib/utils/katex-formatter'
 
@@ -15,7 +18,7 @@ import { normalizeLatexDelimiters } from '@/lib/utils/katex-formatter'
 const MAX_FILE_BYTES = 10 * 1024 * 1024
 const MAX_TEXT_CHARS = 18_000
 const MAX_VISION_PAGES = 8    // max PDF pages to render per call
-const VISION_SCALE = 2.0      // render scale — higher = sharper, more tokens
+const MAX_RENDER_EDGE = 2048
 const VALID_TYPES: QuestionType[] = ['MULTIPLE_CHOICE', 'TRUE_FALSE_GROUP', 'SHORT_ANSWER', 'ESSAY']
 const EQUATION_PLACEHOLDER = '[EQUATION]'
 
@@ -391,9 +394,21 @@ async function pdfToImages(buffer: Buffer): Promise<ImagePayload[]> {
 
   for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     const page = await pdf.getPage(pageNum)
-    const viewport = page.getViewport({ scale: VISION_SCALE })
-    const w = Math.floor(viewport.width)
-    const h = Math.floor(viewport.height)
+    const base = page.getViewport({ scale: 1 })
+    const fitted = fitPdfPage(base.width, base.height)
+    if (!fitted) {
+      page.cleanup()
+      continue
+    }
+    const viewport = page.getViewport({
+      scale: Math.min(fitted.width / base.width, fitted.height / base.height),
+    })
+    const w = Math.min(MAX_RENDER_EDGE, Math.floor(viewport.width))
+    const h = Math.min(MAX_RENDER_EDGE, Math.floor(viewport.height))
+    if (w < 1 || h < 1) {
+      page.cleanup()
+      continue
+    }
 
     const napiCanvas = createCanvas(w, h)
     const ctx = napiCanvas.getContext('2d')
@@ -465,7 +480,7 @@ async function callVisionAPI(images: ImagePayload[]): Promise<{ questions?: unkn
         ],
       },
     ],
-  })
+  }, { timeout: 30_000 })
 
   const raw = completion.choices[0]?.message?.content
   if (!raw) throw new Error('AI không trả về kết quả')
@@ -482,7 +497,7 @@ async function callTextAPI(text: string): Promise<{ questions?: unknown }> {
       { role: 'system', content: TEXT_SYSTEM_PROMPT },
       { role: 'user', content: text.slice(0, MAX_TEXT_CHARS) },
     ],
-  })
+  }, { timeout: 30_000 })
   const raw = completion.choices[0]?.message?.content
   if (!raw) throw new Error('AI không trả về kết quả')
   return JSON.parse(raw) as { questions?: unknown }
@@ -591,6 +606,10 @@ function normalizeQuestions(raw: unknown): ExtractedQuestion[] {
 export async function parseQuizFileAction(
   formData: FormData,
 ): Promise<ActionResult<{ questions: ExtractedQuestion[]; usedVision: boolean }>> {
+  const user = await getSessionUser()
+  const authError = requireTeacher(user)
+  if (authError) return { success: false, error: authError }
+
   const file = formData.get('file')
 
   if (!(file instanceof File) || file.size === 0) {
@@ -625,8 +644,10 @@ export async function parseQuizFileAction(
       parsedRaw = await callTextAPI(text)
     }
   } catch (err) {
-    // If vision fails for PDF, try text extraction as fallback
-    if (ext === 'pdf') {
+    const status = (err as { status?: unknown } | null)?.status
+    const clientError = typeof status === 'number' && status >= 400 && status < 500
+    // If vision fails for PDF, try text extraction as fallback. A 4xx is not retried.
+    if (ext === 'pdf' && !clientError) {
       try {
         const buffer = Buffer.from(await file.arrayBuffer())
         const text = await extractPdfText(buffer)
