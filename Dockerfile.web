@@ -1,0 +1,56 @@
+# mathz-web — Next.js App Router (standalone) for local Compose only
+# Stage 1: Install dependencies based on pnpm-lock.yaml
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+RUN corepack enable pnpm
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY prisma ./prisma
+RUN pnpm i --frozen-lockfile
+
+# Stage 2: Rebuild the source code
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN corepack enable pnpm
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Dummy env so Prisma generate / Next build do not need live secrets in the image
+ENV DATABASE_URL="postgresql://mock_user:mock_pass@localhost:5432/mock_db"
+ENV DIRECT_URL="postgresql://mock_user:mock_pass@localhost:5432/mock_db"
+ENV NEXT_TELEMETRY_DISABLED=1
+# Enables next.config.mjs `output: 'standalone'` — Vercel builds leave this unset
+ENV DOCKER_BUILD=1
+
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+RUN pnpm prisma generate
+# pnpm nests .prisma — flatten for the runner image
+RUN PRISMA_DIR="$(find node_modules -type d -name '.prisma' | head -n 1)" \
+  && test -n "$PRISMA_DIR" \
+  && mkdir -p /prisma-bundle \
+  && cp -a "$PRISMA_DIR" /prisma-bundle/.prisma
+RUN pnpm run build
+
+# Stage 3: Runner environment
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /prisma-bundle/.prisma ./node_modules/.prisma
+
+USER nextjs
+EXPOSE 3000
+
+CMD ["node", "server.js"]

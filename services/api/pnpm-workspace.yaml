@@ -1,0 +1,3 @@
+# Isolate this package from the root Next.js workspace during local installs.
+packages:
+  - '.'

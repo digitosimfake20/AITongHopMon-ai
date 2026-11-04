@@ -15,3 +15,5 @@ node_modules
 .next/
 .DS_Store
 .vercel
+services/api/dist
+.env.docker
