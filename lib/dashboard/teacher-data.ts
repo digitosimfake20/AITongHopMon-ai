@@ -1,10 +1,16 @@
 import type { TeacherDashboardData } from '@/lib/teacher-types'
 import prisma from '@/lib/prisma'
 import { getQuizPackagesForClass } from '@/lib/quiz/queries'
+import { pickAtRiskStudents } from '@/lib/dashboard/teacher-at-risk'
 import { getInitials } from '@/lib/utils/initials'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import { cachedQuery } from '@/lib/cache/cached-query'
 import { CacheTags, CacheTTL } from '@/lib/cache/tags'
+
+type AtRiskSqlRow = {
+  student_id: string
+  avg_score: number
+}
 
 type TopicWrongAgg = {
   topic: string
@@ -21,7 +27,7 @@ async function getTeacherDashboardDataUncached(
 ): Promise<TeacherDashboardData> {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const [scoreAgg, testCount, recentSubmissionCount, topicWrongRows, lowScorers, quizPackages] =
+  const [scoreAgg, testCount, recentSubmissionCount, topicWrongRows, atRiskRows, quizPackages] =
     await Promise.all([
       prisma.submission.aggregate({
         where: { test: { classId } },
@@ -47,12 +53,20 @@ async function getTeacherDashboardDataUncached(
         ORDER BY wrong_count DESC
         LIMIT 12
       `,
-      prisma.submission.groupBy({
-        by: ['studentId'],
-        where: { test: { classId } },
-        _avg: { score: true },
-      }),
-      getQuizPackagesForClass(classId),
+      // Push HAVING / ORDER / LIMIT into SQL — avoid loading every student's avg into JS.
+      prisma.$queryRaw<AtRiskSqlRow[]>`
+        SELECT
+          s.student_id::text AS student_id,
+          AVG(s.score)::float AS avg_score
+        FROM core.submissions s
+        INNER JOIN core.tests t ON t.id = s.test_id
+        WHERE t.class_id = ${classId}::uuid
+        GROUP BY s.student_id
+        HAVING AVG(s.score) < 5
+        ORDER BY AVG(s.score) ASC
+        LIMIT 3
+      `,
+      getQuizPackagesForClass(classId, 'dash'),
     ])
 
   const classAverage =
@@ -100,10 +114,12 @@ async function getTeacherDashboardDataUncached(
       }
     })
 
-  const atRiskAgg = lowScorers
-    .filter((item) => item._avg.score !== null && Number(item._avg.score) < 5)
-    .sort((a, b) => Number(a._avg.score) - Number(b._avg.score))
-    .slice(0, 3)
+  const atRiskAgg = pickAtRiskStudents(
+    atRiskRows.map((row) => ({
+      studentId: row.student_id,
+      avgScore: Number(row.avg_score),
+    })),
+  )
 
   const studentIds = atRiskAgg.map((item) => item.studentId)
   const students =
@@ -117,7 +133,7 @@ async function getTeacherDashboardDataUncached(
   const studentMap = new Map(students.map((student) => [student.id, student.fullName]))
   const atRiskStudents = atRiskAgg.map((item) => {
     const name = studentMap.get(item.studentId) ?? 'Học sinh'
-    const avg = item._avg.score ? Number(item._avg.score).toFixed(1) : '—'
+    const avg = item.avgScore.toFixed(1)
     return {
       id: item.studentId,
       name,
