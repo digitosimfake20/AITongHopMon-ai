@@ -27,11 +27,9 @@
 
 ## SHAs
 
-_(filled after commit)_
-
 | Commit | Summary |
 |---|---|
-| TBD | Phase B shell + #418 + slim assignments |
+| `345e9583ddafe935eea5efd61968e1d228bf88f5` | perf(student): stream shell, fix #418 greeting, slim dash assignments |
 
 ## Navigation Timing (≥5-sample medians)
 
