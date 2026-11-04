@@ -37,4 +37,18 @@ describe('maxPointsFromQuestions', () => {
       maxPointsFromQuestions([{ points: 1 }, { points: null }, undefined, { points: 2 }]),
     ).toBe(4)
   })
+
+  it('treats non-positive points as 1', () => {
+    expect(maxPointsFromQuestions([{ points: 0 }, { points: -2 }, { points: 3 }])).toBe(5)
+  })
+})
+
+describe('scoreOutOfTen — extra edges', () => {
+  it('caps at 10 when earned exceeds max', () => {
+    expect(scoreOutOfTen(12, 10)).toBe(10)
+  })
+
+  it('rounds to two decimal places', () => {
+    expect(scoreOutOfTen(1, 3)).toBe(3.33)
+  })
 })

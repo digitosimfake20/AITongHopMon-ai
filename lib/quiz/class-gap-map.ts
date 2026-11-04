@@ -105,12 +105,36 @@ export interface ClassGapMapData {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (pure — unit-tested)
 // ---------------------------------------------------------------------------
 
-function inferGrade(className: string): string {
+/** Parse grade digit(s) from class name like "9A2" / "10B"; default 8. */
+export function inferGrade(className: string): string {
   const match = className.match(/\b([6-9]|1[0-2])[A-Za-z]/i)
   return match?.[1] ?? '8'
+}
+
+/** Quiz-avg tier bands used on the class gap map (not BKT). */
+export function studentTierFromAvg(
+  avg: number,
+): 'excellent' | 'good' | 'needsSupport' {
+  if (avg >= 8.5) return 'excellent'
+  if (avg >= 5) return 'good'
+  return 'needsSupport'
+}
+
+/** % of class that missed a question (≥1 wrong), one decimal. */
+export function gapWrongPercent(
+  affectedStudentCount: number,
+  classStudentCount: number,
+): number {
+  return classStudentCount > 0
+    ? Math.round((affectedStudentCount / classStudentCount) * 1000) / 10
+    : 0
+}
+
+export function tierGroupPercent(count: number, studentCount: number): number {
+  return studentCount > 0 ? Math.round((count / studentCount) * 100) : 0
 }
 
 type TopicAggRow = {
@@ -402,8 +426,7 @@ async function getClassGapMapDataUncached(
   const criticalGaps: CriticalGap[] = questionWrongRows.slice(0, 4).map((row) => {
     const meta = questionById.get(row.question_id)
     const affectedIds = [...(studentsByQuestion.get(row.question_id) ?? [])]
-    const wrongPercent =
-      studentCount > 0 ? Math.round((row.student_count / studentCount) * 1000) / 10 : 0
+    const wrongPercent = gapWrongPercent(row.student_count, studentCount)
 
     return {
       id: row.question_id,
@@ -467,8 +490,9 @@ async function getClassGapMapDataUncached(
       avgScore: Math.round(avg * 10) / 10,
       strongTopics: (studentStrongTopics.get(stat.studentId) ?? []).slice(0, 3),
     }
-    if (avg >= 8.5) excellent.push(member)
-    else if (avg >= 5) good.push(member)
+    const tier = studentTierFromAvg(avg)
+    if (tier === 'excellent') excellent.push(member)
+    else if (tier === 'good') good.push(member)
     else needsSupport.push(member)
   }
 
@@ -477,30 +501,27 @@ async function getClassGapMapDataUncached(
   good.sort(sortByScore)
   needsSupport.sort(sortByScore)
 
-  const pct = (n: number) =>
-    studentCount > 0 ? Math.round((n / studentCount) * 100) : 0
-
   const tierGroups: StudentTierGroup[] = [
     {
       id: 'excellent',
       label: 'Nhóm Giỏi',
       description: 'Điểm TB ≥ 8.5 — sẵn sàng thử thách nâng cao',
       students: excellent,
-      percent: pct(excellent.length),
+      percent: tierGroupPercent(excellent.length, studentCount),
     },
     {
       id: 'good',
       label: 'Nhóm Khá',
       description: 'Điểm TB 5–8.4 — cần luyện thêm dạng bài (theo điểm bài kiểm tra, không phải BKT)',
       students: good,
-      percent: pct(good.length),
+      percent: tierGroupPercent(good.length, studentCount),
     },
     {
       id: 'needsSupport',
       label: 'Nhóm Cần củng cố',
       description: 'Điểm TB bài kiểm tra < 5 — ưu tiên phụ đạo (không đồng nghĩa BKT/mastery)',
       students: needsSupport,
-      percent: pct(needsSupport.length),
+      percent: tierGroupPercent(needsSupport.length, studentCount),
     },
   ]
 
