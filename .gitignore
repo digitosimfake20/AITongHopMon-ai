@@ -17,3 +17,6 @@ node_modules
 .vercel
 services/api/dist
 .env.docker
+
+# Local self-hosted Supabase stack (secrets + volumes; see docker/supabase/)
+docker/supabase/.stack/

@@ -1,17 +1,17 @@
 # Local dual-container stack for competition / Render split rehearsal.
 # Does NOT deploy anywhere — Vercel production is unchanged until you wire the API.
-name: mathz-local-stack
+# Project name comes from the directory (or COMPOSE_PROJECT_NAME) so parallel worktrees do not collide.
+# Self-hosted Supabase for DB testing is a separate Compose project: docker/supabase/README.md
 
 services:
   web:
-    container_name: mathz-web
     build:
       context: .
       dockerfile: Dockerfile.web
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3001
+        NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-3001}
     ports:
-      - '3000:3000'
+      - "${WEB_PORT:-3000}:3000"
     env_file:
       - path: .env.local
         required: false
@@ -21,16 +21,15 @@ services:
       NODE_ENV: production
       PORT: '3000'
       HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-3001}
     restart: unless-stopped
 
   api:
-    container_name: mathz-api
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - '3001:3001'
+      - "${API_PORT:-3001}:3001"
     env_file:
       - path: .env.local
         required: false
