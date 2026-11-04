@@ -18,6 +18,7 @@ import {
   createQuestionsInTransaction,
   MATERIALIZE_TEST_TX_OPTIONS,
 } from '@/lib/system-test/materialize-questions'
+import { stampQuestionTopicKeys } from '@/lib/system-test/stamp-topic-keys'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,14 +63,15 @@ export async function publishSystemTestAction(
   }
 
   const data = parsed.data
+  const stampedQuestions = stampQuestionTopicKeys(data.questions, data.title)
   const created = await prisma.systemTest.create({
     data: {
       title: data.title.trim(),
       subject: data.subject.trim() || 'Toán',
       grade: data.grade.trim() || '8',
       durationMinutes: data.durationMinutes,
-      questionCount: data.questions.length,
-      questions: data.questions as Prisma.InputJsonValue,
+      questionCount: stampedQuestions.length,
+      questions: stampedQuestions as Prisma.InputJsonValue,
       isSystem: true,
       createdBy: user.id,
     },

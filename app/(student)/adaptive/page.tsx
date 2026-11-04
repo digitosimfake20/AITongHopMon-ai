@@ -146,6 +146,7 @@ export default async function AdaptivePage({ searchParams }: PageProps) {
                   {latest ? (
                     <Link
                       href={`/quiz/result/${latest.id}`}
+                      prefetch={false}
                       className="inline-flex min-h-11 items-center rounded-lg bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300"
                     >
                       {Number(latest.score).toFixed(1)}/10 · Xem kết quả
@@ -153,6 +154,7 @@ export default async function AdaptivePage({ searchParams }: PageProps) {
                   ) : (
                     <Link
                       href={`/quiz/take/${test.id}`}
+                      prefetch={false}
                       className="inline-flex min-h-11 items-center rounded-lg bg-zeno px-3 py-2 text-xs font-semibold text-zeno-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zeno focus-visible:ring-offset-2"
                     >
                       Làm bài

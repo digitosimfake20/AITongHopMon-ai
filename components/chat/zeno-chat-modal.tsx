@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bot, Send, X, Loader2, MessageSquare } from 'lucide-react'
-import { sendZenoMessageAction, getChatHistoryAction } from '@/app/actions/chat-zeno'
+import { getChatHistoryAction } from '@/app/actions/chat-zeno'
 import type { ChatMessageDisplay } from '@/app/actions/chat-zeno'
 import {
   ZENO_CHAT_OPEN_EVENT,
@@ -210,30 +210,103 @@ export function ZenoChatModal({
       content: trimmed,
       createdAt: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, tempUserMsg])
+    const assistantId = crypto.randomUUID()
+    const tempAssistantMsg: ChatMessageDisplay = {
+      id: assistantId,
+      sender: 'assistant',
+      content: '',
+      createdAt: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, tempUserMsg, tempAssistantMsg])
     setInput('')
     setIsLoading(true)
 
+    const appendAssistant = (chunk: string) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: m.content + chunk } : m,
+        ),
+      )
+    }
+
+    const setAssistantContent = (content: string) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, content } : m)),
+      )
+    }
+
     try {
-      const result = await sendZenoMessageAction({ sessionId, message: trimmed })
-      if (result.success && result.data) {
-        setSessionId(result.data.sessionId)
-        const aiMsg: ChatMessageDisplay = {
-          id: crypto.randomUUID(),
-          sender: 'assistant',
-          content: result.data.reply,
-          createdAt: new Date().toISOString(),
+      const res = await fetch('/api/zeno/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, message: trimmed }),
+      })
+
+      if (!res.ok) {
+        let errText = `HTTP ${res.status}`
+        try {
+          const j = (await res.json()) as { error?: string }
+          if (j.error) errText = j.error
+        } catch {
+          /* ignore */
         }
-        setMessages((prev) => [...prev, aiMsg])
-      } else {
-        const errMsg: ChatMessageDisplay = {
-          id: crypto.randomUUID(),
-          sender: 'assistant',
-          content: `Có lỗi xảy ra: ${result.error}`,
-          createdAt: new Date().toISOString(),
-        }
-        setMessages((prev) => [...prev, errMsg])
+        setAssistantContent(`Có lỗi xảy ra: ${errText}`)
+        return
       }
+
+      if (!res.body) {
+        setAssistantContent('Có lỗi xảy ra: không nhận được phản hồi stream')
+        return
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() ?? ''
+
+        for (const part of parts) {
+          const line = part
+            .split('\n')
+            .map((l) => l.trim())
+            .find((l) => l.startsWith('data:'))
+          if (!line) continue
+          const raw = line.slice(5).trim()
+          if (!raw || raw === '[DONE]') continue
+
+          let event: {
+            type: string
+            sessionId?: string
+            text?: string
+            error?: string
+          }
+          try {
+            event = JSON.parse(raw) as typeof event
+          } catch {
+            continue
+          }
+
+          if (event.type === 'meta' && event.sessionId) {
+            setSessionId(event.sessionId)
+          } else if (event.type === 'token' && event.text) {
+            appendAssistant(event.text)
+          } else if (event.type === 'done' && event.sessionId) {
+            setSessionId(event.sessionId)
+          } else if (event.type === 'error') {
+            setAssistantContent(`Có lỗi xảy ra: ${event.error ?? 'không rõ'}`)
+          }
+        }
+      }
+    } catch (err) {
+      setAssistantContent(
+        `Có lỗi xảy ra: ${err instanceof Error ? err.message : 'không kết nối được'}`,
+      )
     } finally {
       setIsLoading(false)
       setTimeout(() => inputRef.current?.focus(), 50)
@@ -319,10 +392,14 @@ export function ZenoChatModal({
                   </p>
                 </div>
               ) : (
-                messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)
+                messages.map((msg) => {
+                  // Hide empty streaming placeholder until first token arrives.
+                  if (msg.sender === 'assistant' && !msg.content && isLoading) return null
+                  return <MessageBubble key={msg.id} msg={msg} />
+                })
               )}
-              {isLoading && (
-                <div className="mb-3 flex justify-start">
+              {isLoading && messages[messages.length - 1]?.sender === 'assistant' && !messages[messages.length - 1]?.content ? (
+                <div className="mb-3 flex justify-start" aria-live="polite">
                   <div className="mr-2 mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-zeno text-white">
                     <Bot className="size-4" aria-hidden />
                   </div>
@@ -330,7 +407,7 @@ export function ZenoChatModal({
                     <Loader2 className="size-4 animate-spin text-zeno" aria-label="Zeno đang trả lời" />
                   </div>
                 </div>
-              )}
+              ) : null}
               <div ref={bottomRef} />
             </div>
 

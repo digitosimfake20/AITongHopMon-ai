@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { Users, ChevronRight, Trophy, BookOpen, Clock } from 'lucide-react'
 import { resolveTeacherContext } from '@/lib/dashboard/context'
@@ -21,15 +22,37 @@ function ScoreBadge({ avg }: { avg: number | null }) {
   return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">{val.toFixed(1)}/10</Badge>
 }
 
-interface PageProps {
-  searchParams: Promise<{ filter?: string }>
+function StudentsListSkeleton({ atRiskOnly }: { atRiskOnly: boolean }) {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Đang tải danh sách học sinh">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Users className="size-5 text-primary" aria-hidden />
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Danh sách học sinh</h1>
+            <p className="text-sm text-muted-foreground">
+              {atRiskOnly ? 'Đang lọc học sinh cần chú ý…' : 'Đang tải…'}
+            </p>
+          </div>
+        </div>
+      </div>
+      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <li key={i} className="h-44 animate-pulse rounded-2xl border border-border bg-secondary/60" />
+        ))}
+      </ul>
+    </div>
+  )
 }
 
-export default async function TeacherStudentsPage({ searchParams }: PageProps) {
-  const { filter } = await searchParams
-  const atRiskOnly = filter === 'at-risk'
-  const { shell } = await resolveTeacherContext()
-  const students = await getStudentsForClass(shell.classId)
+interface StudentsListProps {
+  classId: string
+  className: string
+  atRiskOnly: boolean
+}
+
+async function StudentsList({ classId, className, atRiskOnly }: StudentsListProps) {
+  const students = await getStudentsForClass(classId)
   const visible = atRiskOnly
     ? students.filter((s) => s.avgScore !== null && s.avgScore < AT_RISK_AVG_THRESHOLD)
     : students
@@ -42,7 +65,7 @@ export default async function TeacherStudentsPage({ searchParams }: PageProps) {
           <div>
             <h1 className="text-xl font-bold text-foreground">Danh sách học sinh</h1>
             <p className="text-sm text-muted-foreground">
-              {shell.className} · {visible.length}
+              {className} · {visible.length}
               {atRiskOnly ? ` / ${students.length}` : ''} học sinh
               {atRiskOnly ? ' cần chú ý' : ''}
             </p>
@@ -52,6 +75,7 @@ export default async function TeacherStudentsPage({ searchParams }: PageProps) {
         <div className="flex flex-wrap gap-2" role="group" aria-label="Lọc danh sách">
           <Link
             href="/teacher/students"
+            prefetch={false}
             className={cn(
               'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               !atRiskOnly
@@ -64,6 +88,7 @@ export default async function TeacherStudentsPage({ searchParams }: PageProps) {
           </Link>
           <Link
             href="/teacher/students?filter=at-risk"
+            prefetch={false}
             className={cn(
               'inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               atRiskOnly
@@ -88,6 +113,7 @@ export default async function TeacherStudentsPage({ searchParams }: PageProps) {
           {atRiskOnly ? (
             <Link
               href="/teacher/students"
+              prefetch={false}
               className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
               Xem tất cả học sinh
@@ -100,6 +126,7 @@ export default async function TeacherStudentsPage({ searchParams }: PageProps) {
             <li key={student.id}>
               <Link
                 href={`/teacher/students/${student.id}`}
+                prefetch={false}
                 className="group flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-center gap-3">
@@ -146,5 +173,25 @@ export default async function TeacherStudentsPage({ searchParams }: PageProps) {
         </ul>
       )}
     </div>
+  )
+}
+
+interface PageProps {
+  searchParams: Promise<{ filter?: string }>
+}
+
+export default async function TeacherStudentsPage({ searchParams }: PageProps) {
+  const { filter } = await searchParams
+  const atRiskOnly = filter === 'at-risk'
+  const { shell } = await resolveTeacherContext()
+
+  return (
+    <Suspense fallback={<StudentsListSkeleton atRiskOnly={atRiskOnly} />}>
+      <StudentsList
+        classId={shell.classId}
+        className={shell.className}
+        atRiskOnly={atRiskOnly}
+      />
+    </Suspense>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { TEACHER_NAV } from '@/lib/teacher-nav'
 import type { TeacherNavItem } from '@/lib/teacher-types'
 import { withClassParam } from '@/lib/class/with-class-param'
@@ -24,17 +24,22 @@ interface TeacherNavLinksProps {
 /** Active-state nav only — keeps the teacher sidebar chrome as an RSC. */
 export function TeacherNavLinks({ classId }: TeacherNavLinksProps) {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <>
       {TEACHER_NAV.map((item) => {
         const active = isTeacherNavActive(item, pathname)
         const Icon = item.icon
+        const href = teacherNavHref(item, classId)
+        const isPrimary = item.id === 'overview'
 
         return (
           <Link
             key={item.id}
-            href={teacherNavHref(item, classId)}
+            href={href}
+            prefetch={false}
+            onMouseEnter={isPrimary ? () => router.prefetch(href) : undefined}
             aria-current={active ? 'page' : undefined}
             className={cn(
               'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',

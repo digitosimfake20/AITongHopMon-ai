@@ -21,7 +21,7 @@ export function AdaptivityHeroCard({ title, description }: AdaptivityHeroCardPro
       <Button
         className="mt-6 h-11 w-full px-5 text-[15px] sm:w-auto"
         nativeButton={false}
-        render={<Link href="/adaptive" />}
+        render={<Link href="/adaptive" prefetch={false} />}
       >
         Luyện ngay
         <ArrowRight className="size-4" aria-hidden="true" />

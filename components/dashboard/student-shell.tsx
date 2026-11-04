@@ -1,7 +1,7 @@
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { MobileDashboardNav } from '@/components/dashboard/mobile-dashboard-nav'
-import { ActiveQuizBanner } from '@/components/student/active-quiz-banner'
+import { ActiveQuizBannerLazy } from '@/components/dashboard/active-quiz-banner-lazy'
 import type { StudentShellContext } from '@/lib/dashboard/context'
 
 interface StudentShellProps {
@@ -9,6 +9,7 @@ interface StudentShellProps {
   children: React.ReactNode
 }
 
+/** Sync composition helper (stories/tests). Production student layout streams slots instead. */
 export function StudentShell({ shell, children }: StudentShellProps) {
   return (
     <div className="flex min-h-dvh bg-background">
@@ -22,7 +23,7 @@ export function StudentShell({ shell, children }: StudentShellProps) {
           classLabel={shell.classLabel}
           streakDays={shell.streakDays}
         />
-        <ActiveQuizBanner />
+        <ActiveQuizBannerLazy />
         <DashboardHeader
           studentName={shell.studentName}
           initials={shell.initials}

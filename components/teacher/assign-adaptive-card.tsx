@@ -18,7 +18,7 @@ export function AssignAdaptiveCard() {
         <Button
           className="min-h-11 flex-1"
           nativeButton={false}
-          render={<Link href="/teacher/assignments?mode=adaptive" />}
+          render={<Link href="/teacher/assignments?mode=adaptive" prefetch={false} />}
         >
           Giao bài phân hóa
           <ArrowRight className="size-4" aria-hidden="true" />
@@ -27,7 +27,7 @@ export function AssignAdaptiveCard() {
           variant="outline"
           className="min-h-11 flex-1"
           nativeButton={false}
-          render={<Link href="/teacher/assignments?mode=quick-test" />}
+          render={<Link href="/teacher/assignments?mode=quick-test" prefetch={false} />}
         >
           <Timer className="size-4" aria-hidden="true" />
           Tạo bài 15 phút

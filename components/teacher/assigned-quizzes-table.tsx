@@ -26,7 +26,7 @@ export function AssignedQuizzesTable({ quizzes }: AssignedQuizzesTableProps) {
           <Button
             className="mt-4 min-h-11"
             nativeButton={false}
-            render={<Link href="/teacher/assignments" />}
+            render={<Link href="/teacher/assignments" prefetch={false} />}
           >
             Giao bài
           </Button>
@@ -61,7 +61,7 @@ export function AssignedQuizzesTable({ quizzes }: AssignedQuizzesTableProps) {
                       size="sm"
                       className="min-h-11"
                       nativeButton={false}
-                      render={<Link href={`/teacher/gaps?quiz=${quiz.id}`} />}
+                      render={<Link href={`/teacher/gaps?quiz=${quiz.id}`} prefetch={false} />}
                     >
                       Xem báo cáo
                     </Button>

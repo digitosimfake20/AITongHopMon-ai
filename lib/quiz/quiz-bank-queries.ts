@@ -425,28 +425,56 @@ export async function getQuizForTaking(
   testId: string,
   studentId: string,
 ): Promise<QuizTakingData | null> {
-  const test = await prisma.test.findUnique({ where: { id: testId } })
+  const test = await prisma.test.findUnique({
+    where: { id: testId },
+    select: {
+      id: true,
+      classId: true,
+      title: true,
+      timeLimitMinutes: true,
+      questionIds: true,
+    },
+  })
   if (!test) return null
 
-  const membership = await prisma.classMember.findFirst({
-    where: { classId: test.classId, studentId },
-  })
-  if (!membership) return null
+  const qIds = test.questionIds as string[]
 
-  const classTest = await prisma.classTest.findFirst({
-    where: {
-      OR: [
-        { testId },
-        { easyTestId: testId },
-        { mediumTestId: testId },
-        { hardTestId: testId },
-      ],
-    },
-    include: {
-      adaptiveSessions: { where: { studentId }, take: 1 },
-      testGroup: { select: { title: true } },
-    },
-  })
+  // Was: membership → classTest → optional count → questions+count (3–5 RTTs).
+  // Now: one interactive batch after the test lookup (2 RTTs total).
+  const [membership, classTest, questions, prevSubmissions] = await prisma.$transaction([
+    prisma.classMember.findFirst({
+      where: { classId: test.classId, studentId },
+      select: { id: true },
+    }),
+    prisma.classTest.findFirst({
+      where: {
+        OR: [
+          { testId },
+          { easyTestId: testId },
+          { mediumTestId: testId },
+          { hardTestId: testId },
+        ],
+      },
+      include: {
+        adaptiveSessions: { where: { studentId }, take: 1 },
+        testGroup: { select: { title: true } },
+      },
+    }),
+    prisma.question.findMany({
+      where: { id: { in: qIds } },
+      select: {
+        id: true,
+        type: true,
+        content: true,
+        options: true,
+        points: true,
+        topic: true,
+      },
+    }),
+    prisma.submission.count({ where: { testId, studentId } }),
+  ])
+
+  if (!membership) return null
 
   let adaptiveContext: QuizTakingData['adaptiveContext'] | undefined
 
@@ -481,28 +509,13 @@ export async function getQuizForTaking(
         return null
       }
     } else if (classTest.testId === testId) {
-      const attemptCount = await prisma.submission.count({ where: { testId, studentId } })
-      if (classTest.maxAttempts !== -1 && attemptCount >= classTest.maxAttempts) return null
+      if (classTest.maxAttempts !== -1 && prevSubmissions >= classTest.maxAttempts) {
+        return null
+      }
     } else {
       return null
     }
   }
-
-  const qIds = test.questionIds as string[]
-  const [questions, prevSubmissions] = await prisma.$transaction([
-    prisma.question.findMany({
-      where: { id: { in: qIds } },
-      select: {
-        id: true,
-        type: true,
-        content: true,
-        options: true,
-        points: true,
-        topic: true,
-      },
-    }),
-    prisma.submission.count({ where: { testId, studentId } }),
-  ])
 
   const qMap = new Map(questions.map((q) => [q.id, q]))
   const orderedQuestions: QuizTakingQuestion[] = qIds

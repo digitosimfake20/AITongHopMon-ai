@@ -6,16 +6,16 @@ import { CacheTags, CacheTTL } from '@/lib/cache/tags'
 import { asDate } from '@/lib/cache/revive'
 import { computeStreakDays } from '@/lib/dashboard/streak'
 import { MASTERY_STATUS_MASTERED } from '@/lib/knowledge/mastery-labels'
-import { assignmentsFromQuizBank } from '@/lib/dashboard/student-assignments'
+import { getDashboardAssignments } from '@/lib/dashboard/student-assignment-queries'
 import {
   mapWeakTopics,
   masteryPercentFromAvg,
   studyHoursFromSeconds,
 } from '@/lib/dashboard/student-dashboard-metrics'
-import { getQuizBankForStudent } from '@/lib/quiz/quiz-bank-queries'
 
-function formatRelativeTime(date: Date): string {
-  const diffMs = Date.now() - date.getTime()
+/** Server-only relative label (RSC string prop). Not recomputed on the client. */
+function formatRelativeTime(date: Date, nowMs = Date.now()): string {
+  const diffMs = Math.max(0, nowMs - date.getTime())
   const minutes = Math.floor(diffMs / 60000)
   if (minutes < 1) return 'Vừa cập nhật'
   if (minutes < 60) return `Cập nhật ${minutes} phút trước`
@@ -82,7 +82,7 @@ async function getStudentDashboardDataUncached(
   fullName: string,
   classLabel: string,
 ): Promise<CachedStudentDash> {
-  const [submissionAgg, masteryAgg, weakStates, cognitiveProfile, globalMemory, quizBank] =
+  const [submissionAgg, masteryAgg, weakStates, cognitiveProfile, globalMemory, assignments] =
     await Promise.all([
       prisma.submission.aggregate({
         where: {
@@ -124,7 +124,7 @@ async function getStudentDashboardDataUncached(
         where: { studentId: userId },
         select: { keyInsights: true, updatedAt: true },
       }),
-      getQuizBankForStudent(classId, userId),
+      getDashboardAssignments(classId, userId),
     ])
 
   const masteryPercent = masteryPercentFromAvg(
@@ -148,8 +148,6 @@ async function getStudentDashboardDataUncached(
     weakTopics.length > 0
       ? `Trộn câu từ kho đề theo ${weakTopics.length} chủ đề còn yếu — không phải AI sinh đề mới.`
       : 'Hoàn thành bài kiểm tra để hệ thống ghi nhận điểm yếu và gợi ý luyện tập.'
-
-  const assignments = assignmentsFromQuizBank(quizBank)
 
   const firstName = fullName.split(/\s+/)[0] ?? fullName
 

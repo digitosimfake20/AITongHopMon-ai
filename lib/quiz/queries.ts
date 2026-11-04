@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import type { DifficultyLevel, ParsedQuestion, QuizMode, TrueFalseSubQuestion } from '@/lib/quiz/types'
 
@@ -154,52 +155,48 @@ type PackageTestMeta = {
   id: string
   title: string
   difficultyLevel: DifficultyLevel
-  questionIds?: unknown
   timeLimitMinutes: number
 }
 
 function summarizeTestFromAgg(
   test: PackageTestMeta | null | undefined,
   stats: { submittedCount: number; averageScore: number } | undefined,
-  purpose: PackageListPurpose,
+  questionCount: number,
 ): QuizPackageTestSummary | null {
   if (!test) return null
   return {
     id: test.id,
     title: test.title,
     difficultyLevel: test.difficultyLevel,
-    // Dash cards never render questionCount — skip shipping questionIds JSON.
-    questionCount:
-      purpose === 'dash'
-        ? 0
-        : Array.isArray(test.questionIds)
-          ? test.questionIds.length
-          : 0,
+    questionCount,
     timeLimitMinutes: test.timeLimitMinutes,
     submittedCount: stats?.submittedCount ?? 0,
     averageScore: stats?.averageScore ?? 0,
   }
 }
 
+/** Count questions without shipping question_ids JSON (edit path loads that separately). */
+async function questionCountsByTestId(testIds: string[]): Promise<Map<string, number>> {
+  if (testIds.length === 0) return new Map()
+  const rows = await prisma.$queryRaw<{ id: string; cnt: number }[]>`
+    SELECT id::text AS id,
+           COALESCE(jsonb_array_length(question_ids::jsonb), 0)::int AS cnt
+    FROM core.tests
+    WHERE id IN (${Prisma.join(testIds.map((id) => Prisma.sql`${id}::uuid`))})
+  `
+  return new Map(rows.map((r) => [r.id, r.cnt]))
+}
+
 async function getQuizPackagesForClassUncached(
   classId: string,
   purpose: PackageListPurpose,
 ) {
-  const testSelect =
-    purpose === 'dash'
-      ? ({
-          id: true,
-          title: true,
-          difficultyLevel: true,
-          timeLimitMinutes: true,
-        } as const)
-      : ({
-          id: true,
-          title: true,
-          difficultyLevel: true,
-          questionIds: true,
-          timeLimitMinutes: true,
-        } as const)
+  const testSelect = {
+    id: true,
+    title: true,
+    difficultyLevel: true,
+    timeLimitMinutes: true,
+  } as const
 
   const packages = await prisma.quizPackage.findMany({
     where: { classId },
@@ -226,15 +223,17 @@ async function getQuizPackagesForClassUncached(
     ),
   ]
 
-  const submissionAggs =
+  const [submissionAggs, questionCounts] = await Promise.all([
     testIds.length > 0
-      ? await prisma.submission.groupBy({
+      ? prisma.submission.groupBy({
           by: ['testId'],
           where: { testId: { in: testIds } },
           _count: { id: true },
           _avg: { score: true },
         })
-      : []
+      : Promise.resolve([]),
+    purpose === 'full' ? questionCountsByTestId(testIds) : Promise.resolve(new Map<string, number>()),
+  ])
 
   const statsByTestId = new Map(
     submissionAggs.map((row) => [
@@ -248,30 +247,33 @@ async function getQuizPackagesForClassUncached(
   )
 
   return packages.map((pkg) => {
+    const countFor = (testId: string | undefined) =>
+      purpose === 'dash' ? 0 : (questionCounts.get(testId ?? '') ?? 0)
+
     const tests =
       pkg.mode === 'STANDARD'
         ? [
             summarizeTestFromAgg(
               pkg.standardTest,
               statsByTestId.get(pkg.standardTest?.id ?? ''),
-              purpose,
+              countFor(pkg.standardTest?.id),
             ),
           ]
         : [
             summarizeTestFromAgg(
               pkg.easyTest,
               statsByTestId.get(pkg.easyTest?.id ?? ''),
-              purpose,
+              countFor(pkg.easyTest?.id),
             ),
             summarizeTestFromAgg(
               pkg.mediumTest,
               statsByTestId.get(pkg.mediumTest?.id ?? ''),
-              purpose,
+              countFor(pkg.mediumTest?.id),
             ),
             summarizeTestFromAgg(
               pkg.hardTest,
               statsByTestId.get(pkg.hardTest?.id ?? ''),
-              purpose,
+              countFor(pkg.hardTest?.id),
             ),
           ]
 

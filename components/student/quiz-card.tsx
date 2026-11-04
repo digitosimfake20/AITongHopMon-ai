@@ -158,7 +158,7 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
               variant="outline"
               className="min-h-11 text-xs"
               nativeButton={false}
-              render={<Link href={`/quiz/result/${resultId}`} />}
+              render={<Link href={`/quiz/result/${resultId}`} prefetch={false} />}
             >
               <Trophy className="size-3.5" />
               Xem kết quả
@@ -168,7 +168,7 @@ export function QuizCard({ quiz, isPractice }: QuizCardProps) {
             <Button
               className="min-h-11 gap-1.5"
               nativeButton={false}
-              render={<Link href={`/quiz/take/${quiz.testId}`} />}
+              render={<Link href={`/quiz/take/${quiz.testId}`} prefetch={false} />}
             >
               {status.isDone ? 'Làm lại bài' : 'Bắt đầu làm bài'}
             </Button>
@@ -289,7 +289,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
               variant="outline"
               className="min-h-11 text-xs"
               nativeButton={false}
-              render={<Link href={`/quiz/result/${progress.round1SubmissionId}`} />}
+              render={<Link href={`/quiz/result/${progress.round1SubmissionId}`} prefetch={false} />}
             >
               Lượt 1
             </Button>
@@ -299,7 +299,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
               variant="outline"
               className="min-h-11 text-xs"
               nativeButton={false}
-              render={<Link href={`/quiz/result/${progress.round2SubmissionId}`} />}
+              render={<Link href={`/quiz/result/${progress.round2SubmissionId}`} prefetch={false} />}
             >
               Lượt 2
             </Button>
@@ -308,7 +308,7 @@ function AdaptiveGroupQuizCard({ quiz }: QuizCardProps) {
             <Button
               className="min-h-11 gap-1.5"
               nativeButton={false}
-              render={<Link href={`/quiz/take/${progress.nextTestId}`} />}
+              render={<Link href={`/quiz/take/${progress.nextTestId}`} prefetch={false} />}
             >
               {actionLabel}
               <ArrowRight className="size-3.5" />

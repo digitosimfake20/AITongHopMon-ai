@@ -60,7 +60,7 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
                     <Button
                       className="min-h-11"
                       nativeButton={false}
-                      render={<Link href={`/quiz/take/${item.id}`} />}
+                      render={<Link href={`/quiz/take/${item.id}`} prefetch={false} />}
                     >
                       {item.kind === 'adaptive' ? 'Tiếp tục phân hóa' : 'Bắt đầu làm bài'}
                     </Button>
@@ -75,7 +75,7 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
                         className="min-h-11"
                         variant="outline"
                         nativeButton={false}
-                        render={<Link href={`/quiz/result/${item.submissionId}`} />}
+                        render={<Link href={`/quiz/result/${item.submissionId}`} prefetch={false} />}
                       >
                         Xem kết quả
                       </Button>
@@ -84,7 +84,7 @@ export function AssignmentsCard({ assignments }: AssignmentsCardProps) {
                         className="min-h-11"
                         variant="outline"
                         nativeButton={false}
-                        render={<Link href="/quizzes" />}
+                        render={<Link href="/quizzes" prefetch={false} />}
                       >
                         Xem tất cả
                       </Button>

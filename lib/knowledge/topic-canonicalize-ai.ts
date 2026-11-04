@@ -122,43 +122,79 @@ async function groupTopicsWithAI(
   }
 }
 
-async function persistCanonicalGroups(groups: AiGroup[], subject: string, source: string) {
+/**
+ * Persist AI/rule groups: batch node + alias upserts (fewer serial RTTs).
+ * Returns label → canonical mapping built from the write payload — callers
+ * should not re-`findUnique` each alias after upsert.
+ */
+async function persistCanonicalGroups(
+  groups: AiGroup[],
+  subject: string,
+  source: string,
+): Promise<Map<string, CanonicalTopic>> {
+  const byLabel = new Map<string, CanonicalTopic>()
+  const nodes = new Map<string, { id: string; title: string }>()
+  const aliases: Array<{
+    aliasKey: string
+    canonicalKey: string
+    canonicalLabel: string
+    label: string
+  }> = []
+
   for (const group of groups) {
     const canonicalLabel = normalizeTopicName(group.canonicalLabel)
     const canonicalKey = topicToNodeId(canonicalLabel)
+    if (!canonicalLabel || !canonicalKey) continue
 
-    await prisma.knowledgeNode.upsert({
-      where: { id: canonicalKey },
-      create: {
-        id: canonicalKey,
-        subject,
-        title: canonicalLabel,
-        difficultyLevel: 1,
-      },
-      update: { title: canonicalLabel },
-    })
+    nodes.set(canonicalKey, { id: canonicalKey, title: canonicalLabel })
 
     for (const variant of group.variants) {
-      const normalized = normalizeTopicName(variant)
-      const aliasKey = topicToNodeId(normalized)
-      await prisma.topicCanonicalAlias.upsert({
-        where: { aliasKey },
+      const label = normalizeTopicName(variant)
+      if (!label) continue
+      const aliasKey = topicToNodeId(label)
+      aliases.push({ aliasKey, canonicalKey, canonicalLabel, label })
+      byLabel.set(label, { topicName: canonicalLabel, topicKey: canonicalKey })
+    }
+  }
+
+  // Independent row upserts — Prisma queues on pool size 1; still beats nested awaits.
+  await Promise.all(
+    [...nodes.values()].map((node) =>
+      prisma.knowledgeNode.upsert({
+        where: { id: node.id },
         create: {
-          aliasKey,
-          canonicalKey,
-          canonicalLabel,
+          id: node.id,
+          subject,
+          title: node.title,
+          difficultyLevel: 1,
+        },
+        update: { title: node.title },
+      }),
+    ),
+  )
+
+  await Promise.all(
+    aliases.map((a) =>
+      prisma.topicCanonicalAlias.upsert({
+        where: { aliasKey: a.aliasKey },
+        create: {
+          aliasKey: a.aliasKey,
+          canonicalKey: a.canonicalKey,
+          canonicalLabel: a.canonicalLabel,
           subject,
           source,
         },
         update: {
-          canonicalKey,
-          canonicalLabel,
+          canonicalKey: a.canonicalKey,
+          canonicalLabel: a.canonicalLabel,
           subject,
           source,
         },
-      })
-    }
-  }
+      }),
+    ),
+  )
+
+  return byLabel
 }
 
 export async function ensureTopicsCanonicalized(
@@ -189,17 +225,16 @@ export async function ensureTopicsCanonicalized(
 
   if (unresolved.length >= 2) {
     const groups = await groupTopicsWithAI(unresolved, subject)
-    await persistCanonicalGroups(groups, subject, 'ai')
+    const persisted = await persistCanonicalGroups(groups, subject, 'ai')
 
     for (const label of unresolved) {
-      const aliasKey = topicToNodeId(label)
-      const hit = await lookupCanonicalAlias(aliasKey)
-      result.set(label, hit ?? resolveTopicCanonicalSync(label))
+      result.set(label, persisted.get(label) ?? resolveTopicCanonicalSync(label))
     }
   } else if (unresolved.length === 1) {
     const label = unresolved[0]!
     const sync = resolveTopicCanonicalSync(label)
     result.set(label, sync)
+    // Upsert returns the row — no follow-up findUnique needed.
     await prisma.topicCanonicalAlias.upsert({
       where: { aliasKey: topicToNodeId(label) },
       create: {

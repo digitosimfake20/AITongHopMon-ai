@@ -67,7 +67,10 @@ export async function generateSmartQuizAction(options?: {
     }
   }
 
-  const mixed = await collectPracticeQuestionsFromBank(weakTopics, { targetCount: 6 })
+  const mixed = await collectPracticeQuestionsFromBank(weakTopics, {
+    targetCount: 6,
+    topicKeys: options?.topicKeys?.filter(Boolean),
+  })
 
   if (mixed.questions.length === 0) {
     return {

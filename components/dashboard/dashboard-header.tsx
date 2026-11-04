@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { DashboardGreeting } from '@/components/dashboard/dashboard-greeting'
+import { formatStudentGreeting } from '@/lib/dashboard/greeting'
 import { signOutAction } from '@/lib/auth/actions'
 
 interface DashboardHeaderProps {
@@ -17,10 +18,12 @@ export function DashboardHeader({
   initials,
   masteryScore,
 }: DashboardHeaderProps) {
+  const greeting = formatStudentGreeting(studentName)
+
   return (
     <header className="flex flex-col gap-4 border-b border-border bg-background/85 px-4 py-5 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
       <div>
-        <DashboardGreeting studentName={studentName} />
+        <DashboardGreeting greeting={greeting} />
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
           Hôm nay làm bài kiểm tra nào trước?
         </p>
@@ -31,7 +34,7 @@ export function DashboardHeader({
           variant="outline"
           className="min-h-11"
           nativeButton={false}
-          render={<Link href="/onboarding" />}
+          render={<Link href="/onboarding" prefetch={false} />}
         >
           <LayoutGrid className="size-4" aria-hidden="true" />
           Danh sách lớp

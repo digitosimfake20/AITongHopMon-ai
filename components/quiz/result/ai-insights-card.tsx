@@ -49,10 +49,11 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
     weakTopic: string
   } | null>(null)
 
-  async function handleAnalyze() {
+  async function handleAnalyze(force: boolean) {
     setIsLoading(true)
     setError(null)
-    const result = await analyzeSubmissionAction(submissionId)
+    // force=false prefers pipeline aiFeedbackSummary; force=true refreshes LLM advice.
+    const result = await analyzeSubmissionAction(submissionId, { force })
     if (result.success && result.data) {
       setAnalysis(result.data)
       setIsExpanded(true)
@@ -112,7 +113,7 @@ export function AIInsightsCard({ submissionId, initialAnalysis, readOnly }: AIIn
             {!readOnly && (
               <button
                 type="button"
-                onClick={handleAnalyze}
+                onClick={() => handleAnalyze(Boolean(analysis))}
                 disabled={isLoading}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-teal-600/40 bg-background px-3 py-2 text-sm font-medium text-teal-700 hover:bg-teal-50 disabled:opacity-60 dark:text-teal-300 dark:hover:bg-teal-950"
               >

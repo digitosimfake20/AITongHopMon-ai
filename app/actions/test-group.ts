@@ -23,6 +23,7 @@ import {
   type PublishTestGroupInput,
 } from '@/lib/validations/test-group'
 import { systemTestQuestionsToTierDraft, type TestDraft } from '@/lib/system-test/test-draft'
+import { stampQuestionTopicKeys } from '@/lib/system-test/stamp-topic-keys'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,14 +134,18 @@ export async function publishTestGroupAction(
       ]
 
       for (const tier of tiers) {
+        const stampedQuestions = stampQuestionTopicKeys(
+          tier.payload.questions,
+          data.topic.trim() || data.title.trim(),
+        )
         await tx.systemTest.create({
           data: {
             title: `${data.title.trim()} — ${tier.difficulty === 'EASY' ? 'Dễ' : tier.difficulty === 'MEDIUM' ? 'TB' : 'Khó'}`,
             subject: data.subject.trim() || 'Toán',
             grade: data.grade.trim() || '8',
             durationMinutes: tier.payload.durationMinutes,
-            questionCount: tier.payload.questions.length,
-            questions: tier.payload.questions as Prisma.InputJsonValue,
+            questionCount: stampedQuestions.length,
+            questions: stampedQuestions as Prisma.InputJsonValue,
             isSystem: true,
             groupId: createdGroup.id,
             difficulty: tier.difficulty,
@@ -302,40 +307,15 @@ export async function listAdaptiveAssignmentsAction(
 
   const classroom = await prisma.classroom.findFirst({
     where: { id: classId, teacherId: user.id },
+    select: { id: true },
   })
   if (!classroom) return { success: false, error: 'Không tìm thấy lớp' }
 
-  const [assignments, memberCount] = await prisma.$transaction([
-    prisma.classTest.findMany({
-      where: { classId, isAdaptive: true },
-      include: {
-        testGroup: { select: { title: true, subject: true, topic: true } },
-        adaptiveSessions: {
-          where: { round2SubmissionId: { not: null } },
-          select: { id: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.classMember.count({ where: { classId } }),
-  ])
-
-  return {
-    success: true,
-    data: assignments.map((a) => ({
-      classTestId: a.id,
-      title: a.testGroup?.title ?? 'Cụm đề phân hóa',
-      subject: a.testGroup?.subject ?? 'Toán',
-      topic: a.testGroup?.topic ?? '',
-      classId: a.classId,
-      startTime: a.startTime.toISOString(),
-      endTime: a.endTime.toISOString(),
-      passScoreThreshold: a.passScoreThreshold,
-      lowScoreThreshold: a.lowScoreThreshold,
-      studentCompletedCount: a.adaptiveSessions.length,
-      studentTotalCount: memberCount,
-    })),
-  }
+  const { listAdaptiveAssignmentsForClass } = await import(
+    '@/lib/quiz/adaptive-list-queries'
+  )
+  const data = await listAdaptiveAssignmentsForClass(classId)
+  return { success: true, data }
 }
 
 // ---------------------------------------------------------------------------
@@ -639,7 +619,11 @@ export async function updateTestGroupAction(
     const tierUpdates = tiers.map((tier) => {
       const tierLabel =
         tier.difficulty === 'EASY' ? 'Dễ' : tier.difficulty === 'MEDIUM' ? 'TB' : 'Khó'
-      const questionsChanged = !jsonEqual(tier.payload.questions, tier.existing.questions)
+      const stampedQuestions = stampQuestionTopicKeys(
+        tier.payload.questions,
+        data.topic.trim() || data.title.trim(),
+      )
+      const questionsChanged = !jsonEqual(stampedQuestions, tier.existing.questions)
       const durationChanged = tier.payload.durationMinutes !== tier.existing.durationMinutes
 
       return prismaDirect.systemTest.update({
@@ -651,8 +635,8 @@ export async function updateTestGroupAction(
           ...(durationChanged ? { durationMinutes: tier.payload.durationMinutes } : {}),
           ...(questionsChanged
             ? {
-                questionCount: tier.payload.questions.length,
-                questions: tier.payload.questions as Prisma.InputJsonValue,
+                questionCount: stampedQuestions.length,
+                questions: stampedQuestions as Prisma.InputJsonValue,
               }
             : {}),
         },

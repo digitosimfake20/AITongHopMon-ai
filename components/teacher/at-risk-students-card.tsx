@@ -51,7 +51,7 @@ export function AtRiskStudentsCard({ students }: AtRiskStudentsCardProps) {
         variant="outline"
         className="mt-4 min-h-11 w-full"
         nativeButton={false}
-        render={<Link href="/teacher/students?filter=at-risk" />}
+        render={<Link href="/teacher/students?filter=at-risk" prefetch={false} />}
       >
         Xem học sinh cần chú ý
       </Button>

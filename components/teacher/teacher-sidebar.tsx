@@ -31,6 +31,7 @@ export function TeacherSidebar({ className, classId }: TeacherSidebarProps) {
       <div className="border-t border-border p-4">
         <Link
           href="/onboarding"
+          prefetch={false}
           className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <LayoutGrid className="size-4 shrink-0" aria-hidden="true" />

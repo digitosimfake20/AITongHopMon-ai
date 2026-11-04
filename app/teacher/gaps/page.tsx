@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { ClassKnowledgeGapMap } from '@/components/teacher/class-knowledge-gap-map'
 import { resolveTeacherContext } from '@/lib/dashboard/context'
+import prisma from '@/lib/prisma'
 import { getClassGapMapData } from '@/lib/quiz/class-gap-map'
-import { getQuizPackagesForClass } from '@/lib/quiz/queries'
 import { BookOpen } from 'lucide-react'
 
 interface PageProps {
@@ -16,8 +16,11 @@ export default async function TeacherGapsPage({ searchParams }: PageProps) {
 
   let quizBanner: { title: string; found: boolean } | null = null
   if (quizPackageId) {
-    const packages = await getQuizPackagesForClass(classroom.id)
-    const pkg = packages.find((p) => p.id === quizPackageId)
+    // Avoid full getQuizPackagesForClass just for banner title.
+    const pkg = await prisma.quizPackage.findFirst({
+      where: { id: quizPackageId, classId: classroom.id },
+      select: { id: true, title: true },
+    })
     quizBanner = {
       title: pkg?.title ?? quizPackageId,
       found: Boolean(pkg),
