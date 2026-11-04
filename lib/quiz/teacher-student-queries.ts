@@ -162,7 +162,8 @@ function topicAggQuery(studentId: string, classId: string) {
   `
 }
 
-function buildBehaviorSignals(row: BehaviorAggRow): BehaviorSignal[] {
+/** Pure mapper from timing agg row → teacher behavior chips. */
+export function buildBehaviorSignals(row: BehaviorAggRow): BehaviorSignal[] {
   const signals: BehaviorSignal[] = []
   if (row.fast_wrong >= 2) {
     signals.push({
@@ -203,7 +204,8 @@ function buildBehaviorSignals(row: BehaviorAggRow): BehaviorSignal[] {
   return signals
 }
 
-function buildTopicMasteryFromBkt(
+/** Pure BKT → topic mastery list (sorted weak→strong). */
+export function buildTopicMasteryFromBkt(
   states: Array<{
     nodeId: string
     pMastery: unknown
@@ -229,7 +231,7 @@ function buildTopicMasteryFromBkt(
 }
 
 /** Fallback when student has submissions but no BKT states yet */
-function buildTopicMasteryFromSubmissions(rows: TopicAggRow[]): TopicMasteryItem[] {
+export function buildTopicMasteryFromSubmissions(rows: TopicAggRow[]): TopicMasteryItem[] {
   return rows
     .map((row) => {
       const accuracy = row.total > 0 ? Math.round((row.correct / row.total) * 100) : 0

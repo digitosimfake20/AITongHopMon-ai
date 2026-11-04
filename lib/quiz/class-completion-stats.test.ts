@@ -19,4 +19,39 @@ describe('computeClassCompletionDetail', () => {
     expect(r.expectedSlots).toBe(5)
     expect(r.completionRate).toBe(0)
   })
+
+  it('returns 100% when every student×test slot is filled', () => {
+    const r = computeClassCompletionDetail(4, 2, 8)
+    expect(r.completedSlots).toBe(8)
+    expect(r.expectedSlots).toBe(8)
+    expect(r.completionRate).toBe(100)
+  })
+
+  it('clamps negative completedDistinctPairs to 0', () => {
+    const r = computeClassCompletionDetail(3, 2, -5)
+    expect(r.completedSlots).toBe(0)
+    expect(r.expectedSlots).toBe(6)
+    expect(r.completionRate).toBe(0)
+  })
+
+  it('returns 0% when studentCount is 0 (no expected slots)', () => {
+    const r = computeClassCompletionDetail(0, 5, 0)
+    expect(r.expectedSlots).toBe(0)
+    expect(r.completedSlots).toBe(0)
+    expect(r.completionRate).toBe(0)
+  })
+
+  it('rounds completion rate to nearest integer', () => {
+    // 1/3 → 33.333… → 33
+    expect(computeClassCompletionDetail(1, 3, 1).completionRate).toBe(33)
+    // 2/3 → 66.666… → 67
+    expect(computeClassCompletionDetail(1, 3, 2).completionRate).toBe(67)
+  })
+
+  it('allows completedSlots above expectedSlots (over-complete data)', () => {
+    const r = computeClassCompletionDetail(1, 1, 5)
+    expect(r.completedSlots).toBe(5)
+    expect(r.expectedSlots).toBe(1)
+    expect(r.completionRate).toBe(500)
+  })
 })
