@@ -34,7 +34,7 @@ export function DashboardHeader({
           variant="outline"
           className="min-h-11"
           nativeButton={false}
-          render={<Link href="/onboarding" />}
+          render={<Link href="/onboarding" prefetch={false} />}
         >
           <LayoutGrid className="size-4" aria-hidden="true" />
           Danh sách lớp

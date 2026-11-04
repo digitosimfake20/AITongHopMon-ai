@@ -57,7 +57,7 @@ export function WeaknessRadarCard({ topics }: WeaknessRadarCardProps) {
                   variant="outline"
                   className="min-h-11 shrink-0"
                   nativeButton={false}
-                  render={<Link href={`/adaptive?topic=${topic.id}`} />}
+                  render={<Link href={`/adaptive?topic=${topic.id}`} prefetch={false} />}
                 >
                   Luyện chủ đề này
                 </Button>

@@ -73,7 +73,7 @@ export function ActiveQuizBanner() {
         <Button
           className="min-h-11 gap-1.5"
           nativeButton={false}
-          render={<Link href={`/quiz/take/${session.testId}?resume=1`} />}
+          render={<Link href={`/quiz/take/${session.testId}?resume=1`} prefetch={false} />}
         >
           Tiếp tục làm
         </Button>

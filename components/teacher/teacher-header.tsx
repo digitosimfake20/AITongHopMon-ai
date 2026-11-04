@@ -34,7 +34,7 @@ export function TeacherHeader({
           variant="outline"
           className="min-h-11"
           nativeButton={false}
-          render={<Link href="/onboarding" />}
+          render={<Link href="/onboarding" prefetch={false} />}
         >
           <LayoutGrid className="size-4" aria-hidden="true" />
           Danh sách lớp
@@ -42,7 +42,7 @@ export function TeacherHeader({
         <Button
           className="min-h-11 px-5"
           nativeButton={false}
-          render={<Link href="/teacher/assignments" />}
+          render={<Link href="/teacher/assignments" prefetch={false} />}
         >
           <Plus className="size-4" aria-hidden="true" />
           Tạo &amp; giao bài
