@@ -8,7 +8,7 @@ import {
 } from '@/lib/ai/gemini-vision'
 
 describe('USER_TEXT', () => {
-  it('carries detailed extract rules, STRICT compliance, and a schema example', () => {
+  it('carries detailed extract rules, STRICT compliance, and owner-template example', () => {
     expect(USER_TEXT).toContain('STRICT')
     expect(USER_TEXT).toContain('"questions"')
     expect(USER_TEXT).toContain('MULTIPLE_CHOICE')
@@ -16,8 +16,9 @@ describe('USER_TEXT', () => {
     expect(USER_TEXT).toContain('SHORT_ANSWER')
     expect(USER_TEXT).toContain('correctAnswer')
     expect(USER_TEXT).toContain('subQuestions')
+    expect(USER_TEXT).toContain('"points"')
+    expect(USER_TEXT).toContain('Đa thức')
     expect(USER_TEXT).toMatch(/EXAMPLE/i)
-    // Must not freestyle a competing top-level shape
     expect(USER_TEXT).toContain('Do NOT freestyle')
   })
 })
@@ -52,7 +53,23 @@ describe('questionsJsonFromModelText', () => {
     expect(parsed.questions).toEqual([{ type: 'ESSAY', content: '1+1' }])
   })
 
-  it('rejects text that is not a JSON object', () => {
+  it('accepts a bare question array (owner template shape)', () => {
+    const parsed = questionsJsonFromModelText(
+      '[{"type":"MULTIPLE_CHOICE","topic":"Đa thức","points":1,"content":"1+1?","options":["1","2","3","4"],"correctAnswer":0}]',
+    )
+    expect(parsed.questions).toEqual([
+      {
+        type: 'MULTIPLE_CHOICE',
+        topic: 'Đa thức',
+        points: 1,
+        content: '1+1?',
+        options: ['1', '2', '3', '4'],
+        correctAnswer: 0,
+      },
+    ])
+  })
+
+  it('rejects text that is not JSON', () => {
     expect(() => questionsJsonFromModelText('not json')).toThrow(
       'AI không trả về kết quả',
     )

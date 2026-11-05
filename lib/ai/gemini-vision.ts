@@ -12,49 +12,60 @@ const FIXED_FAILURE = 'Không thể phân tích ảnh đề'
 const EMPTY_RESULT = 'AI không trả về kết quả'
 
 /**
- * User-turn extract instructions. Schema MUST match VISION_SYSTEM_PROMPT /
- * normalizeQuestion in app/actions/parse-quiz-file.ts — do not invent fields.
+ * User-turn extract instructions. Item shape matches the owner template
+ * (Zalo template.txt) and VISION_SYSTEM_PROMPT / normalizeQuestion —
+ * do not invent fields. Top-level is wrapped as {"questions":[...]} for
+ * the parser; a bare question array is also accepted at parse time.
  */
 export const USER_TEXT = `Extract ALL questions from these exam page images.
 
 STRICT OUTPUT RULES (non-negotiable):
-1. Return ONLY one JSON object. No markdown, no code fences, no commentary, no trailing text.
-2. Top-level shape MUST be exactly: {"questions":[...]}
-3. Every question MUST use only these fields (omit unused ones; do not invent others):
-   - "type": one of "MULTIPLE_CHOICE" | "TRUE_FALSE_GROUP" | "SHORT_ANSWER" | "ESSAY"
-   - "topic": string (2–4 word Vietnamese math sub-topic; required)
+1. Return ONLY valid JSON. No markdown, no code fences, no commentary, no trailing text, no [cite: N] markers.
+2. Preferred top-level shape: {"questions":[ ...question objects... ]}
+   - A bare JSON array of question objects (owner template style) is also accepted.
+   - Do NOT use alternate wrappers ("items", "data", "result", "answer", etc.).
+3. Every question object MUST STRICTLY match this field set (omit unused ones; do not invent others):
+   - "type": "MULTIPLE_CHOICE" | "TRUE_FALSE_GROUP" | "SHORT_ANSWER" | "ESSAY"
+   - "topic": string (concise Vietnamese math sub-topic; required)
+   - "points": number (usually 1)
    - "content": string (stem; use $...$ / $$...$$ for math)
-   - "options": string[4] — MULTIPLE_CHOICE only; strip "A."/"B."/"C."/"D." prefixes
+   - "options": string[4] — MULTIPLE_CHOICE only; STRIP "A."/"B."/"C."/"D." prefixes
    - "correctAnswer": number 0–3 for MULTIPLE_CHOICE; string for SHORT_ANSWER
-   - "subQuestions": [{ "label": "a"|"b"|..., "content": string, "correctAnswer": boolean }] — TRUE_FALSE_GROUP only
-   - "explanation": string (optional)
-4. Do NOT wrap the object in an array. Do NOT use alternate keys (e.g. "items", "data", "answer").
-5. Do NOT freestyle a different schema — the downstream parser rejects unknown shapes and falls back to a weaker path.
+   - "subQuestions": [{ "label": "a"|"b"|"c"|"d", "content": string, "correctAnswer": boolean }] — TRUE_FALSE_GROUP only
+   - "explanation": string (optional; no citation markers)
+4. Do NOT freestyle a different schema — the downstream parser rejects unknown shapes and falls back to a weaker path.
 
-EXAMPLE of the exact JSON shape to return (illustrative content only):
+EXAMPLE (preferred wrapper + owner template item shape):
 {
   "questions": [
     {
       "type": "MULTIPLE_CHOICE",
-      "topic": "Phép nhân phân thức",
-      "content": "Tính $\\\\dfrac{1}{2} \\\\times \\\\dfrac{3}{4}$.",
-      "options": ["$\\\\dfrac{3}{8}$", "$\\\\dfrac{4}{6}$", "$\\\\dfrac{1}{4}$", "$\\\\dfrac{7}{8}$"],
-      "correctAnswer": 0
+      "topic": "Đa thức",
+      "points": 1,
+      "content": "Một đa thức hai biến bậc hai thu gọn có thể có tối đa bao nhiêu hạng tử khác 0?",
+      "options": ["3", "4", "5", "6"],
+      "explanation": "Các hạng tử có thể có là $x^2, y^2, xy, x, y$ và hằng số (tối đa 6 hạng tử).",
+      "correctAnswer": 3
     },
     {
       "type": "TRUE_FALSE_GROUP",
-      "topic": "Điều kiện xác định",
-      "content": "Cho biểu thức $\\\\dfrac{x}{x-1}$. Xét các phát biểu sau:",
+      "topic": "Biến đổi đa thức",
+      "points": 1,
+      "content": "Cho đa thức $A = x^4 - (x - y)(x + y)(x^2 + y^2) - y^4$. Xét tính đúng sai của các phát biểu sau:",
       "subQuestions": [
-        { "label": "a", "content": "Biểu thức xác định khi $x \\\\neq 1$.", "correctAnswer": true },
-        { "label": "b", "content": "Biểu thức xác định khi $x = 1$.", "correctAnswer": false }
+        { "label": "a", "content": "Đa thức A sau khi khai triển và thu gọn có bậc là 4.", "correctAnswer": false },
+        { "label": "b", "content": "Giá trị của đa thức A luôn bằng 0 với mọi x, y.", "correctAnswer": true },
+        { "label": "c", "content": "Giá trị của A phụ thuộc vào biến y nhưng không phụ thuộc vào x.", "correctAnswer": false },
+        { "label": "d", "content": "Đây là một đa thức không.", "correctAnswer": true }
       ]
     },
     {
       "type": "SHORT_ANSWER",
-      "topic": "Rút gọn biểu thức",
-      "content": "Rút gọn $\\\\dfrac{6}{9}$. Đáp số:",
-      "correctAnswer": "$\\\\dfrac{2}{3}$"
+      "topic": "Ứng dụng đa thức",
+      "points": 1,
+      "content": "Viết đa thức biểu thị diện tích phần còn lại của một miếng bìa hình vuông cạnh a sau khi cắt bỏ một hình tròn bán kính r (dùng $\\\\pi$).",
+      "explanation": "$S = a^2 - \\\\pi r^2$.",
+      "correctAnswer": "a^2-\\\\pir^2"
     }
   ]
 }
@@ -104,7 +115,11 @@ export function questionsJsonFromModelText(raw: string): { questions?: unknown }
   } catch {
     throw new Error(EMPTY_RESULT)
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+  // Owner template / common Gemini freestyle: bare question array
+  if (Array.isArray(parsed)) {
+    return { questions: parsed }
+  }
+  if (!parsed || typeof parsed !== 'object') {
     throw new Error(EMPTY_RESULT)
   }
   return parsed as { questions?: unknown }
