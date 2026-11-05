@@ -164,18 +164,6 @@ Auth hot paths need `LOADTEST_COOKIE` (browser Cookie header; never commit). Res
 | Không login được | Check Supabase URL + anon key trong `.env` |
 | `pnpm` không có | `npm install -g pnpm` |
 
----
-
-## Nộp USB / nộp BGK
-
-**Nên có trong USB:**
-
-- Toàn bộ source (trừ `node_modules`, `.next`; cài lại được)
-- File **`.env.example`** (mẫu)
-- File **`.env`** riêng (USB nộp BGK; **không public**)
-- **`README.md`** này
-
-**Không cần copy:** `node_modules/`, `.next/` (nặng; BGK chạy `pnpm install`).
 
 ---
 
