@@ -10,7 +10,56 @@ export interface VisionImage {
 
 const FIXED_FAILURE = 'Không thể phân tích ảnh đề'
 const EMPTY_RESULT = 'AI không trả về kết quả'
-const USER_TEXT = 'Extract all questions from these exam pages.'
+
+/**
+ * User-turn extract instructions. Schema MUST match VISION_SYSTEM_PROMPT /
+ * normalizeQuestion in app/actions/parse-quiz-file.ts — do not invent fields.
+ */
+export const USER_TEXT = `Extract ALL questions from these exam page images.
+
+STRICT OUTPUT RULES (non-negotiable):
+1. Return ONLY one JSON object. No markdown, no code fences, no commentary, no trailing text.
+2. Top-level shape MUST be exactly: {"questions":[...]}
+3. Every question MUST use only these fields (omit unused ones; do not invent others):
+   - "type": one of "MULTIPLE_CHOICE" | "TRUE_FALSE_GROUP" | "SHORT_ANSWER" | "ESSAY"
+   - "topic": string (2–4 word Vietnamese math sub-topic; required)
+   - "content": string (stem; use $...$ / $$...$$ for math)
+   - "options": string[4] — MULTIPLE_CHOICE only; strip "A."/"B."/"C."/"D." prefixes
+   - "correctAnswer": number 0–3 for MULTIPLE_CHOICE; string for SHORT_ANSWER
+   - "subQuestions": [{ "label": "a"|"b"|..., "content": string, "correctAnswer": boolean }] — TRUE_FALSE_GROUP only
+   - "explanation": string (optional)
+4. Do NOT wrap the object in an array. Do NOT use alternate keys (e.g. "items", "data", "answer").
+5. Do NOT freestyle a different schema — the downstream parser rejects unknown shapes and falls back to a weaker path.
+
+EXAMPLE of the exact JSON shape to return (illustrative content only):
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "topic": "Phép nhân phân thức",
+      "content": "Tính $\\\\dfrac{1}{2} \\\\times \\\\dfrac{3}{4}$.",
+      "options": ["$\\\\dfrac{3}{8}$", "$\\\\dfrac{4}{6}$", "$\\\\dfrac{1}{4}$", "$\\\\dfrac{7}{8}$"],
+      "correctAnswer": 0
+    },
+    {
+      "type": "TRUE_FALSE_GROUP",
+      "topic": "Điều kiện xác định",
+      "content": "Cho biểu thức $\\\\dfrac{x}{x-1}$. Xét các phát biểu sau:",
+      "subQuestions": [
+        { "label": "a", "content": "Biểu thức xác định khi $x \\\\neq 1$.", "correctAnswer": true },
+        { "label": "b", "content": "Biểu thức xác định khi $x = 1$.", "correctAnswer": false }
+      ]
+    },
+    {
+      "type": "SHORT_ANSWER",
+      "topic": "Rút gọn biểu thức",
+      "content": "Rút gọn $\\\\dfrac{6}{9}$. Đáp số:",
+      "correctAnswer": "$\\\\dfrac{2}{3}$"
+    }
+  ]
+}
+
+Now extract from the attached page image(s) using that SAME schema STRICTLY.`
 
 export function geminiVisionModel(): string {
   return process.env.GEMINI_MODEL || 'gemini-2.5-flash'

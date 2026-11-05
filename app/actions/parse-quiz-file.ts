@@ -38,6 +38,11 @@ function fileExt(name: string): string {
 
 const VISION_SYSTEM_PROMPT = `You are an expert OCR and Vietnamese math exam parser. You will receive images of exam pages. Extract ALL questions into a JSON object with the key "questions".
 
+STRICT COMPLIANCE (non-negotiable):
+- You MUST STRICTLY follow the output schema below. Soft compliance is not enough — freestyled or alternate JSON shapes are rejected by the parser and break the primary extract path.
+- Return ONLY the JSON object. No markdown fences, no prose, no alternate wrappers ("data", "items", "result", etc.).
+- Use ONLY the documented field names and types. Do NOT invent keys, rename fields, or change value types.
+
 READING RULES:
 - Read ALL visible text and mathematical expressions precisely.
 - Convert every formula, fraction, radical, exponent, or inequality you SEE into proper KaTeX/LaTeX: $inline$ or $$block$$.
@@ -74,7 +79,7 @@ TOPIC TAGGING (REQUIRED for every question):
 - Examples: "Phép nhân phân thức", "Điều kiện xác định", "Rút gọn biểu thức", "Phân thức nghịch đảo", "Quy đồng mẫu thức", "Phép cộng đa thức".
 - NEVER use the overall quiz title as the topic. Each question must have its own specific sub-topic.
 
-OUTPUT: valid JSON only, no markdown fences, matching:
+OUTPUT: STRICTLY valid JSON only, no markdown fences, matching this schema exactly:
 {
   "questions": [
     {

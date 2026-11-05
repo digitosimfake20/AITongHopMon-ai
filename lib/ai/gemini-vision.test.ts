@@ -4,7 +4,23 @@ import {
   extractQuestionsWithGemini,
   questionsJsonFromModelText,
   textFromGeminiBody,
+  USER_TEXT,
 } from '@/lib/ai/gemini-vision'
+
+describe('USER_TEXT', () => {
+  it('carries detailed extract rules, STRICT compliance, and a schema example', () => {
+    expect(USER_TEXT).toContain('STRICT')
+    expect(USER_TEXT).toContain('"questions"')
+    expect(USER_TEXT).toContain('MULTIPLE_CHOICE')
+    expect(USER_TEXT).toContain('TRUE_FALSE_GROUP')
+    expect(USER_TEXT).toContain('SHORT_ANSWER')
+    expect(USER_TEXT).toContain('correctAnswer')
+    expect(USER_TEXT).toContain('subQuestions')
+    expect(USER_TEXT).toMatch(/EXAMPLE/i)
+    // Must not freestyle a competing top-level shape
+    expect(USER_TEXT).toContain('Do NOT freestyle')
+  })
+})
 
 describe('buildGeminiVisionRequest', () => {
   it('sends one image part per page and asks for JSON', () => {
@@ -20,8 +36,11 @@ describe('buildGeminiVisionRequest', () => {
     expect(body.contents[0]?.parts).toEqual([
       { inline_data: { mime_type: 'image/png', data: 'aaa' } },
       { inline_data: { mime_type: 'image/jpeg', data: 'bbb' } },
-      { text: 'Extract all questions from these exam pages.' },
+      { text: USER_TEXT },
     ])
+    const userPart = body.contents[0]?.parts.at(-1) as { text: string }
+    expect(userPart.text.length).toBeGreaterThan(200)
+    expect(userPart.text).toContain('MULTIPLE_CHOICE')
   })
 })
 
@@ -74,5 +93,8 @@ describe('extractQuestionsWithGemini', () => {
     expect(init.headers).toMatchObject({ 'x-goog-api-key': 'test-key' })
     const sent = JSON.parse(String(init.body)) as { contents: { parts: unknown[] }[] }
     expect(sent.contents[0]?.parts).toHaveLength(2)
+    const userText = (sent.contents[0]?.parts[1] as { text: string }).text
+    expect(userText).toBe(USER_TEXT)
+    expect(userText).toContain('STRICT')
   })
 })
