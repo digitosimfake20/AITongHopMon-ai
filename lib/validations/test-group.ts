@@ -29,6 +29,7 @@ export const assignAdaptiveGroupSchema = z
     passScoreThreshold: z.coerce.number().min(0).max(10).default(8.0),
     lowScoreThreshold: z.coerce.number().min(0).max(10).default(5.0),
     allowReview: z.boolean().default(true),
+    monitoringEnabled: z.boolean().default(false),
   })
   .refine((d) => d.endTime > d.startTime, {
     message: 'Deadline phải sau thời gian mở đề',

@@ -55,10 +55,23 @@ export async function submitQuizAction(
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
   if (user.role !== 'student') return { success: false, error: 'Chỉ học sinh mới được nộp bài' }
 
-  const [test, prevAttempts] = await Promise.all([
+  const [test, inProgress, completedAttempts] = await Promise.all([
     prisma.test.findUnique({ where: { id: input.testId } }),
+    prisma.submission.findFirst({
+      where: {
+        testId: input.testId,
+        studentId: user.id,
+        status: 'IN_PROGRESS',
+      },
+      orderBy: { attemptNumber: 'desc' },
+      select: { id: true, attemptNumber: true },
+    }),
     prisma.submission.count({
-      where: { testId: input.testId, studentId: user.id },
+      where: {
+        testId: input.testId,
+        studentId: user.id,
+        status: { not: 'IN_PROGRESS' },
+      },
     }),
   ])
 
@@ -85,7 +98,9 @@ export async function submitQuizAction(
   }
   const graded = gradeTestAnswers(gradedQuestions, input.answers)
 
-  const attemptNumber = prevAttempts + 1
+  // Monitored takes create an IN_PROGRESS stub first — complete that row so
+  // consent/flags stay attached to the graded submission teachers review.
+  const attemptNumber = inProgress?.attemptNumber ?? completedAttempts + 1
   const isPractice = isPracticeTestTitle(test.title)
 
   let totalScore = 0
@@ -128,19 +143,32 @@ export async function submitQuizAction(
     timeSpentSeconds: questionSeconds(row.timeSpentSeconds),
   }))
 
-  const submission = await prisma.submission.create({
-    data: {
-      testId: input.testId,
-      studentId: user.id,
-      attemptNumber,
-      score: finalScore,
-      totalQuestions: questionIds.length,
-      correctCount,
-      timeSpentSeconds: elapsed.seconds,
-      status: 'COMPLETED',
-      details: { createMany: { data: details } },
-    },
-  })
+  const gradedFields = {
+    score: finalScore,
+    totalQuestions: questionIds.length,
+    correctCount,
+    timeSpentSeconds: elapsed.seconds,
+    status: 'COMPLETED' as const,
+    submittedAt: new Date(),
+  }
+
+  const submission = inProgress
+    ? await prisma.submission.update({
+        where: { id: inProgress.id },
+        data: {
+          ...gradedFields,
+          details: { createMany: { data: details } },
+        },
+      })
+    : await prisma.submission.create({
+        data: {
+          testId: input.testId,
+          studentId: user.id,
+          attemptNumber,
+          ...gradedFields,
+          details: { createMany: { data: details } },
+        },
+      })
 
   const pipelineDetails: SubmissionDetailForPipeline[] = graded.map((row) => ({
     questionId: row.questionId,

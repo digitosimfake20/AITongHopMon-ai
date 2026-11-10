@@ -223,6 +223,7 @@ export async function assignAdaptiveGroupAction(
     passScoreThreshold,
     lowScoreThreshold,
     allowReview,
+    monitoringEnabled,
   } = parsed.data
 
   const classroom = await prisma.classroom.findFirst({
@@ -271,6 +272,7 @@ export async function assignAdaptiveGroupAction(
           endTime,
           maxAttempts: 2,
           allowReview,
+          monitoringEnabled,
           passScoreThreshold,
           lowScoreThreshold,
         },

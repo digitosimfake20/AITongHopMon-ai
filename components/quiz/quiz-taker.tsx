@@ -17,7 +17,11 @@ import {
   startActiveQuizSession,
 } from '@/lib/quiz/active-quiz-session'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
-import { getMonitoredAttemptId } from '@/components/quiz/anticheat-attempt-session'
+import {
+  clearMonitoredSession,
+  getMonitoredAttemptId,
+  getMonitoredConsentOutcome,
+} from '@/components/quiz/anticheat-attempt-session'
 import { cn } from '@/lib/utils'
 
 const VISIBILITY_FLAG_DEBOUNCE_MS = 5_000
@@ -453,6 +457,8 @@ export function QuizTaker({ data }: QuizTakerProps) {
   // Phase 1: polite tab-leave hints for monitored attempts (no auto-fail / score void).
   useEffect(() => {
     if (!data.monitoringEnabled || !startedAt || isSubmitting) return
+    // Refused / missing consent: take the quiz unproctored — no hint flags.
+    if (getMonitoredConsentOutcome(data.testId) !== 'granted') return
 
     let lastRecordedAt = 0
     let recording = false
@@ -542,6 +548,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
 
       if (result.success && result.data) {
         clearActiveQuizSession(data.testId)
+        clearMonitoredSession(data.testId)
         window.location.assign(`/quiz/result/${result.data.submissionId}`)
         return
       }
