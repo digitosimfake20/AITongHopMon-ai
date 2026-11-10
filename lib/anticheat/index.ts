@@ -1,8 +1,8 @@
 /**
- * Portable client-side anticheat math (Phase 0).
+ * Client-side anticheat: Phase 0 math + Phase 2 capture helpers.
  *
- * Pure TypeScript: pHash + HSV histogram + trigger evaluation.
- * No UI, Prisma, or getDisplayMedia.
+ * Math (pHash / HSV / triggers) stays portable. Capture helpers accept injected
+ * getDisplayMedia / grabFrame so unit tests never open a real picker.
  */
 
 export {
@@ -44,3 +44,34 @@ export {
   type FrameObservation,
   type TriggerEvaluation,
 } from './triggers'
+
+export {
+  MONITOR_REQUIRED,
+  MONITOR_REQUIRED_MESSAGE,
+  readDisplaySurface,
+  stopStream,
+  assertWholeMonitor,
+  requestMonitorShare,
+  type GetDisplayMediaFn,
+  type AssertMonitorResult,
+} from './display-surface'
+
+export {
+  CAPTURE_WIDTH,
+  CAPTURE_HEIGHT,
+  CAPTURE_INTERVAL_MS,
+  HASH_WINDOW_MAX,
+  HASH_HEARTBEAT_MS,
+  MONITOR_CAPTURE_CONSTRAINTS,
+  phashToHex,
+  toServerTrigger,
+  openMonitorCapture,
+  createVideoGrabber,
+  createCaptureLoop,
+  type ServerDecidingTrigger,
+  type HashWindowSample,
+  type CaptureFrame,
+  type CaptureReportResult,
+  type ReportCaptureFlagFn,
+  type CaptureLoopOpts,
+} from './capture-loop'

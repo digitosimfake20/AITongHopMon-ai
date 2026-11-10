@@ -22,6 +22,10 @@ import {
   getMonitoredAttemptId,
   getMonitoredConsentOutcome,
 } from '@/components/quiz/anticheat-attempt-session'
+import {
+  startAnticheatCapture,
+  type AnticheatCaptureHandle,
+} from '@/components/quiz/anticheat-capture'
 import { cn } from '@/lib/utils'
 
 const VISIBILITY_FLAG_DEBOUNCE_MS = 5_000
@@ -424,6 +428,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const submitLock = useRef(false)
+  const captureRef = useRef<AnticheatCaptureHandle | null>(null)
 
   const interactionStart = useRef<Record<string, number>>({})
   const interactionEnd = useRef<Record<string, number>>({})
@@ -513,6 +518,27 @@ export function QuizTaker({ data }: QuizTakerProps) {
     }
   }, [data.monitoringEnabled, data.testId, startedAt, isSubmitting])
 
+  // Phase 2: whole-monitor capture loop — only when consent was granted.
+  useEffect(() => {
+    if (!data.monitoringEnabled || !startedAt || isSubmitting) return
+    if (getMonitoredConsentOutcome(data.testId) !== 'granted') return
+
+    let cancelled = false
+    void startAnticheatCapture({ testId: data.testId }).then((handle) => {
+      if (cancelled) {
+        handle?.dispose()
+        return
+      }
+      captureRef.current = handle
+    })
+
+    return () => {
+      cancelled = true
+      captureRef.current?.dispose()
+      captureRef.current = null
+    }
+  }, [data.monitoringEnabled, data.testId, startedAt, isSubmitting])
+
   const doSubmit = useCallback(async () => {
     if (submitLock.current) return
     submitLock.current = true
@@ -547,6 +573,8 @@ export function QuizTaker({ data }: QuizTakerProps) {
       })
 
       if (result.success && result.data) {
+        captureRef.current?.dispose()
+        captureRef.current = null
         clearActiveQuizSession(data.testId)
         clearMonitoredSession(data.testId)
         window.location.assign(`/quiz/result/${result.data.submissionId}`)
