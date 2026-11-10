@@ -31,6 +31,8 @@ function QuizTakeInner({ data }: QuizTakeClientProps) {
     questionCount: data.questions.length,
     topic: data.topic,
     isPersonalPractice: data.isPersonalPractice,
+    monitoringEnabled: data.monitoringEnabled,
+    classTestId: data.classTestId,
   }
 
   return (

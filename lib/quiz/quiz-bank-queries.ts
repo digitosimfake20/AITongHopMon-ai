@@ -395,6 +395,14 @@ export interface QuizTakingData {
   questions: QuizTakingQuestion[]
   topic?: string
   isPersonalPractice?: boolean
+  /** Assigned ClassTest id when this take is classroom-monitored capable. */
+  classTestId?: string
+  /**
+   * From ClassTest.monitoringEnabled when present.
+   * ClassTest missing (practice) → false.
+   * TODO(anticheat-schema): field lands with schema worker; until then stays false.
+   */
+  monitoringEnabled: boolean
   adaptiveContext?: {
     classTestId: string
     round: 1 | 2
@@ -540,6 +548,13 @@ export async function getQuizForTaking(
     ? test.title.split('—').pop()?.trim()
     : undefined
 
+  // Prefer ClassTest.monitoringEnabled once schema migrates it; practice (no ClassTest) → false.
+  const monitoringEnabled = classTest
+    ? Boolean(
+        (classTest as { monitoringEnabled?: boolean | null }).monitoringEnabled,
+      )
+    : false
+
   return {
     testId: test.id,
     title: classTest?.isAdaptive
@@ -550,6 +565,8 @@ export async function getQuizForTaking(
     questions: orderedQuestions,
     topic: firstTopic ?? topicFromTitle ?? classTest?.testGroup?.title,
     isPersonalPractice: test.title.startsWith('Luyện tập cá nhân hóa'),
+    classTestId: classTest?.id,
+    monitoringEnabled,
     adaptiveContext,
   }
 }
