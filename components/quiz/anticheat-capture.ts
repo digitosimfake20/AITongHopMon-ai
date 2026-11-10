@@ -6,7 +6,10 @@
  */
 
 import { toast } from 'sonner'
-import { uploadAnticheatEvidenceAction } from '@/app/actions/anticheat'
+import {
+  recordTechnicalIssueUnproctoredAction,
+  uploadAnticheatEvidenceAction,
+} from '@/app/actions/anticheat'
 import {
   MONITOR_REQUIRED_MESSAGE,
   createCaptureLoop,
@@ -48,8 +51,15 @@ export async function startAnticheatCapture(opts: {
   })
 
   if (!share.ok) {
-    toast.error(share.message || MONITOR_REQUIRED_MESSAGE, {
-      description: 'Điểm số không bị ảnh hưởng tự động.',
+    // Continue unproctored after recording technical_issue — no score void.
+    try {
+      await recordTechnicalIssueUnproctoredAction({ attemptId })
+    } catch {
+      // Non-blocking: quiz continues even if reason write fails.
+    }
+    toast.message(share.message || MONITOR_REQUIRED_MESSAGE, {
+      description:
+        'Bạn vẫn có thể làm bài không giám sát màn hình. Điểm số không bị hủy tự động.',
       duration: 8_000,
     })
     return null

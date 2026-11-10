@@ -160,6 +160,16 @@ export function QuizPreTestGate({ data, children }: QuizPreTestGateProps) {
               </div>
             </div>
 
+            <p
+              className="rounded-lg border border-sky-200/80 bg-white/50 px-3 py-2 text-[11px] leading-relaxed text-sky-900/90 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100/90"
+              role="note"
+            >
+              Giám sát màn hình hoạt động tốt nhất trên trình duyệt Chromium (Chrome, Edge, …).
+              Firefox và Safari có thể hạn chế chia sẻ toàn màn hình (
+              <code className="text-[10px]">getDisplayMedia</code>
+              ). Ghi chú mang tính tham khảo — không chặn bạn bắt đầu làm bài.
+            </p>
+
             <div className="flex flex-col gap-2">
               <Button
                 className="w-full"

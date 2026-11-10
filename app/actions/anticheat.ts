@@ -5,6 +5,7 @@ import type {
   AnticheatConsentOutcome,
   AnticheatReviewDecision,
   AnticheatTrigger,
+  AnticheatUnproctoredReason,
 } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
@@ -38,6 +39,8 @@ export type ConsentDecision = 'granted' | 'refused'
 export type FlagReviewDecision = 'confirmed' | 'dismissed'
 export type FlagReviewStatus = AnticheatReviewDecision
 export type FlagTrigger = AnticheatTrigger
+/** Teacher-only reasons set from the flags panel (never changes score). */
+export type TeacherUnproctoredReason = 'accommodation' | 'technical_issue'
 
 export interface AnticheatFlagItem {
   id: string
@@ -47,6 +50,17 @@ export interface AnticheatFlagItem {
   reviewStatus: FlagReviewStatus
   clientAt?: string
 }
+
+export interface UnproctoredAttemptInfo {
+  reason: AnticheatUnproctoredReason | null
+  at: string | null
+  by: string | null
+}
+
+const TEACHER_UNPROCTORED_REASONS = new Set<TeacherUnproctoredReason>([
+  'accommodation',
+  'technical_issue',
+])
 
 function resolveSubmissionId(input: {
   submissionId?: string
@@ -614,16 +628,28 @@ export async function cleanupAnticheatEvidenceAction(input?: {
 }
 
 // ---------------------------------------------------------------------------
-// 4. List flags for a submission
+// 4. List flags for a submission (+ unproctored status for teacher panel)
 // ---------------------------------------------------------------------------
 
 export async function listFlagsForSubmissionAction(input: {
   submissionId: string
-}): Promise<ActionResult<{ flags: AnticheatFlagItem[] }>> {
+}): Promise<
+  ActionResult<{ flags: AnticheatFlagItem[]; unproctored: UnproctoredAttemptInfo }>
+> {
   const user = await getSessionUser()
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
 
-  const submission = await loadSubmissionAccess(input.submissionId)
+  const submission = await prisma.submission.findUnique({
+    where: { id: input.submissionId },
+    select: {
+      id: true,
+      studentId: true,
+      unproctoredAt: true,
+      unproctoredReason: true,
+      unproctoredBy: true,
+      test: { select: { class: { select: { teacherId: true } } } },
+    },
+  })
   if (!submission) return { success: false, error: 'Không tìm thấy bài làm' }
   if (!isOwnerOrTeacherOrAdmin(user, submission)) {
     return { success: false, error: 'Không có quyền' }
@@ -663,7 +689,121 @@ export async function listFlagsForSubmissionAction(input: {
     }
   })
 
-  return { success: true, data: { flags: items } }
+  return {
+    success: true,
+    data: {
+      flags: items,
+      unproctored: {
+        reason: submission.unproctoredReason,
+        at: submission.unproctoredAt?.toISOString() ?? null,
+        by: submission.unproctoredBy,
+      },
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4b. Teacher sets unproctored reason (accommodation / technical_issue)
+// ---------------------------------------------------------------------------
+
+/**
+ * Teacher/admin of the class may mark an attempt unproctored for accommodation
+ * or technical issue. Never mutates score / grading fields.
+ */
+export async function setUnproctoredReasonAction(input: {
+  submissionId: string
+  reason: TeacherUnproctoredReason
+}): Promise<
+  ActionResult<{ reason: TeacherUnproctoredReason; unproctoredAt: string }>
+> {
+  const user = await getSessionUser()
+  if (!user) return { success: false, error: 'Chưa đăng nhập' }
+  if (user.role !== 'teacher' && user.role !== 'admin') {
+    return { success: false, error: 'Chỉ giáo viên/admin được cập nhật lý do' }
+  }
+  if (!TEACHER_UNPROCTORED_REASONS.has(input.reason)) {
+    return { success: false, error: 'Lý do không hợp lệ' }
+  }
+
+  const submission = await loadSubmissionAccess(input.submissionId)
+  if (!submission) return { success: false, error: 'Không tìm thấy bài làm' }
+  if (!isTeacherOrAdminOfClass(user, submission.test.class.teacherId)) {
+    return { success: false, error: 'Không có quyền' }
+  }
+
+  const now = new Date()
+  // Intentionally does not update Submission.score or any grade fields.
+  await prisma.submission.update({
+    where: { id: input.submissionId },
+    data: {
+      unproctoredAt: now,
+      unproctoredReason: input.reason,
+      unproctoredBy: user.id,
+    },
+  })
+
+  return {
+    success: true,
+    data: { reason: input.reason, unproctoredAt: now.toISOString() },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4c. Student records technical_issue after monitor share failure
+// ---------------------------------------------------------------------------
+
+/**
+ * Student continues the quiz unproctored after getDisplayMedia / monitor_required
+ * failure. Records reason only — never voids score.
+ */
+export async function recordTechnicalIssueUnproctoredAction(input: {
+  submissionId?: string
+  attemptId?: string
+}): Promise<ActionResult<{ recorded: boolean }>> {
+  const user = await getSessionUser()
+  if (!user) return { success: false, error: 'Chưa đăng nhập' }
+  if (user.role !== 'student') {
+    return { success: false, error: 'Chỉ học sinh mới ghi nhận sự cố kỹ thuật' }
+  }
+
+  const submissionId = resolveSubmissionId(input)
+  if (!submissionId) return { success: false, error: 'Thiếu phiên giám sát' }
+
+  const submission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+    select: {
+      id: true,
+      studentId: true,
+      unproctoredReason: true,
+    },
+  })
+  if (!submission) return { success: false, error: 'Không tìm thấy bài làm' }
+  if (submission.studentId !== user.id) {
+    return { success: false, error: 'Không có quyền' }
+  }
+
+  // Do not overwrite teacher accommodation / refused_monitoring / paper_fallback.
+  if (
+    submission.unproctoredReason &&
+    submission.unproctoredReason !== 'technical_issue'
+  ) {
+    return { success: true, data: { recorded: false } }
+  }
+
+  if (submission.unproctoredReason === 'technical_issue') {
+    return { success: true, data: { recorded: true } }
+  }
+
+  await prisma.submission.update({
+    where: { id: submissionId },
+    data: {
+      unproctoredAt: new Date(),
+      unproctoredReason: 'technical_issue',
+      unproctoredBy: user.id,
+    },
+  })
+
+  return { success: true, data: { recorded: true } }
 }
 
 // ---------------------------------------------------------------------------
