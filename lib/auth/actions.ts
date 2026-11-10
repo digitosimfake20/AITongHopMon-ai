@@ -1,7 +1,7 @@
 'use server'
 
-import type { UserRole } from '@prisma/client'
 import { redirect } from 'next/navigation'
+import { roleForNewUser } from '@/lib/auth/role-for-new-user'
 import { getPostAuthPath, syncUserProfile } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
 import prisma from '@/lib/prisma'
@@ -42,18 +42,19 @@ export async function signUpAction(
     return { success: false, error: 'Không thể tạo tài khoản' }
   }
 
+  const createRole = roleForNewUser(role)
   await syncUserProfile({
     id: data.user.id,
     email,
     fullName,
-    role: role as UserRole,
+    role: createRole,
   })
 
   if (!data.session) {
     return { success: true, data: { needsEmailConfirmation: true } }
   }
 
-  redirect(await getPostAuthPath(data.user.id, role as UserRole))
+  redirect(await getPostAuthPath(data.user.id, createRole))
 }
 
 export async function signInAction(formData: FormData): Promise<ActionResult> {
@@ -78,9 +79,7 @@ export async function signInAction(formData: FormData): Promise<ActionResult> {
   }
 
   const dbUser = await prisma.user.findUnique({ where: { id: data.user.id } })
-  const role =
-    dbUser?.role ??
-    ((data.user.user_metadata?.role as UserRole | undefined) ?? 'student')
+  const role = dbUser?.role ?? roleForNewUser(data.user.user_metadata?.role)
   const fullName =
     dbUser?.fullName ??
     (data.user.user_metadata?.full_name as string | undefined) ??

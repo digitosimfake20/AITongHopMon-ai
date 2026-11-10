@@ -9,7 +9,7 @@ import { findClassTestByTestId } from '@/lib/adaptive/find-class-test'
 import {
   recordAdaptiveRound1Submit,
   recordAdaptiveRound2Submit,
-} from '@/app/actions/test-group'
+} from '@/lib/adaptive/record-adaptive-rounds'
 import { runPostSubmissionAIPipeline } from '@/lib/ai/pipeline'
 import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
@@ -20,6 +20,10 @@ import { gradeTestAnswers, type GradedQuestion } from '@/lib/quiz/grade-submissi
 import { maxPointsFromQuestions, scoreOutOfTen } from '@/lib/quiz/score-out-of-ten'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
 import { assessQuestionTiming } from '@/lib/quiz/question-timing'
+import {
+  authorizeQuizTake,
+  quizTakeDeniedMessage,
+} from '@/lib/quiz/quiz-take-authz'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,8 +59,10 @@ export async function submitQuizAction(
   if (!user) return { success: false, error: 'Chưa đăng nhập' }
   if (user.role !== 'student') return { success: false, error: 'Chỉ học sinh mới được nộp bài' }
 
-  const [test, inProgress, completedAttempts] = await Promise.all([
-    prisma.test.findUnique({ where: { id: input.testId } }),
+  const test = await prisma.test.findUnique({ where: { id: input.testId } })
+  if (!test) return { success: false, error: 'Không tìm thấy đề kiểm tra' }
+
+  const [inProgress, completedAttempts, membership, classTest] = await Promise.all([
     prisma.submission.findFirst({
       where: {
         testId: input.testId,
@@ -73,9 +79,47 @@ export async function submitQuizAction(
         status: { not: 'IN_PROGRESS' },
       },
     }),
+    prisma.classMember.findFirst({
+      where: { classId: test.classId, studentId: user.id },
+      select: { id: true },
+    }),
+    prisma.classTest.findFirst({
+      where: {
+        OR: [
+          { testId: input.testId },
+          { easyTestId: input.testId },
+          { mediumTestId: input.testId },
+          { hardTestId: input.testId },
+        ],
+      },
+      include: {
+        adaptiveSessions: { where: { studentId: user.id }, take: 1 },
+      },
+    }),
   ])
 
-  if (!test) return { success: false, error: 'Không tìm thấy đề kiểm tra' }
+  const gate = authorizeQuizTake({
+    hasMembership: Boolean(membership),
+    testId: input.testId,
+    previousCompletedAttempts: completedAttempts,
+    classTest: classTest
+      ? {
+          id: classTest.id,
+          startTime: classTest.startTime,
+          endTime: classTest.endTime,
+          isAdaptive: classTest.isAdaptive,
+          testId: classTest.testId,
+          easyTestId: classTest.easyTestId,
+          mediumTestId: classTest.mediumTestId,
+          hardTestId: classTest.hardTestId,
+          maxAttempts: classTest.maxAttempts,
+          session: classTest.adaptiveSessions[0] ?? null,
+        }
+      : null,
+  })
+  if (!gate.ok) {
+    return { success: false, error: quizTakeDeniedMessage(gate.reason) }
+  }
 
   const questionIds = test.questionIds as string[]
   const questions = await prisma.question.findMany({

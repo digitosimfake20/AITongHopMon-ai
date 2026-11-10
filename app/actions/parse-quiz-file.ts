@@ -8,6 +8,7 @@ import { requireTeacher } from '@/lib/auth/require-teacher'
 import { getSessionUser } from '@/lib/auth/session'
 import { extractQuestionsWithGemini } from '@/lib/ai/gemini-vision'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
+import { assertDocxZipBudget } from '@/lib/quiz/docx-zip-limits'
 import { fitPdfPage } from '@/lib/quiz/pdf-viewport'
 import type { ExtractedQuestion, ExtractedSubQuestion, QuestionType } from '@/lib/quiz/types'
 import { normalizeLatexDelimiters } from '@/lib/utils/katex-formatter'
@@ -18,7 +19,7 @@ import { normalizeLatexDelimiters } from '@/lib/utils/katex-formatter'
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024
 const MAX_TEXT_CHARS = 18_000
-const MAX_VISION_PAGES = 8    // max PDF pages to render per call
+const MAX_VISION_PAGES = 8    // max PDF pages to render / text-fallback extract
 const MAX_RENDER_EDGE = 2048
 const VALID_TYPES: QuestionType[] = ['MULTIPLE_CHOICE', 'TRUE_FALSE_GROUP', 'SHORT_ANSWER', 'ESSAY']
 const EQUATION_PLACEHOLDER = '[EQUATION]'
@@ -309,9 +310,27 @@ function dispatchOmml(tagName: string, inner: string): string {
   }
 }
 
+function zipEntryUncompressedSize(file: JSZip.JSZipObject): number {
+  const data = (file as JSZip.JSZipObject & {
+    _data?: { uncompressedSize?: number }
+  })._data
+  const size = data?.uncompressedSize
+  return typeof size === 'number' && Number.isFinite(size) ? size : 0
+}
+
 async function convertOmmlInDocx(buffer: Buffer): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(buffer)
+  const budgetError = assertDocxZipBudget(
+    Object.values(zip.files).map((file) => ({
+      dir: file.dir,
+      uncompressedSize: zipEntryUncompressedSize(file),
+    })),
+  )
+  if (budgetError) {
+    throw new Error('Tệp DOCX vượt giới hạn giải nén an toàn')
+  }
+
   try {
-    const zip = await JSZip.loadAsync(buffer)
     const docXmlFile = zip.file('word/document.xml')
     if (!docXmlFile) return buffer
     const xml = await docXmlFile.async('string')
@@ -332,7 +351,10 @@ async function convertOmmlInDocx(buffer: Buffer): Promise<Buffer> {
     if (patched === xml) return buffer
     zip.file('word/document.xml', patched)
     return await zip.generateAsync({ type: 'nodebuffer' })
-  } catch { return buffer }
+  } catch {
+    // OMML rewrite failed — fall back to original bytes (still within zip budget).
+    return buffer
+  }
 }
 
 function cleanExtractedHtml(html: string): string {
@@ -361,7 +383,8 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const parser = new PDFParse({ data: buffer })
   try {
-    const result = await parser.getText()
+    // Match vision page budget so text fallback cannot expand unbounded PDFs.
+    const result = await parser.getText({ first: MAX_VISION_PAGES })
     return result.text
   } finally {
     await parser.destroy()

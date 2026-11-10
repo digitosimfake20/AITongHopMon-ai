@@ -8,7 +8,7 @@ import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
 import prisma, { prismaDirect } from '@/lib/prisma'
 import { fetchTestGroupSummaries } from '@/lib/test-bank/queries'
-import { difficultyLabel, recommendRound2Difficulty } from '@/lib/adaptive/adaptive-logic'
+import { difficultyLabel } from '@/lib/adaptive/adaptive-logic'
 import { explainAdaptiveRound2Decision } from '@/lib/adaptive/adaptive-round2-decision'
 import { assessQuestionTiming, type QuestionTimingQuality } from '@/lib/quiz/question-timing'
 import {
@@ -103,7 +103,7 @@ export async function publishTestGroupAction(
 ): Promise<ActionResult<{ id: string }>> {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'teacher') {
+  if (user.role !== 'admin') {
     return { success: false, error: 'Chỉ Admin mới có thể đăng cụm đề' }
   }
 
@@ -489,8 +489,8 @@ export async function getTestGroupForEditAction(
 ): Promise<ActionResult<TestGroupEditData>> {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'teacher') {
-    return { success: false, error: 'Không có quyền' }
+  if (user.role !== 'admin') {
+    return { success: false, error: 'Chỉ Admin mới có thể sửa cụm đề' }
   }
 
   const group = await prisma.testGroup.findUnique({
@@ -567,7 +567,7 @@ export async function updateTestGroupAction(
 ): Promise<ActionResult<{ id: string }>> {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'teacher') {
+  if (user.role !== 'admin') {
     return { success: false, error: 'Chỉ Admin mới có thể sửa cụm đề' }
   }
 
@@ -665,8 +665,8 @@ export async function updateTestGroupAction(
 export async function deleteTestGroupAction(id: string): Promise<ActionResult> {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'teacher') {
-    return { success: false, error: 'Không có quyền' }
+  if (user.role !== 'admin') {
+    return { success: false, error: 'Chỉ Admin mới có thể xóa cụm đề' }
   }
 
   const assigned = await prisma.classTest.count({ where: { testGroupId: id } })
@@ -682,53 +682,4 @@ export async function deleteTestGroupAction(id: string): Promise<ActionResult> {
   revalidatePath('/admin/test-bank')
   revalidatePath('/teacher/test-bank')
   return { success: true }
-}
-
-// ---------------------------------------------------------------------------
-// After round-1 submit: upsert adaptive session with round-2 recommendation
-// ---------------------------------------------------------------------------
-
-export async function recordAdaptiveRound1Submit(
-  classTestId: string,
-  studentId: string,
-  submissionId: string,
-  round1Score: number,
-  passScoreThreshold: number,
-  easyTestId: string,
-  hardTestId: string,
-  timing?: import('@/lib/adaptive/adaptive-round2-decision').Round1TimingInput,
-): Promise<void> {
-  const round2Difficulty = recommendRound2Difficulty(
-    round1Score,
-    passScoreThreshold,
-    timing,
-  )
-  const round2TestId = round2Difficulty === 'HARD' ? hardTestId : easyTestId
-  
-  await prisma.adaptiveStudentSession.upsert({
-    where: { classTestId_studentId: { classTestId, studentId } },
-    create: {
-      classTestId,
-      studentId,
-      round1SubmissionId: submissionId,
-      round2Difficulty,
-      round2TestId,
-    },
-    update: {
-      round1SubmissionId: submissionId,
-      round2Difficulty,
-      round2TestId,
-    },
-  })
-}
-
-export async function recordAdaptiveRound2Submit(
-  classTestId: string,
-  studentId: string,
-  submissionId: string,
-): Promise<void> {
-  await prisma.adaptiveStudentSession.update({
-    where: { classTestId_studentId: { classTestId, studentId } },
-    data: { round2SubmissionId: submissionId },
-  })
 }

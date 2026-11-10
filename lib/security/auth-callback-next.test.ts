@@ -40,9 +40,21 @@ describe('sanitizeAuthCallbackNext', () => {
     )
   })
 
+  it('rejects userinfo and encoded open-redirect breakouts', () => {
+    expect(sanitizeAuthCallbackNext('@evil.example', ORIGIN)).toBe('/onboarding')
+    expect(sanitizeAuthCallbackNext('/@evil.example', ORIGIN)).toBe('/onboarding')
+    expect(sanitizeAuthCallbackNext('/%40evil.example', ORIGIN)).toBe(
+      '/onboarding',
+    )
+    expect(sanitizeAuthCallbackNext('/%2f%2fevil.example', ORIGIN)).toBe(
+      '/onboarding',
+    )
+  })
+
   it('still allowlists relative paths when origin is omitted', () => {
     expect(sanitizeAuthCallbackNext('/onboarding')).toBe('/onboarding')
     expect(sanitizeAuthCallbackNext('//evil.example')).toBe('/onboarding')
     expect(sanitizeAuthCallbackNext('https://evil.example')).toBe('/onboarding')
+    expect(sanitizeAuthCallbackNext('@evil.example')).toBe('/onboarding')
   })
 })

@@ -8,7 +8,7 @@ import { joinClassAction } from '@/lib/class/actions'
 import { normalizeClassCode } from '@/lib/class/code'
 import { getRosterByCodeAction } from '@/app/actions/roster'
 import { NamePicker } from '@/components/student/name-picker'
-import type { RosterEntryPublic } from '@/app/actions/roster'
+import type { RosterJoinEntry } from '@/app/actions/roster'
 import { Loader2 } from 'lucide-react'
 
 interface JoinClassFormProps {
@@ -17,9 +17,9 @@ interface JoinClassFormProps {
 
 type Step =
   | { type: 'code' }
-  | { type: 'name-picker'; classId: string; className: string; entries: RosterEntryPublic[] }
+  | { type: 'name-picker'; classId: string; className: string; entries: RosterJoinEntry[] }
 
-export function JoinClassForm({ currentUserId }: JoinClassFormProps) {
+export function JoinClassForm({ currentUserId: _currentUserId }: JoinClassFormProps) {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [step, setStep] = useState<Step>({ type: 'code' })
@@ -75,7 +75,6 @@ export function JoinClassForm({ currentUserId }: JoinClassFormProps) {
           classId={step.classId}
           className={step.className}
           entries={step.entries}
-          currentUserId={currentUserId}
         />
       </div>
     )

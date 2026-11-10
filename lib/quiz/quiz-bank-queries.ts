@@ -3,6 +3,7 @@ import {
   computeAdaptiveProgress,
   type AdaptiveProgress,
 } from '@/lib/adaptive/adaptive-logic'
+import { authorizeQuizTake } from '@/lib/quiz/quiz-take-authz'
 
 // ---------------------------------------------------------------------------
 // Quiz Bank (student view)
@@ -484,48 +485,27 @@ export async function getQuizForTaking(
     }),
   ])
 
-  if (!membership) return null
-
-  let adaptiveContext: QuizTakingData['adaptiveContext'] | undefined
-
-  if (classTest) {
-    const now = new Date()
-    if (now < classTest.startTime || now > classTest.endTime) return null
-
-    if (classTest.isAdaptive) {
-      const session = classTest.adaptiveSessions[0] ?? null
-      const isMedium = testId === classTest.mediumTestId
-      const isRound2 =
-        testId === classTest.easyTestId || testId === classTest.hardTestId
-
-      if (isMedium) {
-        if (session?.round1SubmissionId) return null
-        adaptiveContext = {
-          classTestId: classTest.id,
-          round: 1,
-          roundLabel: 'Lượt 1 — Trung bình',
+  const gate = authorizeQuizTake({
+    hasMembership: Boolean(membership),
+    testId,
+    previousCompletedAttempts: prevSubmissions,
+    classTest: classTest
+      ? {
+          id: classTest.id,
+          startTime: classTest.startTime,
+          endTime: classTest.endTime,
+          isAdaptive: classTest.isAdaptive,
+          testId: classTest.testId,
+          easyTestId: classTest.easyTestId,
+          mediumTestId: classTest.mediumTestId,
+          hardTestId: classTest.hardTestId,
+          maxAttempts: classTest.maxAttempts,
+          session: classTest.adaptiveSessions[0] ?? null,
         }
-      } else if (isRound2) {
-        if (!session?.round1SubmissionId) return null
-        if (session.round2TestId !== testId) return null
-        if (session.round2SubmissionId) return null
-        adaptiveContext = {
-          classTestId: classTest.id,
-          round: 2,
-          roundLabel:
-            testId === classTest.hardTestId ? 'Lượt 2 — Khó' : 'Lượt 2 — Dễ',
-        }
-      } else {
-        return null
-      }
-    } else if (classTest.testId === testId) {
-      if (classTest.maxAttempts !== -1 && prevSubmissions >= classTest.maxAttempts) {
-        return null
-      }
-    } else {
-      return null
-    }
-  }
+      : null,
+  })
+  if (!gate.ok) return null
+  const adaptiveContext = gate.adaptiveContext
 
   const qMap = new Map(questions.map((q) => [q.id, q]))
   const orderedQuestions: QuizTakingQuestion[] = qIds

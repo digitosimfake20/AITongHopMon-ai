@@ -14,7 +14,6 @@ import {
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 import { parseCachedAnalysis } from '@/lib/quiz/cached-ai-analysis'
-import { batchUpdateQuestionTopics } from '@/lib/quiz/batch-question-topics'
 import { filterTopicUpdates } from '@/lib/quiz/question-topic-updates'
 
 // ---------------------------------------------------------------------------
@@ -210,9 +209,7 @@ export async function analyzeSubmissionAction(
 
   const openai = getOpenAIClient()
 
-  // ── Auto-fix generic topics ────────────────────────────────────────────────
-  // Build a mutable topic map — may be overridden by AI classification below
-  const allowedQuestionIds = new Set(submission.details.map((d) => d.questionId))
+  // ── Auto-fix generic topics (in-memory only; never rewrite shared Question rows)
   const resolvedTopics = new Map(
     submission.details.map((d) => [
       d.questionId,
@@ -227,24 +224,6 @@ export async function analyzeSubmissionAction(
 
   const uniqueTopicLabels = [...new Set(resolvedTopics.values())]
   const canonicalMap = await ensureTopicsCanonicalized(uniqueTopicLabels, 'Toán')
-
-  // Batch-persist canonical topic/topicKey (one SQL RTT; skip unchanged rows).
-  // Only question ids on this submission may be written.
-  const topicUpdates = filterTopicUpdates(
-    [...resolvedTopics.entries()].map(([questionId, rawLabel]) => {
-      const canonical = canonicalMap.get(rawLabel) ?? {
-        topicName: rawLabel,
-        topicKey: topicToNodeId(rawLabel),
-      }
-      return {
-        id: questionId,
-        topic: canonical.topicName,
-        topicKey: canonical.topicKey,
-      }
-    }),
-    allowedQuestionIds,
-  )
-  void batchUpdateQuestionTopics(topicUpdates).catch(() => null)
 
   // ── Compute topic mastery from canonical topics ─────────────────────────────
   const topicMap = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()

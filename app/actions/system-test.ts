@@ -53,7 +53,7 @@ export async function publishSystemTestAction(
 ): Promise<ActionResult<{ id: string }>> {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'teacher') {
+  if (user.role !== 'admin') {
     return { success: false, error: 'Chỉ Admin mới có thể đăng đề hệ thống' }
   }
 
@@ -220,8 +220,8 @@ export async function assignClassTestAction(
 export async function deleteSystemTestAction(id: string): Promise<ActionResult> {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'admin' && user.role !== 'teacher') {
-    return { success: false, error: 'Không có quyền' }
+  if (user.role !== 'admin') {
+    return { success: false, error: 'Chỉ Admin mới có thể xóa đề hệ thống' }
   }
 
   const assigned = await prisma.classTest.count({ where: { systemTestId: id } })
