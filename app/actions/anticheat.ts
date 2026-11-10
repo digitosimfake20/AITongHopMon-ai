@@ -386,6 +386,51 @@ export async function recordFlagAction(input: {
 }
 
 // ---------------------------------------------------------------------------
+// 3b. Upload frame evidence (JPEG) for deciding triggers
+// Storage worker owns Supabase upload + framePath; this thin wrapper keeps the
+// client contract typed. Until storage lands, flag is recorded without bytes.
+// ---------------------------------------------------------------------------
+
+export async function uploadAnticheatEvidenceAction(input: {
+  submissionId?: string
+  attemptId?: string
+  trigger: AnticheatTrigger | 'frozen' | 'tab_switch' | 'histogram_delta'
+  clientAt: string | Date
+  hashWindow: Prisma.InputJsonValue
+  jpegBase64: string
+}): Promise<
+  ActionResult<{
+    flagId: string
+    evidenceId?: string
+    framePath?: string
+    capped?: boolean
+  }>
+> {
+  // Frame triggers with JPEG go through this action so Storage can set framePath.
+  // TODO(storage-worker): decode jpegBase64, upload to Supabase, pass framePath.
+  void input.jpegBase64
+
+  if (
+    input.trigger === 'hint' ||
+    !FLAG_TRIGGERS.has(input.trigger as AnticheatTrigger)
+  ) {
+    return {
+      success: false,
+      error: 'trigger không hợp lệ cho upload evidence',
+    }
+  }
+
+  return recordFlagAction({
+    submissionId: input.submissionId,
+    attemptId: input.attemptId,
+    trigger: input.trigger as AnticheatTrigger,
+    clientAt: input.clientAt,
+    hashWindow: input.hashWindow,
+    // framePath filled by storage worker when upload is implemented
+  })
+}
+
+// ---------------------------------------------------------------------------
 // 4. List flags for a submission
 // ---------------------------------------------------------------------------
 
