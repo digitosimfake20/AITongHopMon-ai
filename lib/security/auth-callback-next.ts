@@ -24,6 +24,9 @@ export function sanitizeAuthCallbackNext(
 
   // Reject path tricks that escape to another host when concatenated with origin
   if (trimmed.includes('\\')) return fallback
+  // Userinfo / encoded protocol-relative breakouts (`origin` + `@host` or `/%2f%2f`)
+  if (trimmed.includes('@') || /%40/i.test(trimmed)) return fallback
+  if (/%2f%2f/i.test(trimmed) || /%5c/i.test(trimmed)) return fallback
 
   if (origin) {
     try {

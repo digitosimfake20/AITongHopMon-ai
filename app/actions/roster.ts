@@ -27,6 +27,16 @@ export interface RosterEntryPublic {
   linkedUserName: string | null
 }
 
+/** Join-by-code roster row — no linkedUserId PII. */
+export interface RosterJoinEntry {
+  id: string
+  stt: number
+  studentCode: string
+  fullName: string
+  claimed: boolean
+  isMine: boolean
+}
+
 export interface ParsePreviewResult {
   meta: { subject: string; className: string; term: string }
   students: Array<{ stt: number; studentCode: string; fullName: string }>
@@ -259,31 +269,61 @@ export async function getClassRosterAction(classId: string): Promise<ActionResul
 }
 
 // ---------------------------------------------------------------------------
-// Student: look up roster by class code (returns sanitized list)
+// Student: look up roster by class code (join flow — minimized fields)
 // ---------------------------------------------------------------------------
 
 export async function getRosterByCodeAction(
   code: string,
-): Promise<ActionResult<{ classId: string; className: string; entries: RosterEntryPublic[] }>> {
+): Promise<ActionResult<{ classId: string; className: string; entries: RosterJoinEntry[] }>> {
+  const user = await getSessionUser()
+  if (!user) return { success: false, error: 'Chưa đăng nhập' }
+
+  const normalized = code.trim().toUpperCase()
+  if (!/^[A-Z0-9]{8}$/.test(normalized)) {
+    return { success: false, error: 'Mã lớp không hợp lệ' }
+  }
+
   const classroom = await prisma.classroom.findUnique({
-    where: { code: code.trim().toUpperCase() },
-    include: {
+    where: { code: normalized },
+    select: {
+      id: true,
+      name: true,
+      teacherId: true,
       roster: {
-        include: { linkedUser: { select: { fullName: true } } },
+        select: {
+          id: true,
+          stt: true,
+          studentCode: true,
+          fullName: true,
+          linkedUserId: true,
+        },
         orderBy: { stt: 'asc' },
+      },
+      members: {
+        where: { studentId: user.id },
+        select: { id: true },
+        take: 1,
       },
     },
   })
 
   if (!classroom) return { success: false, error: 'Không tìm thấy lớp với mã này' }
 
-  const entries: RosterEntryPublic[] = classroom.roster.map((e) => ({
+  // Joining students, existing members, class teacher, or admin may load the picker list.
+  const isTeacher = classroom.teacherId === user.id
+  const isMember = classroom.members.length > 0
+  const isJoiningStudent = user.role === 'student'
+  if (!isTeacher && !isMember && !isJoiningStudent && user.role !== 'admin') {
+    return { success: false, error: 'Không có quyền xem danh sách lớp này' }
+  }
+
+  const entries: RosterJoinEntry[] = classroom.roster.map((e) => ({
     id: e.id,
     stt: e.stt,
     studentCode: e.studentCode,
     fullName: e.fullName,
-    linkedUserId: e.linkedUserId,
-    linkedUserName: e.linkedUser?.fullName ?? null,
+    claimed: e.linkedUserId != null,
+    isMine: e.linkedUserId === user.id,
   }))
 
   return {

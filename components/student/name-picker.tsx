@@ -5,16 +5,15 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Check, Loader2, UserCheck, UserX, Search } from 'lucide-react'
 import { claimRosterNameAction } from '@/app/actions/roster'
-import type { RosterEntryPublic } from '@/app/actions/roster'
+import type { RosterJoinEntry } from '@/app/actions/roster'
 
 interface NamePickerProps {
   classId: string
   className: string
-  entries: RosterEntryPublic[]
-  currentUserId: string
+  entries: RosterJoinEntry[]
 }
 
-export function NamePicker({ classId, className, entries, currentUserId }: NamePickerProps) {
+export function NamePicker({ classId, className, entries }: NamePickerProps) {
   const router = useRouter()
   const [selected, setSelected] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -24,7 +23,7 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
     e.fullName.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const alreadyClaimed = entries.find((e) => e.linkedUserId === currentUserId)
+  const alreadyClaimed = entries.find((e) => e.isMine)
 
   function handleConfirm() {
     if (!selected) return
@@ -74,8 +73,8 @@ export function NamePicker({ classId, className, entries, currentUserId }: NameP
 
       <div className="grid max-h-[400px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
         {filtered.map((entry) => {
-          const isLinkedByOther = !!entry.linkedUserId && entry.linkedUserId !== currentUserId
-          const isLinkedByMe = entry.linkedUserId === currentUserId
+          const isLinkedByOther = entry.claimed && !entry.isMine
+          const isLinkedByMe = entry.isMine
           const isSelected = selected === entry.id
 
           const linkedLabel = isLinkedByOther

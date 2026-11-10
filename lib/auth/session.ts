@@ -4,6 +4,7 @@ import { cache } from 'react'
 import type { UserRole } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getVerifiedAuthIdentity } from '@/lib/auth/claims'
+import { roleForNewUser } from '@/lib/auth/role-for-new-user'
 import { createClient } from '@/lib/supabase/server'
 import type { SessionUser } from '@/lib/auth/types'
 
@@ -33,8 +34,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     }
   }
 
-  const role =
-    (identity.userMetadata.role as UserRole | undefined) ?? 'student'
+  const role = roleForNewUser(identity.userMetadata.role)
   const fullName =
     (identity.userMetadata.full_name as string | undefined) ??
     identity.email.split('@')[0]
@@ -57,13 +57,19 @@ export async function syncUserProfile(input: {
   fullName: string
   role: UserRole
 }) {
+  const createRole = roleForNewUser(input.role)
   await prisma.user.upsert({
     where: { id: input.id },
-    create: input,
+    create: {
+      id: input.id,
+      email: input.email,
+      fullName: input.fullName,
+      role: createRole,
+    },
+    // Never promote/demote via Auth metadata on subsequent syncs.
     update: {
       email: input.email,
       fullName: input.fullName,
-      role: input.role,
     },
   })
 }
