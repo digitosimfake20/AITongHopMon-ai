@@ -6,6 +6,7 @@ import { getStudentDetail, type TopicMasteryItem } from '@/lib/quiz/teacher-stud
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StudentDetailActions } from '@/components/teacher/student-detail-actions'
+import { AnticheatFlagsPanel } from '@/components/teacher/anticheat-flags-panel'
 import { formatDurationSeconds } from '@/lib/time/format-duration'
 
 interface PageProps {
@@ -211,32 +212,36 @@ export default async function StudentDetailPage({ params }: PageProps) {
             ) : (
               <ul className="divide-y divide-border">
                 {student.submissions.map((sub) => (
-                  <li
-                    key={sub.submissionId}
-                    className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{sub.testTitle}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-3" /> {formatDurationSeconds(sub.timeSpentSeconds)}
-                        </span>
-                        <span>{formatDate(sub.submittedAt)}</span>
+                  <li key={sub.submissionId} className="space-y-3 px-6 py-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{sub.testTitle}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="size-3" /> {formatDurationSeconds(sub.timeSpentSeconds)}
+                          </span>
+                          <span>{formatDate(sub.submittedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <ScoreBar score={sub.score} />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 gap-1.5"
+                          nativeButton={false}
+                          render={<Link href={`/quiz/result/${sub.submissionId}`} />}
+                        >
+                          <ExternalLink className="size-3.5" />
+                          Chi tiết
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <ScoreBar score={sub.score} />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="shrink-0 gap-1.5"
-                        nativeButton={false}
-                        render={<Link href={`/quiz/result/${sub.submissionId}`} />}
-                      >
-                        <ExternalLink className="size-3.5" />
-                        Chi tiết
-                      </Button>
-                    </div>
+                    <AnticheatFlagsPanel
+                      submissionId={sub.submissionId}
+                      testTitle={sub.testTitle}
+                      compact
+                    />
                   </li>
                 ))}
               </ul>

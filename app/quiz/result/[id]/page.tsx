@@ -6,6 +6,7 @@ import { getSubmissionResult } from '@/lib/quiz/submission-queries'
 import { QuestionReview } from '@/components/quiz/result/question-review'
 import { AIInsightsCard } from '@/components/quiz/result/ai-insights-card'
 import { TopicAnalyticsCard } from '@/components/quiz/result/topic-analytics-card'
+import { AnticheatFlagsPanel } from '@/components/teacher/anticheat-flags-panel'
 import { computeTopicMastery } from '@/lib/quiz/topic-mastery'
 import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
 import { formatDurationSeconds } from '@/lib/time/format-duration'
@@ -113,6 +114,10 @@ export default async function QuizResultPage({ params }: PageProps) {
         initialAnalysis={result.aiFeedbackSummary}
         readOnly={user.role === 'teacher' || user.role === 'admin'}
       />
+
+      {(user.role === 'teacher' || user.role === 'admin') && (
+        <AnticheatFlagsPanel submissionId={id} testTitle={result.testTitle} />
+      )}
 
       {/* ── Detailed Review ───────────────────────────────── */}
       <section>
