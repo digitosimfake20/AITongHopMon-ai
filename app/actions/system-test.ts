@@ -132,7 +132,15 @@ export async function assignClassTestAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ' }
   }
 
-  const { systemTestId, classId, startTime, endTime, maxAttempts, allowReview } = parsed.data
+  const {
+    systemTestId,
+    classId,
+    startTime,
+    endTime,
+    maxAttempts,
+    allowReview,
+    monitoringEnabled,
+  } = parsed.data
 
   const classroom = await prisma.classroom.findFirst({
     where: { id: classId, teacherId: user.id },
@@ -185,6 +193,7 @@ export async function assignClassTestAction(
           endTime,
           maxAttempts,
           allowReview,
+          monitoringEnabled,
         },
         select: { id: true },
       })

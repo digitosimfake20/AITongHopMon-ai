@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, CheckCircle2, Clock, Loader2, Send } from 'lucide-react'
+import { toast } from 'sonner'
 import { MathText } from '@/components/quiz/math-text'
 import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import { submitQuizAction } from '@/app/actions/quiz-submission'
+import { recordFlagAction } from '@/app/actions/anticheat'
 import type { QuizTakingData, QuizTakingQuestion } from '@/lib/quiz/quiz-bank-queries'
 import {
   clearActiveQuizSession,
@@ -15,7 +17,18 @@ import {
   startActiveQuizSession,
 } from '@/lib/quiz/active-quiz-session'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
+import {
+  clearMonitoredSession,
+  getMonitoredAttemptId,
+  getMonitoredConsentOutcome,
+} from '@/components/quiz/anticheat-attempt-session'
+import {
+  startAnticheatCapture,
+  type AnticheatCaptureHandle,
+} from '@/components/quiz/anticheat-capture'
 import { cn } from '@/lib/utils'
+
+const VISIBILITY_FLAG_DEBOUNCE_MS = 5_000
 
 // ---------------------------------------------------------------------------
 // Types
@@ -415,6 +428,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const submitLock = useRef(false)
+  const captureRef = useRef<AnticheatCaptureHandle | null>(null)
 
   const interactionStart = useRef<Record<string, number>>({})
   const interactionEnd = useRef<Record<string, number>>({})
@@ -444,6 +458,86 @@ export function QuizTaker({ data }: QuizTakerProps) {
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [isSubmitting, startedAt])
+
+  // Phase 1: polite tab-leave hints for monitored attempts (no auto-fail / score void).
+  useEffect(() => {
+    if (!data.monitoringEnabled || !startedAt || isSubmitting) return
+    // Refused / missing consent: take the quiz unproctored — no hint flags.
+    if (getMonitoredConsentOutcome(data.testId) !== 'granted') return
+
+    let lastRecordedAt = 0
+    let recording = false
+
+    async function recordHint(source: 'visibilitychange' | 'blur') {
+      const now = Date.now()
+      if (recording || now - lastRecordedAt < VISIBILITY_FLAG_DEBOUNCE_MS) return
+      const attemptId = getMonitoredAttemptId(data.testId)
+      if (!attemptId) return
+
+      recording = true
+      lastRecordedAt = now
+      try {
+        const result = await recordFlagAction({
+          attemptId,
+          trigger: 'hint',
+          detail: source === 'blur' ? 'window-blur' : 'document-hidden',
+        })
+        if (result.success) {
+          toast.message('Phát hiện chuyển tab — đã ghi nhận để giáo viên xem', {
+            description: 'Điểm số không bị ảnh hưởng tự động.',
+            duration: 5_000,
+          })
+        }
+      } catch {
+        // Non-blocking: ignore network/stub failures
+      } finally {
+        recording = false
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        void recordHint('visibilitychange')
+      }
+    }
+
+    function onWindowBlur() {
+      // Defer so in-page focus moves (dialogs) do not count as leaving the exam.
+      requestAnimationFrame(() => {
+        if (document.visibilityState === 'hidden') return
+        if (document.hasFocus()) return
+        void recordHint('blur')
+      })
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('blur', onWindowBlur)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('blur', onWindowBlur)
+    }
+  }, [data.monitoringEnabled, data.testId, startedAt, isSubmitting])
+
+  // Phase 2: whole-monitor capture loop — only when consent was granted.
+  useEffect(() => {
+    if (!data.monitoringEnabled || !startedAt || isSubmitting) return
+    if (getMonitoredConsentOutcome(data.testId) !== 'granted') return
+
+    let cancelled = false
+    void startAnticheatCapture({ testId: data.testId }).then((handle) => {
+      if (cancelled) {
+        handle?.dispose()
+        return
+      }
+      captureRef.current = handle
+    })
+
+    return () => {
+      cancelled = true
+      captureRef.current?.dispose()
+      captureRef.current = null
+    }
+  }, [data.monitoringEnabled, data.testId, startedAt, isSubmitting])
 
   const doSubmit = useCallback(async () => {
     if (submitLock.current) return
@@ -479,7 +573,10 @@ export function QuizTaker({ data }: QuizTakerProps) {
       })
 
       if (result.success && result.data) {
+        captureRef.current?.dispose()
+        captureRef.current = null
         clearActiveQuizSession(data.testId)
+        clearMonitoredSession(data.testId)
         window.location.assign(`/quiz/result/${result.data.submissionId}`)
         return
       }

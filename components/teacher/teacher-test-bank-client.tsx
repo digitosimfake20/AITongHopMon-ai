@@ -59,6 +59,7 @@ export function TeacherTestBankClient({
   })
   const [maxAttempts, setMaxAttempts] = useState<number>(1)
   const [allowReview, setAllowReview] = useState(true)
+  const [monitoringEnabled, setMonitoringEnabled] = useState(false)
   const [passScoreThreshold, setPassScoreThreshold] = useState(8.0)
 
   const filtered = tests.filter((t) => {
@@ -92,6 +93,7 @@ export function TeacherTestBankClient({
     setPassScoreThreshold(8.0)
     setMaxAttempts(1)
     setAllowReview(true)
+    setMonitoringEnabled(false)
   }
 
   function openAssign(test: SystemTestSummary) {
@@ -119,6 +121,7 @@ export function TeacherTestBankClient({
         endTime: new Date(endTime).toISOString(),
         maxAttempts,
         allowReview,
+        monitoringEnabled,
       })
       if (result.success) {
         toast.success(`Đã giao "${assigning.title}" cho lớp`)
@@ -148,6 +151,7 @@ export function TeacherTestBankClient({
         passScoreThreshold,
         lowScoreThreshold: 5.0,
         allowReview,
+        monitoringEnabled,
       })
       toast.dismiss(toastId)
       if (result.success && result.data) {
@@ -348,6 +352,8 @@ export function TeacherTestBankClient({
           setEndTime={setEndTime}
           allowReview={allowReview}
           setAllowReview={setAllowReview}
+          monitoringEnabled={monitoringEnabled}
+          setMonitoringEnabled={setMonitoringEnabled}
           isPending={isPending}
           onClose={() => setAssigning(null)}
           onConfirm={handleConfirmAssign}
@@ -386,6 +392,8 @@ export function TeacherTestBankClient({
           setEndTime={setEndTime}
           allowReview={allowReview}
           setAllowReview={setAllowReview}
+          monitoringEnabled={monitoringEnabled}
+          setMonitoringEnabled={setMonitoringEnabled}
           isPending={isPending}
           onClose={() => setAssigningGroup(null)}
           onConfirm={handleConfirmAssignGroup}
@@ -429,6 +437,8 @@ function AssignModal({
   setEndTime,
   allowReview,
   setAllowReview,
+  monitoringEnabled,
+  setMonitoringEnabled,
   isPending,
   onClose,
   onConfirm,
@@ -445,6 +455,8 @@ function AssignModal({
   setEndTime: (v: string) => void
   allowReview: boolean
   setAllowReview: (v: boolean) => void
+  monitoringEnabled: boolean
+  setMonitoringEnabled: (v: boolean) => void
   isPending: boolean
   onClose: () => void
   onConfirm: () => void
@@ -455,6 +467,7 @@ function AssignModal({
   const startFieldId = `${fieldId}-start`
   const endFieldId = `${fieldId}-end`
   const reviewFieldId = `${fieldId}-review`
+  const monitoringFieldId = `${fieldId}-monitoring`
 
   return (
     <AccessibleDialog
@@ -536,6 +549,21 @@ function AssignModal({
             className="size-4 rounded"
           />
           Cho xem lời giải sau khi nộp
+        </label>
+        <label htmlFor={monitoringFieldId} className="flex items-start gap-2 text-sm">
+          <input
+            id={monitoringFieldId}
+            type="checkbox"
+            checked={monitoringEnabled}
+            onChange={(e) => setMonitoringEnabled(e.target.checked)}
+            className="mt-0.5 size-4 rounded"
+          />
+          <span>
+            Bật giám sát chống gian lận
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Học sinh đồng ý trước khi làm; tín hiệu chỉ để giáo viên xem lại — không tự trừ điểm.
+            </span>
+          </span>
         </label>
       </div>
     </AccessibleDialog>

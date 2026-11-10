@@ -52,6 +52,7 @@ export const assignClassTestSchema = z
       message: 'Số lần làm phải là -1 (vô hạn) hoặc >= 1',
     }),
     allowReview: z.boolean().default(true),
+    monitoringEnabled: z.boolean().default(false),
   })
   .refine((d) => d.endTime > d.startTime, {
     message: 'Deadline phải sau thời gian mở đề',

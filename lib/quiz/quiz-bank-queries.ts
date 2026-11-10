@@ -141,7 +141,11 @@ async function getQuizBankForStudentUncached(
   const allSubmissions =
     submissionTestIds.length > 0
       ? await prisma.submission.findMany({
-          where: { studentId, testId: { in: submissionTestIds } },
+          where: {
+            studentId,
+            testId: { in: submissionTestIds },
+            status: { not: 'IN_PROGRESS' },
+          },
           orderBy: { submittedAt: 'desc' },
           select: {
             id: true,
@@ -395,6 +399,10 @@ export interface QuizTakingData {
   questions: QuizTakingQuestion[]
   topic?: string
   isPersonalPractice?: boolean
+  /** Assigned ClassTest id when this take is classroom-monitored capable. */
+  classTestId?: string
+  /** From ClassTest.monitoringEnabled when present; practice (no ClassTest) → false. */
+  monitoringEnabled: boolean
   adaptiveContext?: {
     classTestId: string
     round: 1 | 2
@@ -471,7 +479,9 @@ export async function getQuizForTaking(
         topic: true,
       },
     }),
-    prisma.submission.count({ where: { testId, studentId } }),
+    prisma.submission.count({
+      where: { testId, studentId, status: { not: 'IN_PROGRESS' } },
+    }),
   ])
 
   if (!membership) return null
@@ -540,6 +550,8 @@ export async function getQuizForTaking(
     ? test.title.split('—').pop()?.trim()
     : undefined
 
+  const monitoringEnabled = classTest ? Boolean(classTest.monitoringEnabled) : false
+
   return {
     testId: test.id,
     title: classTest?.isAdaptive
@@ -550,6 +562,8 @@ export async function getQuizForTaking(
     questions: orderedQuestions,
     topic: firstTopic ?? topicFromTitle ?? classTest?.testGroup?.title,
     isPersonalPractice: test.title.startsWith('Luyện tập cá nhân hóa'),
+    classTestId: classTest?.id,
+    monitoringEnabled,
     adaptiveContext,
   }
 }
