@@ -63,6 +63,39 @@ enum RequestStatus {
   @@schema("core")
 }
 
+enum AnticheatConsentOutcome {
+  granted
+  refused
+
+  @@schema("core")
+}
+
+enum AnticheatTrigger {
+  frozen
+  tab_switch
+  histogram_delta
+  hint
+
+  @@schema("core")
+}
+
+enum AnticheatReviewDecision {
+  confirmed
+  dismissed
+  pending
+
+  @@schema("core")
+}
+
+enum AnticheatUnproctoredReason {
+  refused_monitoring
+  accommodation
+  technical_issue
+  paper_fallback
+
+  @@schema("core")
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
@@ -176,6 +209,8 @@ model ClassTest {
   allowReview  Boolean  @default(true) @map("allow_review")
   passScoreThreshold Float @default(8.0) @map("pass_score_threshold")
   lowScoreThreshold  Float @default(5.0) @map("low_score_threshold")
+  /// Phase 1 anticheat: when true, quiz client records consent + visibility/hint flags
+  monitoringEnabled Boolean @default(false) @map("monitoring_enabled")
   createdAt    DateTime @default(now()) @map("created_at")
 
   class      Classroom  @relation(fields: [classId], references: [id], onDelete: Cascade)
@@ -371,14 +406,70 @@ model Submission {
   teacherFeedback         String?          @map("teacher_feedback") @db.Text
   isTeacherFeedbackRead   Boolean          @default(false) @map("is_teacher_feedback_read")
   submittedAt             DateTime         @default(now()) @map("submitted_at")
+  /// Optional unproctored path (refused monitoring / accommodation / etc.) — never auto-grades
+  unproctoredAt           DateTime?        @map("unproctored_at")
+  unproctoredReason       AnticheatUnproctoredReason? @map("unproctored_reason")
+  unproctoredBy           String?          @map("unproctored_by") @db.Uuid
 
   test    Test               @relation(fields: [testId], references: [id], onDelete: Cascade)
   student User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
   details SubmissionDetail[]
+  anticheatConsent AnticheatConsent?
+  anticheatFlags   AnticheatFlag[]
 
   @@unique([testId, studentId, attemptNumber])
   @@index([studentId])
   @@map("submissions")
+  @@schema("core")
+}
+
+/// One consent record per monitored attempt (granted | refused)
+model AnticheatConsent {
+  id            String                   @id @default(uuid()) @db.Uuid
+  submissionId  String                   @unique @map("submission_id") @db.Uuid
+  outcome       AnticheatConsentOutcome
+  noticeVersion String?                  @map("notice_version")
+  noticeHash    String?                  @map("notice_hash")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("anticheat_consents")
+  @@schema("core")
+}
+
+/// Client-reported integrity signal; review never auto-changes grades
+model AnticheatFlag {
+  id             String                   @id @default(uuid()) @db.Uuid
+  submissionId   String                   @map("submission_id") @db.Uuid
+  trigger        AnticheatTrigger
+  clientAt       DateTime                 @map("client_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  reviewDecision AnticheatReviewDecision  @default(pending) @map("review_decision")
+  reviewedBy     String?                  @map("reviewed_by") @db.Uuid
+  reviewedAt     DateTime?                @map("reviewed_at")
+  reviewNote     String?                  @map("review_note") @db.Text
+
+  submission Submission         @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  evidence   AnticheatEvidence?
+
+  @@index([submissionId])
+  @@map("anticheat_flags")
+  @@schema("core")
+}
+
+/// Optional evidence payload (hash window / later frame path in Supabase)
+model AnticheatEvidence {
+  id         String           @id @default(uuid()) @db.Uuid
+  flagId     String           @unique @map("flag_id") @db.Uuid
+  hashWindow Json?            @map("hash_window")
+  framePath  String?          @map("frame_path")
+  trigger    AnticheatTrigger
+  clientAt   DateTime         @map("client_at")
+
+  flag AnticheatFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  @@map("anticheat_evidence")
   @@schema("core")
 }
 
