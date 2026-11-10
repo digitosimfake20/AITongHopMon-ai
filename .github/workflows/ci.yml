@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        # postinstall runs `prisma generate`. Dummy URLs satisfy schema env reads;
+        # unit tests / lint do not open a real database.
+        run: pnpm install --frozen-lockfile
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+
+      - name: Lint
+        # Fails on ESLint errors. Known noisy react-hooks rules are warnings in
+        # eslint.config.mjs until a product cleanup lands.
+        run: pnpm lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+
+      # Intentionally no `pnpm build` / `next build` here: production build needs
+      # real NEXT_PUBLIC_* / Supabase / OpenAI values. Unit tests + lint are the
+      # merge bar. Dummy public placeholders (if a future job adds build):
+      #   NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co
+      #   NEXT_PUBLIC_SUPABASE_ANON_KEY=public-anon-key
+      # Typecheck (`tsc --noEmit`) is skipped: main currently has unrelated TS
+      # errors (DOM lib / services workspace) that need a separate cleanup.
+      - name: Unit tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+          DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
