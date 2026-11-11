@@ -306,7 +306,6 @@ export async function recordFlagAction(input: {
   /** Optional UI detail stored in hashWindow.meta when no hash samples yet */
   detail?: string
   hashWindow?: Prisma.InputJsonValue
-  evidenceMeta?: { framePath?: string }
 }): Promise<
   ActionResult<{
     flagId: string
@@ -366,8 +365,7 @@ export async function recordFlagAction(input: {
         ? ({ detail: input.detail } as Prisma.InputJsonValue)
         : undefined
 
-  const hasEvidence =
-    hashWindow !== undefined || Boolean(input.evidenceMeta?.framePath)
+  const hasEvidence = hashWindow !== undefined
 
   const flag = await prisma.anticheatFlag.create({
     data: {
@@ -382,7 +380,7 @@ export async function recordFlagAction(input: {
                 clientAt,
                 hashWindow:
                   hashWindow === undefined ? Prisma.JsonNull : hashWindow,
-                framePath: input.evidenceMeta?.framePath ?? null,
+                framePath: null,
               },
             },
           }
