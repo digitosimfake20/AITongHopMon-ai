@@ -19,13 +19,22 @@ import {
 } from '@/lib/knowledge/mastery-labels'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 import { resolveTopicCanonicalSync } from '@/lib/knowledge/topic-canonicalize-ai'
-import { normalizeTopicName, resolveTopicKey } from '@/lib/knowledge/topic-normalize'
+import {
+  DEFAULT_SUBJECT,
+  normalizeTopicName,
+  resolveTopicKey,
+} from '@/lib/knowledge/topic-normalize'
 import {
   buildStudentActionPlan,
   curatedInsightFromPlan,
   enrichActionPlanWithLLM,
   type TopicBatchForPlan,
 } from '@/lib/ai/student-action-plan'
+import {
+  nextFeedbackVersion,
+  writeAiFeedbackIfNewer,
+} from '@/lib/ai/feedback-version'
+import type { QuestionTimingQuality } from '@/lib/quiz/question-timing'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,18 +83,42 @@ export async function runPostSubmissionAIPipeline(
     skipLlmEnrich?: boolean
     /** Persisted submission counts — keeps AI feedback aligned with result page */
     officialStats?: import('@/lib/knowledge/scored-submission-stats').SubmissionOfficialStats
+    /** When estimated/insufficient, do not rewrite persona from this submission. */
+    timingQuality?: QuestionTimingQuality
   },
 ): Promise<void> {
   const t0 = Date.now()
   let topicCount = 0
   let llmEnrich = false
+  const feedbackVersion = nextFeedbackVersion()
 
   try {
-    const uniqueLabels = [...new Set(details.map((d) => normalizeTopicName(d.topic)))]
-    const subject = details[0]?.subject || 'Toán'
-    const canonicalMap = options?.skipAiCanonicalization
-      ? new Map(uniqueLabels.map((label) => [label, resolveTopicCanonicalSync(label)]))
-      : await ensureTopicsCanonicalized(uniqueLabels, subject)
+    // Canonicalize each subject separately so titles/ids stay subject-scoped.
+    const labelsBySubject = new Map<string, string[]>()
+    for (const d of details) {
+      const subject = d.subject || DEFAULT_SUBJECT
+      const label = normalizeTopicName(d.topic)
+      const list = labelsBySubject.get(subject) ?? []
+      list.push(label)
+      labelsBySubject.set(subject, list)
+    }
+
+    const canonicalBySubject = new Map<
+      string,
+      Map<string, { topicName: string; topicKey: string }>
+    >()
+    for (const [subject, labels] of labelsBySubject) {
+      const uniqueLabels = [...new Set(labels)]
+      const map = options?.skipAiCanonicalization
+        ? new Map(
+            uniqueLabels.map((label) => [
+              label,
+              resolveTopicCanonicalSync(label, subject),
+            ]),
+          )
+        : await ensureTopicsCanonicalized(uniqueLabels, subject)
+      canonicalBySubject.set(subject, map)
+    }
 
     // ── 1. Group by AI-canonical topicKey ─────────────────────────────────────
     type TopicBatch = {
@@ -101,9 +134,11 @@ export async function runPostSubmissionAIPipeline(
       // unscored — never feed into BKT / KnowledgeNode mastery.
       if (!contributesToMasteryUpdate(d.type)) continue
 
+      const subject = d.subject || DEFAULT_SUBJECT
       const normalized = normalizeTopicName(d.topic)
-      const canonical = canonicalMap.get(normalized) ?? (() => {
-        const { topicName, topicKey } = resolveTopicKey(normalized)
+      const canonicalMap = canonicalBySubject.get(subject)
+      const canonical = canonicalMap?.get(normalized) ?? (() => {
+        const { topicName, topicKey } = resolveTopicKey(normalized, subject)
         return { topicName, topicKey }
       })()
       const nodeId = canonical.topicKey
@@ -111,7 +146,7 @@ export async function runPostSubmissionAIPipeline(
         byNodeId.set(nodeId, {
           topicName: canonical.topicName,
           nodeId,
-          subject: d.subject || 'Toán',
+          subject,
           answers: [],
         })
       }
@@ -152,6 +187,8 @@ export async function runPostSubmissionAIPipeline(
             },
             update: {
               title: batch.topicName,
+              // Keep subject aligned with this submission's topic subject.
+              subject: batch.subject,
             },
           }),
         ),
@@ -191,7 +228,11 @@ export async function runPostSubmissionAIPipeline(
     }
 
     // ── 3. Deterministic plan on hot path (LLM enrich deferred) ───────────────
-    let plan = buildStudentActionPlan(planBatches, options?.officialStats)
+    let plan = {
+      ...buildStudentActionPlan(planBatches, options?.officialStats),
+      polished: false,
+      feedbackVersion,
+    }
 
     // ── 4. Cognitive signals + prefetch profile/memory (parallel reads) ───────
     const scoredDetails = details.filter((d) => contributesToMasteryUpdate(d.type))
@@ -223,12 +264,11 @@ export async function runPostSubmissionAIPipeline(
       .slice(0, 5)
       .map((s) => s.node.title)
 
-    const avgMastery =
-      allStates.length > 0
-        ? allStates.reduce((sum, s) => sum + Number(s.pMastery), 0) / allStates.length
+    // Persona mastery from THIS submission's topics only (not lifetime mean).
+    const submissionAvgMastery =
+      planBatches.length > 0
+        ? planBatches.reduce((sum, b) => sum + b.pMastery, 0) / planBatches.length
         : 0.3
-
-    const persona = computePersona(avgSpeed, carelessRate, avgMastery)
 
     const EMA = 0.3
     const blendedSpeed = existingProfile
@@ -237,6 +277,16 @@ export async function runPostSubmissionAIPipeline(
     const blendedCareless = existingProfile
       ? Number(existingProfile.carelessErrorRate) * (1 - EMA) + carelessRate * EMA
       : carelessRate
+
+    const timingUnreliable =
+      options?.timingQuality === 'estimated' ||
+      options?.timingQuality === 'insufficient'
+
+    // Estimated timing zeros out per-question seconds — leave persona unchanged.
+    const persona =
+      timingUnreliable && existingProfile
+        ? existingProfile.personaType
+        : computePersona(blendedSpeed, blendedCareless, submissionAvgMastery)
 
     const memorySnippet = `[${new Date().toLocaleDateString('vi-VN')}] Bài kiểm tra vừa nộp. Điểm yếu hiện tại: ${weaknesses.slice(0, 3).join(', ') || 'Chưa xác định'}. Persona: ${persona}.`
     const curated = curatedInsightFromPlan(plan)
@@ -254,10 +304,7 @@ export async function runPostSubmissionAIPipeline(
     // ── 5. Persist plan + profile + memory (LLM not required) ────────────────
     await Promise.all([
       options?.submissionId
-        ? prisma.submission.update({
-            where: { id: options.submissionId },
-            data: { aiFeedbackSummary: JSON.stringify(plan) },
-          })
+        ? writeAiFeedbackIfNewer(options.submissionId, plan)
         : Promise.resolve(),
       prisma.studentCognitiveProfile.upsert({
         where: { studentId },
@@ -301,14 +348,16 @@ export async function runPostSubmissionAIPipeline(
     // after() budget for mastery + dashboard signals.
     if (!options?.skipLlmEnrich && !options?.skipAiCanonicalization) {
       llmEnrich = true
-      plan = await enrichActionPlanWithLLM(plan)
+      const enriched = await enrichActionPlanWithLLM(plan)
+      plan = {
+        ...enriched,
+        feedbackVersion,
+        polished: enriched.polished ?? false,
+      }
       const curatedEnriched = curatedInsightFromPlan(plan)
       await Promise.all([
         options?.submissionId
-          ? prisma.submission.update({
-              where: { id: options.submissionId },
-              data: { aiFeedbackSummary: JSON.stringify(plan) },
-            })
+          ? writeAiFeedbackIfNewer(options.submissionId, plan)
           : Promise.resolve(),
         prisma.globalAgentMemory.update({
           where: { studentId },

@@ -4,7 +4,10 @@
  * casing / whitespace / empty strings).
  */
 
+import { createHash } from 'node:crypto'
+
 export const DEFAULT_TOPIC = 'Chủ đề khác'
+export const DEFAULT_SUBJECT = 'Toán'
 
 /** Collapse whitespace, trim, fallback for empty. Does NOT change Vietnamese casing. */
 export function normalizeTopicName(raw: string | null | undefined): string {
@@ -13,27 +16,43 @@ export function normalizeTopicName(raw: string | null | undefined): string {
   return collapsed.length > 0 ? collapsed : DEFAULT_TOPIC
 }
 
-/** Stable slug used as KnowledgeNode.id / topicKey (student mastery unique key). */
-export function topicToNodeId(topic: string): string {
+function slugifyTopic(normalized: string): string {
+  return normalized
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+/**
+ * Stable KnowledgeNode.id / topicKey.
+ * Short slugs stay as-is (migration-safe for existing rows). Labels whose slug
+ * would exceed 64 chars use a subject-scoped hash of the full normalized label
+ * so truncate collisions cannot merge distinct topics; `title` stays on the node.
+ */
+export function topicToNodeId(topic: string, subject: string = DEFAULT_SUBJECT): string {
   const normalized = normalizeTopicName(topic)
-  return (
-    normalized
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 64) || 'chua-de-khac'
-  )
+  const slug = slugifyTopic(normalized)
+  if (!slug) return 'chua-de-khac'
+  if (slug.length <= 64) return slug
+  const digest = createHash('sha256')
+    .update(`${subject}\u0000${normalized}`)
+    .digest('hex')
+    .slice(0, 32)
+  return `t_${digest}`
 }
 
 /** Resolve display label + node id from any raw topic string. */
-export function resolveTopicKey(raw: string | null | undefined): {
+export function resolveTopicKey(
+  raw: string | null | undefined,
+  subject: string = DEFAULT_SUBJECT,
+): {
   topicName: string
   topicKey: string
 } {
   const topicName = normalizeTopicName(raw)
-  return { topicName, topicKey: topicToNodeId(topicName) }
+  return { topicName, topicKey: topicToNodeId(topicName, subject) }
 }
 
 /** SQL expression fragment for Postgres — group questions by normalized topic key. */

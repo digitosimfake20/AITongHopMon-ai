@@ -23,14 +23,25 @@ describe('normalizeTopicName', () => {
 })
 
 describe('topicToNodeId', () => {
-  it('slugifies with diacritic strip and length cap', () => {
+  it('slugifies with diacritic strip for short labels', () => {
     // `đ` is not NFD-decomposed to `d`, so it is dropped by the [a-z0-9] filter
     expect(topicToNodeId('Phân thức đại số')).toBe('phan-thuc-ai-so')
     expect(topicToNodeId('Phương trình')).toBe('phuong-trinh')
     // DEFAULT_TOPIC "Chủ đề khác" → đ dropped → chu-e-khac (empty-slug fallback unused)
     expect(topicToNodeId('')).toBe('chu-e-khac')
-    const long = 'a'.repeat(100)
-    expect(topicToNodeId(long).length).toBeLessThanOrEqual(64)
+  })
+
+  it('hashes long labels by full normalized text + subject (no 64-char truncate collide)', () => {
+    const prefix = 'chu-de-rat-dai-' + 'x'.repeat(80)
+    const a = `${prefix}-bien-a`
+    const b = `${prefix}-bien-b`
+    const idA = topicToNodeId(a, 'Toán')
+    const idB = topicToNodeId(b, 'Toán')
+    expect(idA).toMatch(/^t_[a-f0-9]{32}$/)
+    expect(idB).toMatch(/^t_[a-f0-9]{32}$/)
+    expect(idA).not.toBe(idB)
+    expect(topicToNodeId(a, 'Toán')).toBe(idA)
+    expect(topicToNodeId(a, 'Vật lý')).not.toBe(idA)
   })
 
   it('is stable across casing for the same Vietnamese topic', () => {

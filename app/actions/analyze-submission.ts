@@ -2,7 +2,17 @@
 
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
-import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
+import {
+  AI_FEATURES_PAUSED_MESSAGE,
+  getOpenAIClient,
+  isOpenAIKeyMissingError,
+  OPENAI_MODEL_CHAT,
+} from '@/lib/ai/openai'
+import { analysisModelResponseSchema } from '@/lib/ai/model-json-schemas'
+import {
+  nextFeedbackVersion,
+  writeAiFeedbackIfNewer,
+} from '@/lib/ai/feedback-version'
 import type { ActionResult } from '@/lib/auth/types'
 import { contributesToMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
 import { masteryStatusFromAccuracyPercent } from '@/lib/knowledge/mastery-labels'
@@ -11,7 +21,12 @@ import {
   submissionOfficialStatsFromDetails,
   type SubmissionOfficialStats,
 } from '@/lib/knowledge/scored-submission-stats'
-import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
+import {
+  DEFAULT_SUBJECT,
+  normalizeTopicName,
+  resolveTopicKey,
+  topicToNodeId,
+} from '@/lib/knowledge/topic-normalize'
 import { ensureTopicsCanonicalized } from '@/lib/knowledge/topic-canonicalize-ai'
 import { parseCachedAnalysis } from '@/lib/quiz/cached-ai-analysis'
 import { filterTopicUpdates } from '@/lib/quiz/question-topic-updates'
@@ -207,86 +222,106 @@ export async function analyzeSubmissionAction(
     }
   }
 
-  const openai = getOpenAIClient()
+  const refreshAdviceOnly = options?.force === true
+  const feedbackVersion = nextFeedbackVersion()
 
-  // ── Auto-fix generic topics (in-memory only; never rewrite shared Question rows)
-  const resolvedTopics = new Map(
-    submission.details.map((d) => [
-      d.questionId,
-      normalizeTopicName(d.question.topic),
-    ]),
-  )
+  try {
+    const openai = getOpenAIClient()
 
-  if (isGenericTopicSet(submission.details)) {
-    const fixed = await autoFixTopics(openai, submission.details)
-    for (const [qid, topic] of fixed) resolvedTopics.set(qid, topic)
-  }
-
-  const uniqueTopicLabels = [...new Set(resolvedTopics.values())]
-  const canonicalMap = await ensureTopicsCanonicalized(uniqueTopicLabels, 'Toán')
-
-  // ── Compute topic mastery from canonical topics ─────────────────────────────
-  const topicMap = new Map<string, { topic: string; topicKey: string; total: number; correct: number }>()
-  for (const d of submission.details) {
-    if (!contributesToMasteryUpdate(d.question.type)) continue
-    const raw = normalizeTopicName(resolvedTopics.get(d.questionId))
-    const canonical = canonicalMap.get(raw) ?? {
-      topicName: raw,
-      topicKey: topicToNodeId(raw),
-    }
-    const key = canonical.topicKey
-    if (!topicMap.has(key)) {
-      topicMap.set(key, {
-        topic: canonical.topicName,
-        topicKey: key,
-        total: 0,
-        correct: 0,
-      })
-    }
-    const entry = topicMap.get(key)!
-    entry.total++
-    if (d.isCorrect) entry.correct++
-  }
-
-  const topicMasteryBase = [...topicMap.values()].map((stats) => {
-    const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
-    const status = masteryStatusFromAccuracyPercent(accuracy)
-    return {
-      topic: stats.topic,
-      topicKey: stats.topicKey,
-      total: stats.total,
-      correct: stats.correct,
-      accuracy,
-      status,
-    }
-  })
-
-  const weakTopics = topicMasteryBase
-    .filter((t) => t.status !== 'MASTERED')
-    .map(
-      (t) =>
-        `topicKey="${t.topicKey}" "${t.topic}" (đúng ${t.correct}/${t.total} câu, ${t.accuracy}%)`,
+    // ── Topics: refresh-advice skips repair; otherwise in-memory only until advice validates
+    const resolvedTopics = new Map(
+      submission.details.map((d) => [
+        d.questionId,
+        normalizeTopicName(d.question.topic),
+      ]),
     )
 
-  // ── Build AI prompt ─────────────────────────────────────────────────────────
-  const questionSummaries = submission.details.map((d, i) => {
-    const topic = resolvedTopics.get(d.questionId) || d.question.topic
-    if (!contributesToMasteryUpdate(d.question.type)) {
-      return `Câu ${i + 1} [${d.question.type}|${topic}]: (tự luận — chưa chấm tự động) — ${d.timeSpentSeconds}s`
+    if (!refreshAdviceOnly && isGenericTopicSet(submission.details)) {
+      const fixed = await autoFixTopics(openai, submission.details)
+      for (const [qid, topic] of fixed) resolvedTopics.set(qid, topic)
     }
-    return `Câu ${i + 1} [${d.question.type}|${topic}]: ${d.isCorrect ? '✓' : '✗'} — ${d.timeSpentSeconds}s — "${d.question.content.slice(0, 120)}"`
-  })
 
-  const officialStats = submissionOfficialStatsFromDetails(
-    submission.details.map((d) => ({
-      type: d.question.type,
-      isCorrect: d.isCorrect,
-    })),
-    submission.correctCount,
-    submission.totalQuestions,
-  )
+    const uniqueTopicLabels = [...new Set(resolvedTopics.values())]
+    // Sync keys for this request. Alias/node repair runs only after advice validates
+    // (and never when the caller only asked to refresh advice).
+    const canonicalMap = new Map(
+      uniqueTopicLabels.map((label) => {
+        const existingKey = submission.details.find(
+          (d) => normalizeTopicName(resolvedTopics.get(d.questionId) ?? d.question.topic) === label,
+        )?.question.topicKey
+        if (existingKey && existingKey.trim()) {
+          return [label, { topicName: label, topicKey: existingKey }] as const
+        }
+        return [label, resolveTopicKey(label, DEFAULT_SUBJECT)] as const
+      }),
+    )
 
-  const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | ${formatOfficialScoreLine(officialStats)} | Thời gian: ${submission.timeSpentSeconds}s
+    // ── Compute topic mastery from canonical topics ─────────────────────────────
+    const topicMap = new Map<
+      string,
+      { topic: string; topicKey: string; total: number; correct: number }
+    >()
+    for (const d of submission.details) {
+      if (!contributesToMasteryUpdate(d.question.type)) continue
+      const raw = normalizeTopicName(resolvedTopics.get(d.questionId))
+      const canonical = canonicalMap.get(raw) ?? {
+        topicName: raw,
+        topicKey: topicToNodeId(raw, DEFAULT_SUBJECT),
+      }
+      const key = canonical.topicKey
+      if (!topicMap.has(key)) {
+        topicMap.set(key, {
+          topic: canonical.topicName,
+          topicKey: key,
+          total: 0,
+          correct: 0,
+        })
+      }
+      const entry = topicMap.get(key)!
+      entry.total++
+      if (d.isCorrect) entry.correct++
+    }
+
+    const topicMasteryBase = [...topicMap.values()].map((stats) => {
+      const accuracy =
+        stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+      const status = masteryStatusFromAccuracyPercent(accuracy)
+      return {
+        topic: stats.topic,
+        topicKey: stats.topicKey,
+        total: stats.total,
+        correct: stats.correct,
+        accuracy,
+        status,
+      }
+    })
+
+    const weakTopics = topicMasteryBase
+      .filter((t) => t.status !== 'MASTERED')
+      .map(
+        (t) =>
+          `topicKey="${t.topicKey}" "${t.topic}" (đúng ${t.correct}/${t.total} câu, ${t.accuracy}%)`,
+      )
+
+    // ── Build AI prompt ─────────────────────────────────────────────────────────
+    const questionSummaries = submission.details.map((d, i) => {
+      const topic = resolvedTopics.get(d.questionId) || d.question.topic
+      if (!contributesToMasteryUpdate(d.question.type)) {
+        return `Câu ${i + 1} [${d.question.type}|${topic}]: (tự luận — chưa chấm tự động) — ${d.timeSpentSeconds}s`
+      }
+      return `Câu ${i + 1} [${d.question.type}|${topic}]: ${d.isCorrect ? '✓' : '✗'} — ${d.timeSpentSeconds}s — "${d.question.content.slice(0, 120)}"`
+    })
+
+    const officialStats = submissionOfficialStatsFromDetails(
+      submission.details.map((d) => ({
+        type: d.question.type,
+        isCorrect: d.isCorrect,
+      })),
+      submission.correctCount,
+      submission.totalQuestions,
+    )
+
+    const userPrompt = `Tổng điểm: ${Number(submission.score)}/10 | ${formatOfficialScoreLine(officialStats)} | Thời gian: ${submission.timeSpentSeconds}s
 
 Các chủ đề cần advice (dùng đúng topicKey trong JSON):
 ${weakTopics.length > 0 ? weakTopics.join('\n') : '(Không có chủ đề yếu)'}
@@ -294,70 +329,85 @@ ${weakTopics.length > 0 ? weakTopics.join('\n') : '(Không có chủ đề yếu
 Chi tiết từng câu:
 ${questionSummaries.join('\n')}`
 
-  const completion = await openai.chat.completions.create({
-    model: OPENAI_MODEL_CHAT,
-    response_format: { type: 'json_object' },
-    temperature: 0.4,
-    max_tokens: 1200,
-    messages: [
-      { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-  })
+    const completion = await openai.chat.completions.create({
+      model: OPENAI_MODEL_CHAT,
+      response_format: { type: 'json_object' },
+      temperature: 0.4,
+      max_tokens: 1200,
+      messages: [
+        { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ],
+    })
 
-  const raw = completion.choices[0]?.message?.content
-  if (!raw) return { success: false, error: 'AI không phản hồi' }
+    const raw = completion.choices[0]?.message?.content
+    if (!raw) return { success: false, error: 'AI không phản hồi' }
 
-  let parsed: {
-    praise: string
-    knowledgeGaps: AIAnalysis['knowledgeGaps']
-    topicAdvice?: { topicKey?: string; topic?: string; advice: string }[]
+    let json: unknown
+    try {
+      json = JSON.parse(raw)
+    } catch {
+      return { success: false, error: 'Kết quả AI không hợp lệ' }
+    }
+
+    const validated = analysisModelResponseSchema.safeParse(json)
+    if (!validated.success) {
+      return { success: false, error: 'AI trả về sai định dạng' }
+    }
+    const parsed = validated.data
+
+    // Advice validated — persist topic repair (aliases) only on first analyze, not refresh.
+    if (!refreshAdviceOnly) {
+      await ensureTopicsCanonicalized(uniqueTopicLabels, DEFAULT_SUBJECT)
+    }
+
+    // ── Merge AI advice by topicKey (fallback: exact topic name) ───────────────
+    const adviceByKey = new Map<string, string>()
+    const adviceByName = new Map<string, string>()
+    for (const t of parsed.topicAdvice ?? []) {
+      if (!t.advice) continue
+      if (t.topicKey) adviceByKey.set(t.topicKey, t.advice)
+      if (t.topic) adviceByName.set(t.topic, t.advice)
+    }
+    const topicMastery: TopicMastery[] = topicMasteryBase.map((t) => ({
+      ...t,
+      advice: (t.topicKey && adviceByKey.get(t.topicKey)) || adviceByName.get(t.topic),
+    }))
+
+    const weakForPractice = topicMasteryBase
+      .filter((t) => t.status !== 'MASTERED')
+      .slice(0, 3)
+
+    const analysis: AIAnalysis & {
+      polished: boolean
+      feedbackVersion: number
+    } = {
+      officialStats,
+      praise: parsed.praise,
+      knowledgeGaps: parsed.knowledgeGaps,
+      topicMastery,
+      nextStep:
+        weakForPractice.length > 0
+          ? {
+              type: 'practice',
+              topicKeys: weakForPractice.map((t) => t.topicKey),
+              topicTitles: weakForPractice.map((t) => t.topic),
+            }
+          : null,
+      polished: true,
+      feedbackVersion,
+    }
+
+    await writeAiFeedbackIfNewer(submissionId, analysis)
+
+    return { success: true, data: analysis }
+  } catch (err) {
+    console.error('[analyze-submission] failed:', err)
+    if (isOpenAIKeyMissingError(err)) {
+      return { success: false, error: AI_FEATURES_PAUSED_MESSAGE }
+    }
+    return { success: false, error: 'Không thể phân tích bài nộp. Thử lại sau.' }
   }
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return { success: false, error: 'Kết quả AI không hợp lệ' }
-  }
-
-  // ── Merge AI advice by topicKey (fallback: exact topic name) ───────────────
-  const adviceByKey = new Map<string, string>()
-  const adviceByName = new Map<string, string>()
-  for (const t of parsed.topicAdvice ?? []) {
-    if (!t.advice) continue
-    if (t.topicKey) adviceByKey.set(t.topicKey, t.advice)
-    if (t.topic) adviceByName.set(t.topic, t.advice)
-  }
-  const topicMastery: TopicMastery[] = topicMasteryBase.map((t) => ({
-    ...t,
-    advice: (t.topicKey && adviceByKey.get(t.topicKey)) || adviceByName.get(t.topic),
-  }))
-
-  const weakForPractice = topicMasteryBase
-    .filter((t) => t.status !== 'MASTERED')
-    .slice(0, 3)
-
-  const analysis: AIAnalysis = {
-    officialStats,
-    praise: parsed.praise?.trim() ?? '',
-    knowledgeGaps: parsed.knowledgeGaps ?? [],
-    topicMastery,
-    nextStep:
-      weakForPractice.length > 0
-        ? {
-            type: 'practice',
-            topicKeys: weakForPractice.map((t) => t.topicKey),
-            topicTitles: weakForPractice.map((t) => t.topic),
-          }
-        : null,
-  }
-
-  // Persist the analysis so it loads fast next time
-  await prisma.submission.update({
-    where: { id: submissionId },
-    data: { aiFeedbackSummary: JSON.stringify(analysis) },
-  })
-
-  return { success: true, data: analysis }
 }
 
 /**
