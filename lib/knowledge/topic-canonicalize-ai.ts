@@ -7,6 +7,7 @@
 import prisma from '@/lib/prisma'
 import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
 import {
+  DEFAULT_SUBJECT,
   normalizeTopicName,
   resolveTopicKey,
   topicToNodeId,
@@ -51,6 +52,7 @@ export type InputTopicAlias = {
 export function aliasesForInput(
   groups: readonly { canonicalLabel?: string; variants?: readonly string[] }[] | null | undefined,
   inputLabels: readonly string[],
+  subject: string = DEFAULT_SUBJECT,
 ): InputTopicAlias[] {
   if (!groups || groups.length === 0 || inputLabels.length === 0) return []
 
@@ -68,7 +70,7 @@ export function aliasesForInput(
   for (const group of groups) {
     if (!group || typeof group.canonicalLabel !== 'string') continue
     const canonicalLabel = normalizeTopicName(group.canonicalLabel)
-    const canonicalKey = topicToNodeId(canonicalLabel)
+    const canonicalKey = topicToNodeId(canonicalLabel, subject)
     if (!canonicalKey) continue
 
     const variants = Array.isArray(group.variants) ? group.variants : []
@@ -97,22 +99,25 @@ export async function lookupCanonicalAlias(
   }
 }
 
-export function resolveTopicCanonicalSync(raw: string | null | undefined): CanonicalTopic {
-  const { topicName, topicKey } = resolveTopicKey(raw)
+export function resolveTopicCanonicalSync(
+  raw: string | null | undefined,
+  subject: string = DEFAULT_SUBJECT,
+): CanonicalTopic {
+  const { topicName, topicKey } = resolveTopicKey(raw, subject)
   return { topicName, topicKey }
 }
 
 export async function resolveTopicCanonical(
   raw: string | null | undefined,
-  subject = 'Toán',
+  subject = DEFAULT_SUBJECT,
 ): Promise<CanonicalTopic> {
   const normalized = normalizeTopicName(raw)
-  const aliasKey = topicToNodeId(normalized)
+  const aliasKey = topicToNodeId(normalized, subject)
   const cached = await lookupCanonicalAlias(aliasKey)
   if (cached) return cached
 
   await ensureTopicsCanonicalized([normalized], subject)
-  return (await lookupCanonicalAlias(aliasKey)) ?? resolveTopicCanonicalSync(normalized)
+  return (await lookupCanonicalAlias(aliasKey)) ?? resolveTopicCanonicalSync(normalized, subject)
 }
 
 async function groupTopicsWithAI(
@@ -187,12 +192,20 @@ async function groupTopicsWithAI(
  * Returns label → canonical mapping built from the write payload — callers
  * should not re-`findUnique` each alias after upsert.
  */
-async function persistCanonicalGroups(
+async function buildCanonicalDraftMap(
   groups: AiGroup[],
   inputLabels: readonly string[],
   subject: string,
-  source: string,
-): Promise<Map<string, CanonicalTopic>> {
+): Promise<{
+  byLabel: Map<string, CanonicalTopic>
+  nodes: Map<string, { id: string; title: string }>
+  aliases: Array<{
+    aliasKey: string
+    canonicalKey: string
+    canonicalLabel: string
+    label: string
+  }>
+}> {
   const byLabel = new Map<string, CanonicalTopic>()
   const nodes = new Map<string, { id: string; title: string }>()
   const aliases: Array<{
@@ -203,9 +216,9 @@ async function persistCanonicalGroups(
   }> = []
 
   const seenSlug = new Set<string>()
-  for (const draft of aliasesForInput(groups, inputLabels)) {
+  for (const draft of aliasesForInput(groups, inputLabels, subject)) {
     const label = normalizeTopicName(draft.aliasKey)
-    const aliasKey = topicToNodeId(label)
+    const aliasKey = topicToNodeId(label, subject)
     if (!label || !aliasKey || !draft.canonicalKey || seenSlug.has(aliasKey)) continue
     seenSlug.add(aliasKey)
     nodes.set(draft.canonicalKey, { id: draft.canonicalKey, title: draft.canonicalLabel })
@@ -218,7 +231,23 @@ async function persistCanonicalGroups(
     byLabel.set(label, { topicName: draft.canonicalLabel, topicKey: draft.canonicalKey })
   }
 
-  if (aliases.length === 0) return byLabel
+  return { byLabel, nodes, aliases }
+}
+
+async function persistCanonicalGroups(
+  groups: AiGroup[],
+  inputLabels: readonly string[],
+  subject: string,
+  source: string,
+  persist: boolean,
+): Promise<Map<string, CanonicalTopic>> {
+  const { byLabel, nodes, aliases } = await buildCanonicalDraftMap(
+    groups,
+    inputLabels,
+    subject,
+  )
+
+  if (!persist || aliases.length === 0) return byLabel
 
   // Independent row upserts — Prisma queues on pool size 1; still beats nested awaits.
   await Promise.all(
@@ -231,7 +260,7 @@ async function persistCanonicalGroups(
           title: node.title,
           difficultyLevel: 1,
         },
-        update: { title: node.title },
+        update: { title: node.title, subject },
       }),
     ),
   )
@@ -262,14 +291,16 @@ async function persistCanonicalGroups(
 
 export async function ensureTopicsCanonicalized(
   rawLabels: string[],
-  subject = 'Toán',
+  subject = DEFAULT_SUBJECT,
+  options?: { persist?: boolean },
 ): Promise<Map<string, CanonicalTopic>> {
+  const persist = options?.persist !== false
   const normalized = [...new Set(rawLabels.map(normalizeTopicName).filter(Boolean))]
   const result = new Map<string, CanonicalTopic>()
 
   if (normalized.length === 0) return result
 
-  const aliasKeys = normalized.map((l) => topicToNodeId(l))
+  const aliasKeys = normalized.map((l) => topicToNodeId(l, subject))
   const cached = await prisma.topicCanonicalAlias.findMany({
     where: { aliasKey: { in: aliasKeys } },
   })
@@ -277,7 +308,7 @@ export async function ensureTopicsCanonicalized(
 
   const unresolved: string[] = []
   for (const label of normalized) {
-    const aliasKey = topicToNodeId(label)
+    const aliasKey = topicToNodeId(label, subject)
     const hit = cacheByAlias.get(aliasKey)
     if (hit) {
       result.set(label, { topicName: hit.canonicalLabel, topicKey: hit.canonicalKey })
@@ -290,30 +321,38 @@ export async function ensureTopicsCanonicalized(
     const groups = await groupTopicsWithAI(unresolved, subject)
     if (groups == null) {
       for (const label of unresolved) {
-        result.set(label, resolveTopicCanonicalSync(label))
+        result.set(label, resolveTopicCanonicalSync(label, subject))
       }
     } else {
-      const persisted = await persistCanonicalGroups(groups, unresolved, subject, 'ai')
+      const mapped = await persistCanonicalGroups(
+        groups,
+        unresolved,
+        subject,
+        'ai',
+        persist,
+      )
       for (const label of unresolved) {
-        result.set(label, persisted.get(label) ?? resolveTopicCanonicalSync(label))
+        result.set(label, mapped.get(label) ?? resolveTopicCanonicalSync(label, subject))
       }
     }
   } else if (unresolved.length === 1) {
     const label = unresolved[0]!
-    const sync = resolveTopicCanonicalSync(label)
+    const sync = resolveTopicCanonicalSync(label, subject)
     result.set(label, sync)
-    // Upsert returns the row — no follow-up findUnique needed.
-    await prisma.topicCanonicalAlias.upsert({
-      where: { aliasKey: topicToNodeId(label) },
-      create: {
-        aliasKey: topicToNodeId(label),
-        canonicalKey: sync.topicKey,
-        canonicalLabel: sync.topicName,
-        subject,
-        source: 'rule',
-      },
-      update: {},
-    })
+    if (persist) {
+      // Upsert returns the row — no follow-up findUnique needed.
+      await prisma.topicCanonicalAlias.upsert({
+        where: { aliasKey: topicToNodeId(label, subject) },
+        create: {
+          aliasKey: topicToNodeId(label, subject),
+          canonicalKey: sync.topicKey,
+          canonicalLabel: sync.topicName,
+          subject,
+          source: 'rule',
+        },
+        update: {},
+      })
+    }
   }
 
   return result

@@ -216,11 +216,12 @@ describe('enrichActionPlanWithLLM', () => {
     expect(enriched.topicMastery[0]?.advice).toBe('Ôn lại hệ phương trình.')
     expect(enriched.knowledgeGaps[0]?.advice).toBe('Ôn lại hệ phương trình.')
     expect(enriched.praise.startsWith('Kết quả: 4/10 câu đúng.')).toBe(true)
+    expect(enriched.polished).toBe(true)
   })
 
-  it('returns original plan when LLM throws', async () => {
+  it('returns deterministic plan with polished:false when LLM throws', async () => {
     vi.mocked(getOpenAIClient).mockImplementation(() => {
-      throw new Error('no key')
+      throw new Error('Thiếu OPENAI_API_KEY trong biến môi trường')
     })
     const plan = basePlan({
       topicMastery: [
@@ -235,7 +236,56 @@ describe('enrichActionPlanWithLLM', () => {
         },
       ],
     })
-    await expect(enrichActionPlanWithLLM(plan)).resolves.toBe(plan)
+    await expect(enrichActionPlanWithLLM(plan)).resolves.toEqual({
+      ...plan,
+      polished: false,
+    })
+  })
+
+  it('scrubs xuất sắc at ~75% when a topic is not mastered', async () => {
+    vi.mocked(getOpenAIClient).mockReturnValue({
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    encouragement: 'Em làm xuất sắc ở bài này!',
+                    topicAdvice: [{ topicKey: 'a', advice: 'Luyện thêm dạng trung bình.' }],
+                  }),
+                },
+              },
+            ],
+          }),
+        },
+      },
+    } as never)
+
+    const plan = basePlan({
+      praise: 'Kết quả: 15/20 câu đúng.',
+      officialStats: {
+        correctCount: 15,
+        totalQuestions: 20,
+        scoredQuestionCount: 20,
+      },
+      topicMastery: [
+        {
+          topic: 'A',
+          topicKey: 'a',
+          total: 10,
+          correct: 7,
+          accuracy: 70,
+          pMastery: 0.65,
+          status: 'MEDIUM',
+        },
+      ],
+    })
+
+    const enriched = await enrichActionPlanWithLLM(plan)
+    expect(enriched.praise).not.toMatch(/xuất sắc/i)
+    expect(enriched.polished).toBe(true)
+    expect(enriched.topicMastery[0]?.advice).toBe('Luyện thêm dạng trung bình.')
   })
 })
 

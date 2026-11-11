@@ -1,10 +1,14 @@
 'use server'
 
-import OpenAI from 'openai'
-import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
+import {
+  AI_FEATURES_PAUSED_MESSAGE,
+  getOpenAIClient,
+  isOpenAIKeyMissingError,
+  OPENAI_MODEL_CHAT,
+} from '@/lib/ai/openai'
+import { personalizedQuizResponseSchema } from '@/lib/ai/model-json-schemas'
 import { requireTeacher } from '@/lib/auth/require-teacher'
 import { getSessionUser } from '@/lib/auth/session'
-import type { ParsedQuestion } from '@/lib/quiz/types'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,8 +47,6 @@ export async function generateStudentFeedbackAction(input: {
   const authError = requireTeacher(user)
   if (authError) return { ok: false, error: authError }
 
-  const openai = getOpenAIClient()
-
   const weakTopicList = input.weakTopics.length > 0
     ? input.weakTopics.map((t) => `- ${t}`).join('\n')
     : '(Không có chủ đề yếu rõ ràng)'
@@ -54,6 +56,7 @@ export async function generateStudentFeedbackAction(input: {
     : '(Không có tín hiệu hành vi đặc biệt)'
 
   try {
+    const openai = getOpenAIClient()
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL_CHAT,
       temperature: 0.6,
@@ -90,6 +93,9 @@ Hãy soạn tin nhắn nhận xét.`,
     return { ok: true, message }
   } catch (err) {
     console.error('[teacher-student-ai] generateStudentFeedback error:', err)
+    if (isOpenAIKeyMissingError(err)) {
+      return { ok: false, error: AI_FEATURES_PAUSED_MESSAGE }
+    }
     return { ok: false, error: 'Không thể tạo nhận xét. Vui lòng thử lại.' }
   }
 }
@@ -110,10 +116,10 @@ export async function generatePersonalizedQuizAction(input: {
     return { ok: false, error: 'Không có chủ đề yếu để tạo bài tập.' }
   }
 
-  const openai: OpenAI = getOpenAIClient()
   const topicList = input.weakTopics.slice(0, 4).join(', ')
 
   try {
+    const openai = getOpenAIClient()
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL_CHAT,
       response_format: { type: 'json_object' },
@@ -165,20 +171,24 @@ Tạo 5 câu hỏi phụ đạo phù hợp.`,
     const raw = completion.choices[0]?.message?.content
     if (!raw) return { ok: false, error: 'AI không phản hồi' }
 
-    let parsed: { questions: GeneratedQuizQuestion[] }
+    let json: unknown
     try {
-      parsed = JSON.parse(raw)
+      json = JSON.parse(raw)
     } catch {
       return { ok: false, error: 'Kết quả AI không hợp lệ' }
     }
 
-    if (!Array.isArray(parsed.questions)) {
+    const parsed = personalizedQuizResponseSchema.safeParse(json)
+    if (!parsed.success) {
       return { ok: false, error: 'AI trả về sai định dạng' }
     }
 
-    return { ok: true, questions: parsed.questions }
+    return { ok: true, questions: parsed.data.questions }
   } catch (err) {
     console.error('[teacher-student-ai] generatePersonalizedQuiz error:', err)
+    if (isOpenAIKeyMissingError(err)) {
+      return { ok: false, error: AI_FEATURES_PAUSED_MESSAGE }
+    }
     return { ok: false, error: 'Không thể tạo bài tập. Vui lòng thử lại.' }
   }
 }

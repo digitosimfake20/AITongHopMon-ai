@@ -40,6 +40,10 @@ export interface StudentActionPlan {
     carelessCount: number
     stuckCount: number
   }
+  /** True only after a successful LLM polish; false when deterministic plan is stored as-is. */
+  polished?: boolean
+  /** Monotonic write token — older polish must not overwrite newer feedback. */
+  feedbackVersion?: number
 }
 
 export interface TopicBatchForPlan {
@@ -149,6 +153,10 @@ CHỈ trả JSON thuần:
 topicKey phải khớp đúng danh sách được cung cấp. Không bịa chủ đề mới. Không đếm lại câu đúng.
 Nếu prompt có "toneHint" báo còn chủ đề yếu hoặc điểm trung bình: KHÔNG dùng "vững chắc", "nền tảng vững", "xuất sắc" — hãy thừa nhận còn dạng cần luyện và động viên tiếp tục.`
 
+/** Strong-plan line from deterministicEncouragement — overpraise guard keys off this. */
+export const STRONG_PLAN_ENCOURAGEMENT =
+  'Làm tốt! Có thể thử thêm bài khó hơn một chút để củng cố.'
+
 /** One-line encouragement aligned with official stats + weak topics (no LLM counting). */
 export function deterministicEncouragement(plan: StudentActionPlan): string {
   const weak = plan.topicMastery.filter((t) => t.status !== 'MASTERED')
@@ -167,7 +175,7 @@ export function deterministicEncouragement(plan: StudentActionPlan): string {
   if (ratio < 0.85 || weak.length >= 2) {
     return 'Tiến bộ rõ. Một số chủ đề còn lệch — tập trung luyện các dạng đó trước khi làm đề mới.'
   }
-  return 'Làm tốt! Có thể thử thêm bài khó hơn một chút để củng cố.'
+  return STRONG_PLAN_ENCOURAGEMENT
 }
 
 const OVERPRAISE_WHEN_WEAK = /vững chắc|nền tảng.*vững|xuất sắc|rất tốt.*toàn diện/i
@@ -205,7 +213,7 @@ ${weak
     })
 
     const raw = completion.choices[0]?.message?.content
-    if (!raw) return plan
+    if (!raw) return { ...plan, polished: false }
 
     const parsed = JSON.parse(raw) as {
       encouragement?: string
@@ -232,13 +240,15 @@ ${weak
     })
 
     let encouragement = (parsed.encouragement ?? parsed.praise)?.trim()
+    // Match the prompt: scrub overpraise whenever any topic is not mastered,
+    // or when the deterministic tone is not the strong-plan line (e.g. ~75%).
     const needsCaution =
-      weak.some((t) => t.accuracy < 50) ||
-      (plan.officialStats &&
-        plan.officialStats.scoredQuestionCount > 0 &&
-        plan.officialStats.correctCount / plan.officialStats.scoredQuestionCount < 0.7)
-    if (!encouragement || (needsCaution && encouragement && OVERPRAISE_WHEN_WEAK.test(encouragement))) {
-      encouragement = deterministicEncouragement(plan)
+      weak.length > 0 || toneHint !== STRONG_PLAN_ENCOURAGEMENT
+    if (
+      !encouragement ||
+      (needsCaution && encouragement && OVERPRAISE_WHEN_WEAK.test(encouragement))
+    ) {
+      encouragement = toneHint
     }
     const praise = encouragement ? `${plan.praise} ${encouragement}` : plan.praise
 
@@ -247,10 +257,11 @@ ${weak
       praise,
       topicMastery,
       knowledgeGaps,
+      polished: true,
     }
   } catch (err) {
     console.error('[action-plan] LLM enrich failed, using deterministic plan:', err)
-    return plan
+    return { ...plan, polished: false }
   }
 }
 

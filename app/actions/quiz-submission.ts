@@ -238,6 +238,7 @@ export async function submitQuizAction(
         skipAiCanonicalization: isPractice,
         skipLlmEnrich: isPractice,
         submissionId,
+        timingQuality: timingPreview.quality,
         officialStats: submissionOfficialStatsFromDetails(
           pipelineDetails.map((d) => ({
             type: d.type,

@@ -2,11 +2,22 @@ import OpenAI from 'openai'
 
 let client: OpenAI | null = null
 
+/** Thrown / matched when OPENAI_API_KEY is unset — boundaries should pause AI, not crash. */
+export const OPENAI_KEY_MISSING_ERROR = 'Thiếu OPENAI_API_KEY trong biến môi trường'
+
+/** User-facing pause copy aligned with README / .env.example. */
+export const AI_FEATURES_PAUSED_MESSAGE =
+  'Chức năng AI tạm tắt. Cấu hình OPENAI_API_KEY để bật lại.'
+
+export function isOpenAIKeyMissingError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('OPENAI_API_KEY')
+}
+
 export function getOpenAIClient(): OpenAI {
   if (!client) {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
-      throw new Error('Thiếu OPENAI_API_KEY trong biến môi trường')
+      throw new Error(OPENAI_KEY_MISSING_ERROR)
     }
     client = new OpenAI({ apiKey })
   }

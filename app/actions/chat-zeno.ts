@@ -2,7 +2,12 @@
 
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
-import { getOpenAIClient, OPENAI_MODEL_CHAT } from '@/lib/ai/openai'
+import {
+  AI_FEATURES_PAUSED_MESSAGE,
+  getOpenAIClient,
+  isOpenAIKeyMissingError,
+  OPENAI_MODEL_CHAT,
+} from '@/lib/ai/openai'
 import { decryptMessage } from '@/lib/ai/chat-crypto'
 import { isChatSessionId } from '@/lib/ai/chat-limits'
 import {
@@ -57,6 +62,9 @@ export async function sendZenoMessageAction(input: {
       'Xin lỗi, Zeno không thể trả lời lúc này. Hãy thử lại nhé!'
   } catch (err) {
     console.error('[Zeno] completion failed:', err)
+    if (isOpenAIKeyMissingError(err)) {
+      return { success: false, error: AI_FEATURES_PAUSED_MESSAGE }
+    }
     return { success: false, error: 'Zeno tạm thời không trả lời được. Thử lại sau.' }
   }
 

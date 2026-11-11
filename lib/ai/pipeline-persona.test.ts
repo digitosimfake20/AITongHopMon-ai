@@ -28,4 +28,9 @@ describe('computePersona', () => {
   it('defaults to Đang phát triển', () => {
     expect(computePersona(40, 0.2, 0.4)).toBe('Đang phát triển')
   })
+
+  it('uses blended speed for persona (not raw estimated 30s default alone)', () => {
+    // Stored blend of 90s + new 90s → still slow persona
+    expect(computePersona(90, 0.05, 0.4)).toBe('Cẩn thận - Ngâm lâu')
+  })
 })

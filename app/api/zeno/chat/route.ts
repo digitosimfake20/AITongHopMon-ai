@@ -3,6 +3,10 @@ import {
   createZenoChatStream,
   finalizeZenoTurn,
 } from '@/lib/ai/zeno-chat-turn'
+import {
+  AI_FEATURES_PAUSED_MESSAGE,
+  isOpenAIKeyMissingError,
+} from '@/lib/ai/openai'
 
 export const runtime = 'nodejs'
 
@@ -74,7 +78,9 @@ export async function POST(req: Request): Promise<Response> {
         controller.enqueue(
           encodeSse({
             type: 'error',
-            error: 'Zeno tạm thời không trả lời được. Thử lại sau.',
+            error: isOpenAIKeyMissingError(err)
+              ? AI_FEATURES_PAUSED_MESSAGE
+              : 'Zeno tạm thời không trả lời được. Thử lại sau.',
           }),
         )
       } finally {
