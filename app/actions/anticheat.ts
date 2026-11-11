@@ -211,6 +211,51 @@ export async function startMonitoredAttemptAction(input: {
 }
 
 // ---------------------------------------------------------------------------
+// 1b. Read consent for the in-progress submission (authority for enter/capture)
+// ---------------------------------------------------------------------------
+
+export async function getMonitoredConsentAction(input: {
+  testId: string
+}): Promise<
+  ActionResult<{
+    submissionId: string | null
+    outcome: ConsentDecision | null
+  }>
+> {
+  const user = await getSessionUser()
+  if (!user) return { success: false, error: 'Chưa đăng nhập' }
+  if (user.role !== 'student') {
+    return { success: false, error: 'Chỉ học sinh mới xem đồng ý giám sát' }
+  }
+  if (!input.testId) return { success: false, error: 'Thiếu đề kiểm tra' }
+
+  const submission = await prisma.submission.findFirst({
+    where: {
+      testId: input.testId,
+      studentId: user.id,
+      status: 'IN_PROGRESS',
+    },
+    orderBy: { attemptNumber: 'desc' },
+    select: {
+      id: true,
+      anticheatConsent: { select: { outcome: true } },
+    },
+  })
+
+  if (!submission) {
+    return { success: true, data: { submissionId: null, outcome: null } }
+  }
+
+  return {
+    success: true,
+    data: {
+      submissionId: submission.id,
+      outcome: submission.anticheatConsent?.outcome ?? null,
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 2. Record consent (one per submission)
 // ---------------------------------------------------------------------------
 

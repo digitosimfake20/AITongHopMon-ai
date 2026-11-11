@@ -8,6 +8,8 @@ import { MathText } from '@/components/quiz/math-text'
 import { AccessibleDialog } from '@/components/ui/accessible-dialog'
 import { submitQuizAction } from '@/app/actions/quiz-submission'
 import { recordFlagAction } from '@/app/actions/anticheat'
+import { useMonitoredServerConsent } from '@/components/quiz/use-monitored-server-consent'
+import { openMonitoredQuizGate } from '@/lib/quiz/monitored-consent-gate'
 import type { QuizTakingData, QuizTakingQuestion } from '@/lib/quiz/quiz-bank-queries'
 import {
   clearActiveQuizSession,
@@ -17,11 +19,7 @@ import {
   startActiveQuizSession,
 } from '@/lib/quiz/active-quiz-session'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
-import {
-  clearMonitoredSession,
-  getMonitoredAttemptId,
-  getMonitoredConsentOutcome,
-} from '@/components/quiz/anticheat-attempt-session'
+import { clearMonitoredSession } from '@/components/quiz/anticheat-attempt-session'
 import {
   startAnticheatCapture,
   type AnticheatCaptureHandle,
@@ -429,6 +427,14 @@ export function QuizTaker({ data }: QuizTakerProps) {
   const [error, setError] = useState<string | null>(null)
   const submitLock = useRef(false)
   const captureRef = useRef<AnticheatCaptureHandle | null>(null)
+  const serverConsent = useMonitoredServerConsent(
+    data.testId,
+    Boolean(data.monitoringEnabled),
+  )
+  const captureAllowed = openMonitoredQuizGate({
+    monitoringEnabled: Boolean(data.monitoringEnabled),
+    serverOutcome: serverConsent.outcome,
+  }).capture
 
   const interactionStart = useRef<Record<string, number>>({})
   const interactionEnd = useRef<Record<string, number>>({})
@@ -462,8 +468,9 @@ export function QuizTaker({ data }: QuizTakerProps) {
   // Phase 1: polite tab-leave hints for monitored attempts (no auto-fail / score void).
   useEffect(() => {
     if (!data.monitoringEnabled || !startedAt || isSubmitting) return
-    // Refused / missing consent: take the quiz unproctored — no hint flags.
-    if (getMonitoredConsentOutcome(data.testId) !== 'granted') return
+    // Refused / missing server consent: take the quiz unproctored — no hint flags.
+    if (!captureAllowed || !serverConsent.submissionId) return
+    const attemptId = serverConsent.submissionId
 
     let lastRecordedAt = 0
     let recording = false
@@ -471,8 +478,6 @@ export function QuizTaker({ data }: QuizTakerProps) {
     async function recordHint(source: 'visibilitychange' | 'blur') {
       const now = Date.now()
       if (recording || now - lastRecordedAt < VISIBILITY_FLAG_DEBOUNCE_MS) return
-      const attemptId = getMonitoredAttemptId(data.testId)
-      if (!attemptId) return
 
       recording = true
       lastRecordedAt = now
@@ -516,12 +521,19 @@ export function QuizTaker({ data }: QuizTakerProps) {
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('blur', onWindowBlur)
     }
-  }, [data.monitoringEnabled, data.testId, startedAt, isSubmitting])
+  }, [
+    captureAllowed,
+    data.monitoringEnabled,
+    data.testId,
+    isSubmitting,
+    serverConsent.submissionId,
+    startedAt,
+  ])
 
-  // Phase 2: whole-monitor capture loop — only when consent was granted.
+  // Phase 2: whole-monitor capture loop — only when server consent is granted.
   useEffect(() => {
     if (!data.monitoringEnabled || !startedAt || isSubmitting) return
-    if (getMonitoredConsentOutcome(data.testId) !== 'granted') return
+    if (!captureAllowed) return
 
     let cancelled = false
     void startAnticheatCapture({ testId: data.testId }).then((handle) => {
@@ -537,7 +549,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
       captureRef.current?.dispose()
       captureRef.current = null
     }
-  }, [data.monitoringEnabled, data.testId, startedAt, isSubmitting])
+  }, [captureAllowed, data.monitoringEnabled, data.testId, startedAt, isSubmitting])
 
   const doSubmit = useCallback(async () => {
     if (submitLock.current) return
