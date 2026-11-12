@@ -37,7 +37,12 @@ import {
 } from '@/components/ui/card'
 import { withClassParam } from '@/lib/class/with-class-param'
 import { masteryStatusLabel } from '@/lib/knowledge/topic-clusters'
-import type { ClassGapMapData, CriticalGap, StudentTierGroup } from '@/lib/quiz/class-gap-map'
+import {
+  pickNeedsSupportRemedialTopic,
+  type ClassGapMapData,
+  type CriticalGap,
+  type StudentTierGroup,
+} from '@/lib/quiz/class-gap-map'
 import { QUESTION_TYPE_LABELS } from '@/lib/quiz/types'
 import { cn } from '@/lib/utils'
 
@@ -273,6 +278,14 @@ export function ClassKnowledgeGapMap({ data, classId }: ClassKnowledgeGapMapProp
               key={tier.id}
               tier={tier}
               classId={classId}
+              remedialTopic={
+                tier.id === 'needsSupport'
+                  ? pickNeedsSupportRemedialTopic({
+                      topicMastery: data.topicMastery,
+                      criticalGaps: data.criticalGaps,
+                    })
+                  : null
+              }
               expanded={expandedTier === tier.id}
               onToggle={() =>
                 setExpandedTier((v) => (v === tier.id ? null : tier.id))
@@ -434,11 +447,13 @@ function CriticalGapCard({
 function TierCard({
   tier,
   classId,
+  remedialTopic,
   expanded,
   onToggle,
 }: {
   tier: StudentTierGroup
   classId: string
+  remedialTopic: string | null
   expanded: boolean
   onToggle: () => void
 }) {
@@ -469,9 +484,13 @@ function TierCard({
   const TierIcon = tierStyles.icon
 
   function handleZenoActivate() {
+    if (!remedialTopic) return
     startTransition(async () => {
-      const topTopic = tier.students[0]?.strongTopics[0] ?? 'Phân thức đại số'
-      const res = await generateRemedialSuggestionAction(topTopic, tier.students.length, tier.percent)
+      const res = await generateRemedialSuggestionAction(
+        remedialTopic,
+        tier.students.length,
+        tier.percent,
+      )
       if (res.ok) setAiResult(res.data)
     })
   }
@@ -552,7 +571,7 @@ function TierCard({
             className="min-h-11 w-full gap-1.5"
             variant="destructive"
             onClick={handleZenoActivate}
-            disabled={pending}
+            disabled={pending || !remedialTopic}
             aria-busy={pending}
           >
             {pending ? (

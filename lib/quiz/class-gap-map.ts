@@ -136,6 +136,22 @@ export function tierGroupPercent(count: number, studentCount: number): number {
   return studentCount > 0 ? Math.round((count / studentCount) * 100) : 0
 }
 
+/** Topic for needs-support remedial CTA: weakest GAP, else worst critical gap. */
+export function pickNeedsSupportRemedialTopic(input: {
+  topicMastery: Array<Pick<TopicMasteryRow, 'topic' | 'status' | 'masteryPercent'>>
+  criticalGaps: Array<Pick<CriticalGap, 'topic' | 'wrongPercent'>>
+}): string | null {
+  const weakestGap = [...input.topicMastery]
+    .filter((row) => row.status === 'GAP' && row.topic.trim())
+    .sort((a, b) => a.masteryPercent - b.masteryPercent)[0]
+  if (weakestGap) return weakestGap.topic
+
+  const worstCritical = [...input.criticalGaps]
+    .filter((gap) => gap.topic.trim())
+    .sort((a, b) => b.wrongPercent - a.wrongPercent)[0]
+  return worstCritical?.topic ?? null
+}
+
 type TopicAggRow = {
   topic_key: string
   topic_label: string

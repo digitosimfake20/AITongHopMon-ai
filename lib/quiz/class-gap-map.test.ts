@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   gapWrongPercent,
   inferGrade,
+  pickNeedsSupportRemedialTopic,
   studentTierFromAvg,
   tierGroupPercent,
 } from '@/lib/quiz/class-gap-map'
@@ -66,5 +67,46 @@ describe('tierGroupPercent', () => {
 
   it('returns 0 when studentCount is 0', () => {
     expect(tierGroupPercent(2, 0)).toBe(0)
+  })
+})
+
+describe('pickNeedsSupportRemedialTopic', () => {
+  it('picks weakest GAP topic from topicMastery, not a strong topic', () => {
+    const topic = pickNeedsSupportRemedialTopic({
+      topicMastery: [
+        { topic: 'Phương trình bậc nhất', status: 'MASTERED', masteryPercent: 92 },
+        { topic: 'Phân số', status: 'GAP', masteryPercent: 28 },
+        { topic: 'Hình học', status: 'GAP', masteryPercent: 15 },
+        { topic: 'Tỉ lệ', status: 'PROGRESSING', masteryPercent: 60 },
+      ],
+      criticalGaps: [{ topic: 'Phân thức đại số', wrongPercent: 80 }],
+    })
+    expect(topic).toBe('Hình học')
+    expect(topic).not.toBe('Phương trình bậc nhất')
+    expect(topic).not.toBe('Phân thức đại số')
+  })
+
+  it('falls back to highest-wrong critical gap when no GAP mastery rows', () => {
+    const topic = pickNeedsSupportRemedialTopic({
+      topicMastery: [
+        { topic: 'Phương trình bậc nhất', status: 'MASTERED', masteryPercent: 90 },
+      ],
+      criticalGaps: [
+        { topic: 'Căn bậc hai', wrongPercent: 45 },
+        { topic: 'Bất phương trình', wrongPercent: 72 },
+      ],
+    })
+    expect(topic).toBe('Bất phương trình')
+  })
+
+  it('returns null when neither GAP nor critical topics exist', () => {
+    expect(
+      pickNeedsSupportRemedialTopic({
+        topicMastery: [
+          { topic: 'Phương trình bậc nhất', status: 'MASTERED', masteryPercent: 90 },
+        ],
+        criticalGaps: [],
+      }),
+    ).toBeNull()
   })
 })
