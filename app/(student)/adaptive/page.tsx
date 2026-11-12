@@ -1,5 +1,6 @@
 import { resolveStudentContext } from '@/lib/dashboard/context'
 import prisma from '@/lib/prisma'
+import { personalPracticeListWhere } from '@/lib/quiz/practice-quiz'
 import { AiProfileCard } from '@/components/student/ai-profile-card'
 import { AdaptiveTopicList } from '@/components/student/adaptive-topic-list'
 import { Brain, Zap, TrendingDown, BookOpen } from 'lucide-react'
@@ -25,7 +26,7 @@ export default async function AdaptivePage({ searchParams }: PageProps) {
     prisma.test.findMany({
       where: {
         classId: classroom.id,
-        title: { startsWith: 'Luyện tập cá nhân hóa' },
+        ...personalPracticeListWhere(user.id),
       },
       include: {
         submissions: {
