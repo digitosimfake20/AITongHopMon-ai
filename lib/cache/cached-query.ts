@@ -73,8 +73,9 @@ export function bustClassCaches(classId: string, opts?: { studentId?: string }) 
 }
 
 /**
- * Narrow submit invalidation: one class submissions tag covers dash/gap/packages
- * that include it; plus adaptive/quiz-bank and the submitting student's slices.
+ * Narrow submit invalidation for scores/bank already written.
+ * Do not bust knowledge/studentDash here — BKT upserts finish later in
+ * runPostSubmissionAIPipeline; early bust would refill stale mastery.
  */
 export function bustAfterSubmit(classId: string, studentId: string) {
   bustCacheTags(
@@ -82,6 +83,12 @@ export function bustAfterSubmit(classId: string, studentId: string) {
     CacheTags.adaptive(classId),
     CacheTags.quizBank(classId),
     CacheTags.quizBankStudent(classId, studentId),
+  )
+}
+
+/** Bust mastery/dash tags after BKT upserts in the post-submit pipeline. */
+export function bustAfterMastery(studentId: string) {
+  bustCacheTags(
     CacheTags.studentDash(studentId),
     CacheTags.knowledge(studentId),
   )

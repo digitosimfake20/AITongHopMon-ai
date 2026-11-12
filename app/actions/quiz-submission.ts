@@ -15,7 +15,10 @@ import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
-import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
+import {
+  invalidateAfterMastery,
+  invalidateAfterSubmit,
+} from '@/lib/cache/invalidate'
 import { gradeTestAnswers, type GradedQuestion } from '@/lib/quiz/grade-submission'
 import { maxPointsFromQuestions, scoreOutOfTen } from '@/lib/quiz/score-out-of-ten'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
@@ -263,9 +266,9 @@ export async function submitQuizAction(
 
   const classId = test.classId
 
-  // Bust dashboards / quiz bank / classGap (via submissions tag) immediately
-  // so next navigation is fresh — Phase D/E cache-tag contract.
+  // Bust scores / quiz bank / classGap (via submissions tag) immediately.
   // Adaptive round rows are already committed above, so this bust sees them.
+  // knowledge + studentDash wait until after BKT upserts (below).
   invalidateAfterSubmit(classId, user.id)
 
   after(async () => {
@@ -286,8 +289,10 @@ export async function submitQuizAction(
         ),
       })
 
-      // Pipeline mastery lands after the early bust. Keep the adaptive refresh
-      // that used to follow the session write; session itself is not written here.
+      // Mastery written — safe to refill knowledge / studentDash caches.
+      invalidateAfterMastery(user.id)
+
+      // Session itself is not written here; refresh adaptive views after pipeline.
       if (!isPractice && classTest?.isAdaptive) {
         invalidateAfterSubmit(classId, user.id)
       }
