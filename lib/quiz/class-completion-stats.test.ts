@@ -1,5 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { computeClassCompletionDetail } from '@/lib/quiz/class-completion-stats'
+import {
+  computeClassCompletionDetail,
+  computeWeeklyCompletionRate,
+} from '@/lib/quiz/class-completion-stats'
+
+describe('computeWeeklyCompletionRate', () => {
+  it('uses week-scoped test count for expected slots, not all-time', () => {
+    const students = 10
+    const weekCompleted = 10
+    const allTimeTests = 20
+    const weekTests = 2
+
+    // Bug shape: all-time denom → 10 / (10×20) = 5%
+    expect(
+      computeClassCompletionDetail(students, allTimeTests, weekCompleted)
+        .completionRate,
+    ).toBe(5)
+
+    // Week-scoped: 10 / (10×2) = 50%
+    expect(
+      computeWeeklyCompletionRate(students, weekTests, weekCompleted),
+    ).toBe(50)
+  })
+
+  it('matches computeClassCompletionDetail slot math and caps at 100', () => {
+    expect(computeWeeklyCompletionRate(4, 2, 8)).toBe(100)
+    expect(computeWeeklyCompletionRate(4, 2, 16)).toBe(100)
+    expect(computeWeeklyCompletionRate(2, 3, 2)).toBe(33)
+  })
+
+  it('treats zero week tests as one slot per student (same floor as detail)', () => {
+    expect(computeWeeklyCompletionRate(5, 0, 0)).toBe(0)
+    expect(computeWeeklyCompletionRate(5, 0, 5)).toBe(100)
+  })
+})
 
 describe('computeClassCompletionDetail', () => {
   it('matches 9A2: 2 students, 3 tests, 2 distinct pairs → 2/6, 33%', () => {
