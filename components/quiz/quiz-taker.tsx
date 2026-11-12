@@ -68,12 +68,15 @@ function useWallClockTimer(
 
   const [remaining, setRemaining] = useState(() => computeRemaining())
   const cbRef = useRef(onExpire)
-  cbRef.current = onExpire
   const expiredRef = useRef(false)
 
   useEffect(() => {
-    setRemaining(computeRemaining())
+    cbRef.current = onExpire
+  }, [onExpire])
+
+  useEffect(() => {
     expiredRef.current = false
+    queueMicrotask(() => setRemaining(computeRemaining()))
   }, [computeRemaining, startedAt])
 
   useEffect(() => {
@@ -448,10 +451,15 @@ export function QuizTaker({ data }: QuizTakerProps) {
       session = startActiveQuizSession(data.testId, data.title, data.timeLimitMinutes)
     }
     startedAtRef.current = session.startedAt
-    setStartedAt(session.startedAt)
-    if (session.answers && Object.keys(session.answers).length > 0) {
-      setAnswers(session.answers as AnswerMap)
-    }
+    const started = session.startedAt
+    const restored =
+      session.answers && Object.keys(session.answers).length > 0
+        ? (session.answers as AnswerMap)
+        : null
+    queueMicrotask(() => {
+      setStartedAt(started)
+      if (restored) setAnswers(restored)
+    })
   }, [data.testId, data.title, data.timeLimitMinutes])
 
   useEffect(() => {
@@ -551,6 +559,13 @@ export function QuizTaker({ data }: QuizTakerProps) {
     }
   }, [captureAllowed, data.monitoringEnabled, data.testId, startedAt, isSubmitting])
 
+  const getTimeSpent = useCallback((questionId: string): number => {
+    const start = interactionStart.current[questionId]
+    const end = interactionEnd.current[questionId]
+    if (!start) return 0
+    return Math.round(((end ?? Date.now()) - start) / 1000)
+  }, [])
+
   const doSubmit = useCallback(async () => {
     if (submitLock.current) return
     submitLock.current = true
@@ -589,7 +604,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
         captureRef.current = null
         clearActiveQuizSession(data.testId)
         clearMonitoredSession(data.testId)
-        window.location.assign(`/quiz/result/${result.data.submissionId}`)
+        router.push(`/quiz/result/${result.data.submissionId}`)
         return
       }
 
@@ -601,8 +616,7 @@ export function QuizTaker({ data }: QuizTakerProps) {
       setError('Không thể nộp bài. Vui lòng thử lại.')
       setIsSubmitting(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [answers, data, totalSeconds])
+  }, [answers, data, getTimeSpent, router, totalSeconds])
 
   const handleExpire = useCallback(() => {
     setShowConfirm(false)
@@ -637,25 +651,21 @@ export function QuizTaker({ data }: QuizTakerProps) {
     }
   }, [startedAt, remaining, display, data.testId])
 
-  function handleAnswer(questionId: string, type: QuizTakingQuestion['type'], value: QuizAnswer) {
-    const now = Date.now()
-    if (!(questionId in interactionStart.current)) {
-      interactionStart.current[questionId] = now
-    }
-    interactionEnd.current[questionId] = now
-    setAnswers((prev) => {
-      const next = { ...prev, [questionId]: { type, value } }
-      patchActiveQuizAnswers(data.testId, next)
-      return next
-    })
-  }
-
-  function getTimeSpent(questionId: string): number {
-    const start = interactionStart.current[questionId]
-    const end = interactionEnd.current[questionId]
-    if (!start) return 0
-    return Math.round(((end ?? Date.now()) - start) / 1000)
-  }
+  const handleAnswer = useCallback(
+    (questionId: string, type: QuizTakingQuestion['type'], value: QuizAnswer) => {
+      const now = Date.now()
+      if (!(questionId in interactionStart.current)) {
+        interactionStart.current[questionId] = now
+      }
+      interactionEnd.current[questionId] = now
+      setAnswers((prev) => {
+        const next = { ...prev, [questionId]: { type, value } }
+        patchActiveQuizAnswers(data.testId, next)
+        return next
+      })
+    },
+    [data.testId],
+  )
 
   const answeredCount = data.questions.filter((q) => answers[q.id] !== undefined).length
 

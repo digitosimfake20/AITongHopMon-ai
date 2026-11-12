@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlertTriangle, Flame, Sparkles, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,7 @@ export function ZenoProactivePanel({
   streakDays,
   weakTopic,
 }: ZenoProactivePanelProps) {
+  const router = useRouter()
   const firstName = studentName.split(/\s+/).pop() ?? studentName
   const [pretestOpen, setPretestOpen] = useState(false)
   const [pendingQuiz, setPendingQuiz] = useState<{
@@ -28,6 +30,43 @@ export function ZenoProactivePanel({
     weakTopic: string
   } | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGeneratePractice = useCallback(
+    async (saveForLater: boolean) => {
+      setIsGenerating(true)
+      const result = await generateSmartQuizAction({ saveForLater })
+      setIsGenerating(false)
+
+      if (!result.success || !result.data) {
+        toast.error(result.error ?? 'Không thể tạo bài luyện')
+        return
+      }
+
+      if (saveForLater) {
+        const { addSavedPractice } = await import('@/lib/quiz/active-quiz-session')
+        addSavedPractice({
+          testId: result.data.testId,
+          title: `Luyện tập: ${result.data.weakTopic}`,
+          topic: result.data.weakTopic,
+          questionCount: result.data.questionCount,
+          timeLimitMinutes: result.data.timeLimitMinutes,
+          savedAt: Date.now(),
+        })
+        toast.success('Đã thêm vào tab "Làm sau"')
+        router.push('/quizzes?tab=later')
+        return
+      }
+
+      setPendingQuiz({
+        testId: result.data.testId,
+        questionCount: result.data.questionCount,
+        timeLimitMinutes: result.data.timeLimitMinutes,
+        weakTopic: result.data.weakTopic,
+      })
+      setPretestOpen(true)
+    },
+    [router],
+  )
 
   useEffect(() => {
     if (!weakTopic) return
@@ -43,42 +82,7 @@ export function ZenoProactivePanel({
         onClick: () => void handleGeneratePractice(false),
       },
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weakTopic])
-
-  async function handleGeneratePractice(saveForLater: boolean) {
-    setIsGenerating(true)
-    const result = await generateSmartQuizAction({ saveForLater })
-    setIsGenerating(false)
-
-    if (!result.success || !result.data) {
-      toast.error(result.error ?? 'Không thể tạo bài luyện')
-      return
-    }
-
-    if (saveForLater) {
-      const { addSavedPractice } = await import('@/lib/quiz/active-quiz-session')
-      addSavedPractice({
-        testId: result.data.testId,
-        title: `Luyện tập: ${result.data.weakTopic}`,
-        topic: result.data.weakTopic,
-        questionCount: result.data.questionCount,
-        timeLimitMinutes: result.data.timeLimitMinutes,
-        savedAt: Date.now(),
-      })
-      toast.success('Đã thêm vào tab "Làm sau"')
-      window.location.href = '/quizzes?tab=later'
-      return
-    }
-
-    setPendingQuiz({
-      testId: result.data.testId,
-      questionCount: result.data.questionCount,
-      timeLimitMinutes: result.data.timeLimitMinutes,
-      weakTopic: result.data.weakTopic,
-    })
-    setPretestOpen(true)
-  }
+  }, [weakTopic, handleGeneratePractice])
 
   return (
     <>

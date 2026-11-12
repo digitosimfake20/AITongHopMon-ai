@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { DemoStage } from '@/lib/types'
 
 export interface DemoState {
@@ -47,18 +47,18 @@ const FRAMES: Frame[] = [
 
 const LOOP_DURATION = 14500
 
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+  media.addEventListener('change', onStoreChange)
+  return () => media.removeEventListener('change', onStoreChange)
+}
+
 export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false)
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setReduced(media.matches)
-    update()
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
-
-  return reduced
+  return useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false,
+  )
 }
 
 /**
@@ -79,7 +79,7 @@ export function useDemoSequence(
     if (reducedMotion) {
       for (const timer of timers.current) clearTimeout(timer)
       timers.current = []
-      setState(STATIC_DEMO_STATE)
+      queueMicrotask(() => setState(STATIC_DEMO_STATE))
       return
     }
 
