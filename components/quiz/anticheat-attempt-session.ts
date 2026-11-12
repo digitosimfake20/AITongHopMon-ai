@@ -32,6 +32,7 @@ export function clearMonitoredAttemptId(testId: string) {
   }
 }
 
+/** UI cache only. Enter and capture use server consent, not this key. */
 export function getMonitoredConsentOutcome(
   testId: string,
 ): StoredConsentOutcome | null {

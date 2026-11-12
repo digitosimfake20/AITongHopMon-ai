@@ -137,12 +137,21 @@ export function ZenoChatModal({
 
   useEffect(() => {
     if (!open || !sessionId) return
-    setIsLoadingHistory(true)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setIsLoadingHistory(true)
+    })
     getChatHistoryAction(sessionId)
       .then((res) => {
+        if (cancelled) return
         if (res.success && res.data) setMessages(res.data)
       })
-      .finally(() => setIsLoadingHistory(false))
+      .finally(() => {
+        if (!cancelled) setIsLoadingHistory(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [open, sessionId])
 
   useEffect(() => {
@@ -155,6 +164,7 @@ export function ZenoChatModal({
 
     previouslyFocused.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const fab = fabRef.current
 
     const main = document.getElementById('main-content')
     const wasMainInert = main?.hasAttribute('inert') ?? false
@@ -196,7 +206,7 @@ export function ZenoChatModal({
       clearTimeout(t)
       window.removeEventListener('keydown', onKeyDown)
       if (main && !wasMainInert) main.removeAttribute('inert')
-      const restore = previouslyFocused.current ?? fabRef.current
+      const restore = previouslyFocused.current ?? fab
       restore?.focus()
     }
   }, [open, close])

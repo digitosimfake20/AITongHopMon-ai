@@ -1,11 +1,11 @@
 'use server'
 
+import { randomUUID } from 'crypto'
 import { after } from 'next/server'
 import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/auth/types'
-import { findClassTestByTestId } from '@/lib/adaptive/find-class-test'
 import {
   recordAdaptiveRound1Submit,
   recordAdaptiveRound2Submit,
@@ -15,7 +15,10 @@ import type { SubmissionDetailForPipeline } from '@/lib/ai/pipeline'
 import { submissionOfficialStatsFromDetails } from '@/lib/knowledge/scored-submission-stats'
 import { normalizeTopicName } from '@/lib/knowledge/topic-normalize'
 import { isPracticeTestTitle } from '@/lib/quiz/practice-quiz'
-import { invalidateAfterSubmit } from '@/lib/cache/invalidate'
+import {
+  invalidateAfterMastery,
+  invalidateAfterSubmit,
+} from '@/lib/cache/invalidate'
 import { gradeTestAnswers, type GradedQuestion } from '@/lib/quiz/grade-submission'
 import { maxPointsFromQuestions, scoreOutOfTen } from '@/lib/quiz/score-out-of-ten'
 import { resolveElapsedSeconds } from '@/lib/quiz/quiz-elapsed'
@@ -196,23 +199,61 @@ export async function submitQuizAction(
     submittedAt: new Date(),
   }
 
-  const submission = inProgress
-    ? await prisma.submission.update({
+  const completedData = {
+    ...gradedFields,
+    details: { createMany: { data: details } },
+  }
+  const submissionId = inProgress?.id ?? randomUUID()
+  const submissionWrite = inProgress
+    ? prisma.submission.update({
         where: { id: inProgress.id },
-        data: {
-          ...gradedFields,
-          details: { createMany: { data: details } },
-        },
+        data: completedData,
       })
-    : await prisma.submission.create({
+    : prisma.submission.create({
         data: {
+          id: submissionId,
           testId: input.testId,
           studentId: user.id,
           attemptNumber,
-          ...gradedFields,
-          details: { createMany: { data: details } },
+          ...completedData,
         },
       })
+
+  const isAdaptiveRound1 =
+    !isPractice &&
+    classTest?.isAdaptive === true &&
+    input.testId === classTest.mediumTestId
+  const isAdaptiveRound2 =
+    !isPractice &&
+    classTest?.isAdaptive === true &&
+    (input.testId === classTest.easyTestId || input.testId === classTest.hardTestId)
+  const sessionWrite = isAdaptiveRound1
+    ? recordAdaptiveRound1Submit(
+        classTest.id,
+        user.id,
+        submissionId,
+        finalScore,
+        classTest.passScoreThreshold,
+        classTest.easyTestId!,
+        classTest.hardTestId!,
+        { medianResponseMs: timingPreview.medianMs, reliable: timingPreview.reliable },
+      )
+    : isAdaptiveRound2
+      ? recordAdaptiveRound2Submit(classTest.id, user.id, submissionId)
+      : null
+
+  let submission: { id: string }
+  if (sessionWrite) {
+    try {
+      const [row] = await prisma.$transaction([submissionWrite, sessionWrite])
+      submission = row
+    } catch (err) {
+      console.error('[submitQuizAction] adaptive session commit failed:', err)
+      return { success: false, error: 'Không nộp được bài' }
+    }
+  } else {
+    submission = await submissionWrite
+  }
 
   const pipelineDetails: SubmissionDetailForPipeline[] = graded.map((row) => ({
     questionId: row.questionId,
@@ -223,12 +264,11 @@ export async function submitQuizAction(
     timeSpentSeconds: questionSeconds(row.timeSpentSeconds),
   }))
 
-  const submissionId = submission.id
-  const testId = input.testId
   const classId = test.classId
 
-  // Bust dashboards / quiz bank / classGap (via submissions tag) immediately
-  // so next navigation is fresh — Phase D/E cache-tag contract.
+  // Bust scores / quiz bank / classGap (via submissions tag) immediately.
+  // Adaptive round rows are already committed above, so this bust sees them.
+  // knowledge + studentDash wait until after BKT upserts (below).
   invalidateAfterSubmit(classId, user.id)
 
   after(async () => {
@@ -237,7 +277,7 @@ export async function submitQuizAction(
       await runPostSubmissionAIPipeline(user.id, pipelineDetails, {
         skipAiCanonicalization: isPractice,
         skipLlmEnrich: isPractice,
-        submissionId,
+        submissionId: submission.id,
         timingQuality: timingPreview.quality,
         officialStats: submissionOfficialStatsFromDetails(
           pipelineDetails.map((d) => ({
@@ -249,43 +289,21 @@ export async function submitQuizAction(
         ),
       })
 
-      if (isPractice) return
+      // Mastery written — safe to refill knowledge / studentDash caches.
+      invalidateAfterMastery(user.id)
 
-      const classTest = await findClassTestByTestId(testId)
-      if (!classTest?.isAdaptive) return
-
-      if (testId === classTest.mediumTestId) {
-        const timing = assessQuestionTiming({
-          perQuestionSeconds,
-          totalSeconds: elapsed.seconds,
-          questionCount: questionIds.length,
-        })
-        await recordAdaptiveRound1Submit(
-          classTest.id,
-          user.id,
-          submissionId,
-          finalScore,
-          classTest.passScoreThreshold,
-          classTest.easyTestId!,
-          classTest.hardTestId!,
-          { medianResponseMs: timing.medianMs, reliable: timing.reliable },
-        )
-      } else if (
-        testId === classTest.easyTestId ||
-        testId === classTest.hardTestId
-      ) {
-        await recordAdaptiveRound2Submit(classTest.id, user.id, submissionId)
+      // Session itself is not written here; refresh adaptive views after pipeline.
+      if (!isPractice && classTest?.isAdaptive) {
+        invalidateAfterSubmit(classId, user.id)
       }
-      // Adaptive session changed → bust again for teacher adaptive views
-      invalidateAfterSubmit(classId, user.id)
     } catch (err) {
       console.error('[submitQuizAction] post-submit work failed:', err)
     } finally {
       console.info(
-        `[submitQuizAction] after() done submission=${submissionId} practice=${isPractice ? 1 : 0} ms=${Date.now() - afterT0}`,
+        `[submitQuizAction] after() done submission=${submission.id} practice=${isPractice ? 1 : 0} ms=${Date.now() - afterT0}`,
       )
     }
   })
 
-  return { success: true, data: { submissionId } }
+  return { success: true, data: { submissionId: submission.id } }
 }

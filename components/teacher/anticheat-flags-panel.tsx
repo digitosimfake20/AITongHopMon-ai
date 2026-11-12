@@ -45,18 +45,17 @@ export function AnticheatFlagsPanel({
   testTitle,
   compact = false,
 }: AnticheatFlagsPanelProps) {
-  const [flags, setFlags] = useState<AnticheatFlagItem[] | null>(null)
+  const [flags, setFlags] = useState<AnticheatFlagItem[]>([])
   const [unproctored, setUnproctored] = useState<UnproctoredAttemptInfo | null>(null)
+  const [loadedForId, setLoadedForId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [reasonBusy, setReasonBusy] = useState<TeacherUnproctoredReason | null>(null)
+  const isLoading = loadedForId !== submissionId
 
   useEffect(() => {
     let cancelled = false
-    setFlags(null)
-    setUnproctored(null)
-    setLoadError(null)
 
     void (async () => {
       const result = await listFlagsForSubmissionAction({ submissionId })
@@ -65,10 +64,13 @@ export function AnticheatFlagsPanel({
         setLoadError(result.error ?? 'Không tải được tín hiệu giám sát')
         setFlags([])
         setUnproctored({ reason: null, at: null, by: null })
+        setLoadedForId(submissionId)
         return
       }
       setFlags(result.data.flags)
       setUnproctored(result.data.unproctored)
+      setLoadError(null)
+      setLoadedForId(submissionId)
     })()
 
     return () => {
@@ -152,7 +154,7 @@ export function AnticheatFlagsPanel({
       </div>
 
       <div className={compact ? 'space-y-3' : 'space-y-3 px-5 py-4'}>
-        {unproctored === null && flags === null ? null : (
+        {isLoading ? null : (
           <div
             className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-2.5 dark:border-sky-900 dark:bg-sky-950/30"
             role="status"
@@ -210,7 +212,7 @@ export function AnticheatFlagsPanel({
           </div>
         )}
 
-        {flags === null ? (
+        {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             Đang tải tín hiệu...

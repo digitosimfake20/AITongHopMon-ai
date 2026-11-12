@@ -5,8 +5,10 @@ import type { Round1TimingInput } from '@/lib/adaptive/adaptive-round2-decision'
 /**
  * Trusted-server-only mutators for adaptive sessions.
  * Not a Server Action module — call only from submitQuizAction with session-bound studentId.
+ * Returns the query unawaited so the caller can commit it in the same
+ * prisma.$transaction batch as the COMPLETED submission (pooler-safe).
  */
-export async function recordAdaptiveRound1Submit(
+export function recordAdaptiveRound1Submit(
   classTestId: string,
   studentId: string,
   submissionId: string,
@@ -15,7 +17,7 @@ export async function recordAdaptiveRound1Submit(
   easyTestId: string,
   hardTestId: string,
   timing?: Round1TimingInput,
-): Promise<void> {
+) {
   const round2Difficulty = recommendRound2Difficulty(
     round1Score,
     passScoreThreshold,
@@ -23,7 +25,7 @@ export async function recordAdaptiveRound1Submit(
   )
   const round2TestId = round2Difficulty === 'HARD' ? hardTestId : easyTestId
 
-  await prisma.adaptiveStudentSession.upsert({
+  return prisma.adaptiveStudentSession.upsert({
     where: { classTestId_studentId: { classTestId, studentId } },
     create: {
       classTestId,
@@ -40,12 +42,12 @@ export async function recordAdaptiveRound1Submit(
   })
 }
 
-export async function recordAdaptiveRound2Submit(
+export function recordAdaptiveRound2Submit(
   classTestId: string,
   studentId: string,
   submissionId: string,
-): Promise<void> {
-  await prisma.adaptiveStudentSession.update({
+) {
+  return prisma.adaptiveStudentSession.update({
     where: { classTestId_studentId: { classTestId, studentId } },
     data: { round2SubmissionId: submissionId },
   })

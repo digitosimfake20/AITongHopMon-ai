@@ -2,11 +2,12 @@
 
 /**
  * Quiz-take wiring for Phase 2 whole-monitor capture.
- * Starts only when consent was `granted` and monitoring is enabled.
+ * Starts only when the server granted consent for this in-progress submission.
  */
 
 import { toast } from 'sonner'
 import {
+  getMonitoredConsentAction,
   recordTechnicalIssueUnproctoredAction,
   uploadAnticheatEvidenceAction,
 } from '@/app/actions/anticheat'
@@ -17,7 +18,7 @@ import {
   type CaptureLoopOpts,
   type GetDisplayMediaFn,
 } from '@/lib/anticheat'
-import { getMonitoredAttemptId } from '@/components/quiz/anticheat-attempt-session'
+import { openMonitoredQuizGate } from '@/lib/quiz/monitored-consent-gate'
 
 export type AnticheatCaptureHandle = {
   dispose: () => void
@@ -43,8 +44,14 @@ export async function startAnticheatCapture(opts: {
   /** Extra loop opts for tests (grabFrame, timers, …). */
   loop?: Partial<CaptureLoopOpts>
 }): Promise<AnticheatCaptureHandle | null> {
-  const attemptId = getMonitoredAttemptId(opts.testId)
-  if (!attemptId) return null
+  const consent = await getMonitoredConsentAction({ testId: opts.testId })
+  const serverOutcome = consent.success ? (consent.data?.outcome ?? null) : null
+  const attemptId = consent.success ? (consent.data?.submissionId ?? null) : null
+  const gate = openMonitoredQuizGate({
+    monitoringEnabled: true,
+    serverOutcome,
+  })
+  if (!gate.capture || !attemptId) return null
 
   const share = await openMonitorCapture({
     getDisplayMedia: opts.getDisplayMedia,

@@ -21,13 +21,11 @@ export function ScoreRing({
   className,
 }: ScoreRingProps) {
   const reducedMotion = usePrefersReducedMotion()
-  const [progress, setProgress] = useState(reducedMotion ? value : 0)
+  const [animatedProgress, setAnimatedProgress] = useState(0)
+  const progress = reducedMotion ? value : animatedProgress
 
   useEffect(() => {
-    if (reducedMotion) {
-      setProgress(value)
-      return
-    }
+    if (reducedMotion) return
 
     let frame = 0
     const start = performance.now()
@@ -36,7 +34,7 @@ export function ScoreRing({
       const elapsed = Math.min((now - start) / DURATION, 1)
       // ease-out cubic
       const eased = 1 - (1 - elapsed) ** 3
-      setProgress(Math.round(value * eased))
+      setAnimatedProgress(Math.round(value * eased))
       if (elapsed < 1) frame = requestAnimationFrame(tick)
     }
 

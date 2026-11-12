@@ -24,11 +24,20 @@ describe('normalizeTopicName', () => {
 
 describe('topicToNodeId', () => {
   it('slugifies with diacritic strip for short labels', () => {
-    // `đ` is not NFD-decomposed to `d`, so it is dropped by the [a-z0-9] filter
-    expect(topicToNodeId('Phân thức đại số')).toBe('phan-thuc-ai-so')
+    // `đ`/`Đ` map to `d` before NFD strip (đ is not an NFD combining mark)
+    expect(topicToNodeId('Phân thức đại số')).toBe('phan-thuc-dai-so')
     expect(topicToNodeId('Phương trình')).toBe('phuong-trinh')
-    // DEFAULT_TOPIC "Chủ đề khác" → đ dropped → chu-e-khac (empty-slug fallback unused)
-    expect(topicToNodeId('')).toBe('chu-e-khac')
+    // DEFAULT_TOPIC "Chủ đề khác" → chu-de-khac
+    expect(topicToNodeId('')).toBe('chu-de-khac')
+  })
+
+  it('keeps đại số and ái số as distinct node ids', () => {
+    const withD = topicToNodeId('đại số')
+    const withoutD = topicToNodeId('ái số')
+    expect(withD).toBe('dai-so')
+    expect(withoutD).toBe('ai-so')
+    expect(withD).not.toBe(withoutD)
+    expect(topicToNodeId('Đại số')).toBe(withD)
   })
 
   it('hashes long labels by full normalized text + subject (no 64-char truncate collide)', () => {

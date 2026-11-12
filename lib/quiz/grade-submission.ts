@@ -58,9 +58,12 @@ function scoreAnswer(
       return { isCorrect: pts >= maxPoints, pointsEarned: Math.round(pts * 100) / 100 }
     }
     case 'SHORT_ANSWER': {
+      // A null or blank key must not match an empty client answer (`'' === (null ?? '')`).
+      if (!hasStoredKey(correctOption)) {
+        return { isCorrect: false, pointsEarned: 0 }
+      }
       const given = typeof studentAnswer === 'string' ? studentAnswer : ''
-      const correct =
-        given.trim().toLowerCase() === (correctOption ?? '').trim().toLowerCase()
+      const correct = given.trim().toLowerCase() === correctOption.trim().toLowerCase()
       return { isCorrect: correct, pointsEarned: correct ? maxPoints : 0 }
     }
     case 'ESSAY':

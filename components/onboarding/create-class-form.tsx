@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { createClassAction } from '@/lib/class/actions'
 export function CreateClassForm() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -16,7 +18,7 @@ export function CreateClassForm() {
     if (result.success && result.data) {
       toast.success(`Đã tạo lớp. Mã lớp: ${result.data.code}`)
       setOpen(false)
-      window.location.href = `/teacher?class=${result.data.classId}`
+      router.push(`/teacher?class=${result.data.classId}`)
     } else {
       toast.error(result.error ?? 'Không thể tạo lớp')
     }
