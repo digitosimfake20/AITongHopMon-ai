@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  prismaDirect: PrismaClient | undefined
   prismaUrlLogged: boolean | undefined
 }
 
@@ -75,11 +76,23 @@ function serverlessDatabaseUrl(raw: string | undefined): string | undefined {
   return url
 }
 
-const databaseUrl = serverlessDatabaseUrl(process.env.DATABASE_URL)
+/** Session/direct URL for interactive $transaction — never rewrite :5432 → :6543. */
+function sessionDirectDatabaseUrl(raw: string | undefined): string | undefined {
+  const normalized = normalizeEnvDatabaseUrl(raw)
+  if (!normalized) return normalized
+  let url = normalized
+  if (!url.includes('connection_limit=')) {
+    url = `${url}${url.includes('?') ? '&' : '?'}connection_limit=1`
+  }
+  return url
+}
 
-function createClient(): PrismaClient {
+const databaseUrl = serverlessDatabaseUrl(process.env.DATABASE_URL)
+const directUrl = sessionDirectDatabaseUrl(process.env.DIRECT_URL)
+
+function createClient(url: string | undefined): PrismaClient {
   return new PrismaClient({
-    datasources: databaseUrl ? { db: { url: databaseUrl } } : undefined,
+    datasources: url ? { db: { url } } : undefined,
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     transactionOptions: {
       maxWait: 15_000,
@@ -88,9 +101,12 @@ function createClient(): PrismaClient {
   })
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient()
-export const prismaDirect = prisma
+export const prisma = globalForPrisma.prisma ?? createClient(databaseUrl)
+// Interactive txs need a session client; pooler alias breaks under PgBouncer transaction mode.
+export const prismaDirect =
+  globalForPrisma.prismaDirect ?? createClient(directUrl ?? databaseUrl)
 
 globalForPrisma.prisma = prisma
+globalForPrisma.prismaDirect = prismaDirect
 
 export default prisma
