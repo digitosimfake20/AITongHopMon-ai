@@ -265,6 +265,7 @@ async function persistCanonicalGroups(
     ),
   )
 
+  // Insert-only: first writer wins. Remap only via an explicit merge tool.
   await Promise.all(
     aliases.map((a) =>
       prisma.topicCanonicalAlias.upsert({
@@ -276,12 +277,7 @@ async function persistCanonicalGroups(
           subject,
           source,
         },
-        update: {
-          canonicalKey: a.canonicalKey,
-          canonicalLabel: a.canonicalLabel,
-          subject,
-          source,
-        },
+        update: {},
       }),
     ),
   )
