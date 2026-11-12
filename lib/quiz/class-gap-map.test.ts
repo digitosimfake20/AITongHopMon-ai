@@ -5,7 +5,7 @@ import {
   pickNeedsSupportRemedialTopic,
   studentTierFromAvg,
   tierGroupPercent,
-} from '@/lib/quiz/class-gap-map'
+} from '@/lib/quiz/class-gap-map-shared'
 
 describe('inferGrade', () => {
   it('parses single-digit grades 6–9', () => {

@@ -42,7 +42,7 @@ import {
   type ClassGapMapData,
   type CriticalGap,
   type StudentTierGroup,
-} from '@/lib/quiz/class-gap-map'
+} from '@/lib/quiz/class-gap-map-shared'
 import { QUESTION_TYPE_LABELS } from '@/lib/quiz/types'
 import { cn } from '@/lib/utils'
 
