@@ -1,6 +1,7 @@
 import type { TeacherDashboardData } from '@/lib/teacher-types'
 import prisma from '@/lib/prisma'
 import { getQuizPackagesForClass } from '@/lib/quiz/queries'
+import { computeWeeklyCompletionRate } from '@/lib/quiz/class-completion-stats'
 import { pickAtRiskStudents } from '@/lib/dashboard/teacher-at-risk'
 import { getInitials } from '@/lib/utils/initials'
 import { normalizeTopicName, topicToNodeId } from '@/lib/knowledge/topic-normalize'
@@ -27,13 +28,14 @@ async function getTeacherDashboardDataUncached(
 ): Promise<TeacherDashboardData> {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const [scoreAgg, testCount, recentSubmissionCount, topicWrongRows, atRiskRows, quizPackages] =
+  const [scoreAgg, weekTestCount, recentSubmissionCount, topicWrongRows, atRiskRows, quizPackages] =
     await Promise.all([
       prisma.submission.aggregate({
         where: { test: { classId } },
         _avg: { score: true },
       }),
-      prisma.test.count({ where: { classId } }),
+      // Week-scoped expected slots: tests created/assigned in the window, not all-time.
+      prisma.test.count({ where: { classId, createdAt: { gte: weekAgo } } }),
       prisma.submission.count({
         where: { test: { classId }, submittedAt: { gte: weekAgo } },
       }),
@@ -74,11 +76,11 @@ async function getTeacherDashboardDataUncached(
       ? Math.round(Number(scoreAgg._avg.score) * 10) / 10
       : 0
 
-  const weeklyTarget = studentCount * Math.max(testCount, 1)
-  const weeklyCompletionRate =
-    weeklyTarget > 0
-      ? Math.min(100, Math.round((recentSubmissionCount / weeklyTarget) * 100))
-      : 0
+  const weeklyCompletionRate = computeWeeklyCompletionRate(
+    studentCount,
+    weekTestCount,
+    recentSubmissionCount,
+  )
 
   // Aggregate by canonical topicKey (dedupe casing / whitespace variants)
   const byTopicKey = new Map<

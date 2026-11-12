@@ -16,8 +16,9 @@ import { MASTERY_STATUS_MASTERED } from '@/lib/knowledge/mastery-labels'
 
 export async function generateSmartQuizAction(options?: {
   saveForLater?: boolean
-  /** Prefer these topic keys / titles from the result action plan */
+  /** Prefer these owned topic keys from the result action plan */
   topicKeys?: string[]
+  /** Accepted for call-site compat; never used for topic choice */
   topicTitles?: string[]
 }): Promise<ActionResult<GenerateSmartQuizResult>> {
   const user = await getSessionUser()
@@ -26,17 +27,18 @@ export async function generateSmartQuizAction(options?: {
     return { success: false, error: 'Chỉ học sinh mới có thể tạo bài luyện' }
   }
 
-  let weakTopics: string[] = (options?.topicTitles ?? []).filter(Boolean).slice(0, 3)
+  // topicTitles is client-controlled; resolve only from owned topicKeys or server weak state
+  let weakTopics: string[] = []
 
-  if (weakTopics.length === 0 && options?.topicKeys?.length) {
+  if (options?.topicKeys?.length) {
     const keyed = await prisma.studentKnowledgeState.findMany({
       where: {
         studentId: user.id,
-        nodeId: { in: options.topicKeys },
+        nodeId: { in: options.topicKeys.filter(Boolean) },
       },
       include: { node: true },
     })
-    weakTopics = keyed.map((s) => s.node.title)
+    weakTopics = keyed.map((s) => s.node.title).filter(Boolean).slice(0, 3)
   }
 
   if (weakTopics.length === 0) {

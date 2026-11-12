@@ -3,6 +3,7 @@ import {
   computeAdaptiveProgress,
   type AdaptiveProgress,
 } from '@/lib/adaptive/adaptive-logic'
+import { isTestVisibleInStudentCatalog } from '@/lib/quiz/practice-quiz'
 import { authorizeQuizTake } from '@/lib/quiz/quiz-take-authz'
 
 // ---------------------------------------------------------------------------
@@ -69,6 +70,7 @@ async function getQuizBankForStudentUncached(
         difficultyLevel: true,
         questionIds: true,
         createdAt: true,
+        createdBy: true,
       },
     }),
     prisma.classTest.findMany({
@@ -128,7 +130,11 @@ async function getQuizBankForStudentUncached(
     if (ct.hardTestId) adaptiveTestIds.add(ct.hardTestId)
   }
 
-  const regularTests = tests.filter((t) => !adaptiveTestIds.has(t.id))
+  const regularTests = tests.filter(
+    (t) =>
+      !adaptiveTestIds.has(t.id) &&
+      isTestVisibleInStudentCatalog(t.title, t.createdBy, studentId),
+  )
   if (regularTests.length === 0 && adaptiveClassTests.length === 0) return []
 
   const classTestByTestId = new Map(

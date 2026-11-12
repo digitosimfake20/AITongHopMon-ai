@@ -27,21 +27,19 @@ interface TeacherViewProps {
 }
 
 export function TeacherView({ animateTyping = true }: TeacherViewProps) {
-  const [typed, setTyped] = useState(animateTyping ? '' : SUMMARY)
+  const [typedAnim, setTypedAnim] = useState('')
+  const typed = animateTyping ? typedAnim : SUMMARY
 
   useEffect(() => {
-    if (!animateTyping) {
-      setTyped(SUMMARY)
-      return
-    }
+    if (!animateTyping) return
 
-    setTyped('')
     let intervalId = 0
     const startId = window.setTimeout(() => {
       let index = 0
+      setTypedAnim('')
       intervalId = window.setInterval(() => {
         index += 2
-        setTyped(SUMMARY.slice(0, index))
+        setTypedAnim(SUMMARY.slice(0, index))
         if (index >= SUMMARY.length) window.clearInterval(intervalId)
       }, TYPING_SPEED)
     }, 700)

@@ -8,10 +8,8 @@
  *  4. GlobalAgentMemory keyInsights — curated insight (not raw log dump for UI)
  */
 import prisma from '@/lib/prisma'
-import {
-  computeTopicMasteryUpdate,
-  contributesToMasteryUpdate,
-} from '@/lib/knowledge/mastery-evidence'
+import { contributesToMasteryUpdate } from '@/lib/knowledge/mastery-evidence'
+import { persistStudentMasteryBatches } from '@/lib/knowledge/persist-student-mastery'
 import {
   isStrengthMastery,
   MASTERY_STATUS_MASTERED,
@@ -159,73 +157,11 @@ export async function runPostSubmissionAIPipeline(
     const batches = [...byNodeId.values()]
     topicCount = batches.length
 
-    // ── 2. Batch-read prior mastery (1 RTT) then upsert nodes + states ─────────
-    // Skip per-topic findUnique: upsert create path uses default 0.2; update path
-    // needs prior pMastery for correct BKT — load once via findMany.
-    const nodeIds = batches.map((b) => b.nodeId)
-    const existingStates =
-      nodeIds.length > 0
-        ? await prisma.studentKnowledgeState.findMany({
-            where: { studentId, nodeId: { in: nodeIds } },
-            select: { nodeId: true, pMastery: true },
-          })
-        : []
-    const priorMastery = new Map(
-      existingStates.map((s) => [s.nodeId, Number(s.pMastery)] as const),
+    // ── 2. Per-student transactional read→BKT→upsert (no last-write-win) ───────
+    const planBatches: TopicBatchForPlan[] = await persistStudentMasteryBatches(
+      studentId,
+      batches,
     )
-
-    if (batches.length > 0) {
-      await Promise.all(
-        batches.map((batch) =>
-          prisma.knowledgeNode.upsert({
-            where: { id: batch.nodeId },
-            create: {
-              id: batch.nodeId,
-              subject: batch.subject,
-              title: batch.topicName,
-              difficultyLevel: 1,
-            },
-            update: {
-              title: batch.topicName,
-              // Keep subject aligned with this submission's topic subject.
-              subject: batch.subject,
-            },
-          }),
-        ),
-      )
-    }
-
-    const planBatches: TopicBatchForPlan[] = []
-    if (batches.length > 0) {
-      const masteryRows = await Promise.all(
-        batches.map(async (batch) => {
-          const currentMastery = priorMastery.get(batch.nodeId) ?? 0.2
-          const mastery = computeTopicMasteryUpdate(currentMastery, batch.answers)
-
-          await prisma.studentKnowledgeState.upsert({
-            where: { studentId_nodeId: { studentId, nodeId: batch.nodeId } },
-            create: {
-              studentId,
-              nodeId: batch.nodeId,
-              pMastery: mastery,
-              lastPracticedAt: new Date(),
-            },
-            update: {
-              pMastery: mastery,
-              lastPracticedAt: new Date(),
-            },
-          })
-
-          return {
-            topicName: batch.topicName,
-            topicKey: batch.nodeId,
-            pMastery: mastery,
-            answers: batch.answers,
-          } satisfies TopicBatchForPlan
-        }),
-      )
-      planBatches.push(...masteryRows)
-    }
 
     // ── 3. Deterministic plan on hot path (LLM enrich deferred) ───────────────
     let plan = {

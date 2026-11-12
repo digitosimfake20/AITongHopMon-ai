@@ -368,22 +368,39 @@ export async function claimRosterNameAction(input: {
     }
   }
 
-  await prisma.$transaction(async (tx) => {
-    // Link roster entry to user — scoped to this class only
-    const linked = await tx.classRosterEntry.updateMany({
-      where: { id: input.rosterId, classId: input.classId },
-      data: { linkedUserId: user.id },
+  // shortcut: non-locking count, same race as joinClassAction; upgrade when over-capacity claims must be impossible
+  const memberCount = await prisma.classMember.count({
+    where: { classId: input.classId },
+  })
+  if (memberCount >= entry.class.maxCapacity) {
+    const existingMember = await prisma.classMember.findUnique({
+      where: { classId_studentId: { classId: input.classId, studentId: user.id } },
+      select: { id: true },
     })
-    if (linked.count === 0) {
-      throw new Error('Không tìm thấy tên trong danh sách lớp')
+    if (!existingMember) {
+      return { success: false, error: 'Lớp đã đủ sĩ số' }
     }
-    // Also add to ClassMember if not already there
+  }
+
+  const claimed = await prisma.$transaction(async (tx) => {
+    // Already ours: skip the null-link. A concurrent claim only matches linkedUserId null.
+    if (entry.linkedUserId !== user.id) {
+      const linked = await tx.classRosterEntry.updateMany({
+        where: { id: input.rosterId, classId: input.classId, linkedUserId: null },
+        data: { linkedUserId: user.id },
+      })
+      if (linked.count === 0) return false
+    }
     await tx.classMember.upsert({
       where: { classId_studentId: { classId: input.classId, studentId: user.id } },
       create: { classId: input.classId, studentId: user.id },
       update: {},
     })
+    return true
   })
+  if (!claimed) {
+    return { success: false, error: 'Tên này đã được bạn khác chọn. Hãy chọn tên của bạn.' }
+  }
 
   invalidateAfterRoster(input.classId, user.id)
   revalidatePath('/onboarding')

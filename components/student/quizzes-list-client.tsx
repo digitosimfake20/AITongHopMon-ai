@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { BookOpen } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -18,7 +18,6 @@ import {
   resolveStandardQuizStatus,
 } from '@/lib/quiz/quiz-display-status'
 import { getSavedPracticeQuizzes } from '@/lib/quiz/active-quiz-session'
-import { useEffect } from 'react'
 
 interface QuizzesListClientProps {
   quizzes: QuizBankItem[]
@@ -57,12 +56,20 @@ function filterByStatus(items: QuizBankItem[], status: string) {
   })
 }
 
-export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListClientProps) {
-  const [savedIds, setSavedIds] = useState<string[]>([])
+const emptySubscribe = () => () => {}
 
-  useEffect(() => {
-    setSavedIds(getSavedPracticeQuizzes().map((q) => q.testId))
-  }, [])
+function getSavedIdsSnapshot(): string {
+  return getSavedPracticeQuizzes()
+    .map((q) => q.testId)
+    .join('\0')
+}
+
+export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListClientProps) {
+  const savedIdsKey = useSyncExternalStore(emptySubscribe, getSavedIdsSnapshot, () => '')
+  const savedIds = useMemo(
+    () => (savedIdsKey ? savedIdsKey.split('\0') : []),
+    [savedIdsKey],
+  )
 
   const assigned = useMemo(
     () => quizzes.filter((q) => !isPracticeQuizItem(q)),
@@ -73,10 +80,9 @@ export function QuizzesListClient({ quizzes, defaultTab = 'all' }: QuizzesListCl
     [quizzes],
   )
   const savedPractice = useMemo(() => {
-    const saved = getSavedPracticeQuizzes()
     const byId = new Map(quizzes.map((q) => [q.testId, q]))
-    return saved
-      .map((s) => byId.get(s.testId))
+    return savedIds
+      .map((id) => byId.get(id))
       .filter(Boolean) as QuizBankItem[]
   }, [quizzes, savedIds])
 

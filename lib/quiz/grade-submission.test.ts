@@ -132,6 +132,48 @@ describe('gradeTestAnswers', () => {
     })
   })
 
+  it('does not treat an empty short answer as correct when the key is null or blank', () => {
+    const graded = gradeTestAnswers(
+      [
+        {
+          id: 'null-key',
+          type: 'SHORT_ANSWER',
+          correctOption: null,
+          points: 2,
+          topic: null,
+          subject: null,
+        },
+        {
+          id: 'empty-key',
+          type: 'SHORT_ANSWER',
+          correctOption: '',
+          points: 2,
+          topic: null,
+          subject: null,
+        },
+        {
+          id: 'blank-key',
+          type: 'SHORT_ANSWER',
+          correctOption: '   ',
+          points: 2,
+          topic: null,
+          subject: null,
+        },
+      ],
+      [
+        { questionId: 'null-key', answer: '', timeSpentSeconds: 1 },
+        { questionId: 'empty-key', answer: '', timeSpentSeconds: 1 },
+        { questionId: 'blank-key', answer: '', timeSpentSeconds: 1 },
+      ],
+    )
+
+    expect(graded).toHaveLength(3)
+    for (const row of graded) {
+      expect(row.isCorrect).toBe(false)
+      expect(row.pointsEarned).toBe(0)
+    }
+  })
+
   it('scores short answers with trim and case-insensitive compare', () => {
     const graded = gradeTestAnswers(
       [

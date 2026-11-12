@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -14,10 +14,11 @@ import {
 } from '@/app/actions/anticheat'
 import {
   getMonitoredAttemptId,
-  getMonitoredConsentOutcome,
   setMonitoredAttemptId,
   setMonitoredConsentOutcome,
 } from '@/components/quiz/anticheat-attempt-session'
+import { useMonitoredServerConsent } from '@/components/quiz/use-monitored-server-consent'
+import { openMonitoredQuizGate } from '@/lib/quiz/monitored-consent-gate'
 
 interface QuizPreTestGateProps {
   data: {
@@ -39,24 +40,24 @@ export function QuizPreTestGate({ data, children }: QuizPreTestGateProps) {
   const wantsStart =
     searchParams.get('start') === '1' || searchParams.get('resume') === '1'
   const monitoring = Boolean(data.monitoringEnabled)
-
-  // Consent must be recorded — attempt id alone is not enough (start can succeed
-  // while recordConsent fails / is skipped).
-  const [hasConsent, setHasConsent] = useState(() =>
-    monitoring ? Boolean(getMonitoredConsentOutcome(data.testId)) : true,
-  )
+  const serverConsent = useMonitoredServerConsent(data.testId, monitoring)
   const [isPending, startTransition] = useTransition()
   const [consentBusy, setConsentBusy] = useState<ConsentDecision | null>(null)
 
-  useEffect(() => {
-    if (!monitoring) {
-      setHasConsent(true)
-      return
-    }
-    setHasConsent(Boolean(getMonitoredConsentOutcome(data.testId)))
-  }, [monitoring, data.testId])
+  // Enter only when the server has a consent row for this in-progress submission.
+  const gate = openMonitoredQuizGate({
+    monitoringEnabled: monitoring,
+    serverOutcome: serverConsent.outcome,
+  })
+  const canEnterQuiz = wantsStart && gate.enter
 
-  const canEnterQuiz = wantsStart && (!monitoring || hasConsent)
+  if (monitoring && !serverConsent.ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+        Đang kiểm tra đồng ý giám sát...
+      </div>
+    )
+  }
 
   if (canEnterQuiz) {
     return <>{children}</>
@@ -93,7 +94,7 @@ export function QuizPreTestGate({ data, children }: QuizPreTestGateProps) {
         }
 
         setMonitoredConsentOutcome(data.testId, decision)
-        setHasConsent(true)
+        serverConsent.reload()
 
         if (decision === 'refused') {
           toast.message('Đã ghi nhận từ chối giám sát', {

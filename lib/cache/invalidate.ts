@@ -1,4 +1,9 @@
-import { bustAfterSubmit, bustCacheTags, bustClassCaches } from '@/lib/cache/cached-query'
+import {
+  bustAfterMastery,
+  bustAfterSubmit,
+  bustCacheTags,
+  bustClassCaches,
+} from '@/lib/cache/cached-query'
 import { CacheTags } from '@/lib/cache/tags'
 
 /** Admin/teacher published or deleted system tests / groups. */
@@ -16,9 +21,14 @@ export function invalidateAfterAssign(classId: string) {
   bustClassCaches(classId)
 }
 
-/** Student submitted a quiz (scores, bank status, gap map, dashboards). */
+/** Student submitted a quiz (scores, bank status — not mastery/dash). */
 export function invalidateAfterSubmit(classId: string, studentId: string) {
   bustAfterSubmit(classId, studentId)
+}
+
+/** After BKT mastery upserts finish in the post-submit pipeline. */
+export function invalidateAfterMastery(studentId: string) {
+  bustAfterMastery(studentId)
 }
 
 /** Roster / membership changed. */

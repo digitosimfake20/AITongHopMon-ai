@@ -19,6 +19,8 @@ export function normalizeTopicName(raw: string | null | undefined): string {
 function slugifyTopic(normalized: string): string {
   return normalized
     .toLowerCase()
+    // đ/Đ are not NFD-decomposed; map to d before accent strip so they stay in the slug
+    .replace(/đ/g, 'd')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
