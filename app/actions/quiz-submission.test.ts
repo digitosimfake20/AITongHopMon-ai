@@ -274,6 +274,45 @@ describe('submitQuizAction adaptive session', () => {
     expect(h.counts.globalSessionUpdate).toBe(0)
   })
 
+  it('completes an in-progress assignment attempt instead of inserting another row', async () => {
+    h.prisma.test.findUnique.mockResolvedValue({
+      id: 'test-assigned',
+      classId: 'class-1',
+      title: 'Bài tập về nhà',
+      timeLimitMinutes: 15,
+      questionIds: [QUESTION],
+    })
+    h.prisma.submission.findFirst.mockResolvedValue({ id: 'sub-open', attemptNumber: 1 })
+    h.prisma.classTest.findFirst.mockResolvedValue({
+      ...classTestRow(),
+      isAdaptive: false,
+      testId: 'test-assigned',
+      easyTestId: null,
+      mediumTestId: null,
+      hardTestId: null,
+      maxAttempts: 1,
+    })
+
+    const result = await submitQuizAction(answerInput('test-assigned'))
+
+    expect(result).toMatchObject({ success: true, data: { submissionId: 'sub-open' } })
+    expect(h.committed.submission).toEqual({ id: 'sub-open', status: 'COMPLETED' })
+    expect(h.counts.globalCreate).toBe(0)
+    expect(h.counts.txCreate).toBe(0)
+  })
+
+  it('completes an in-progress adaptive round on the same submission row', async () => {
+    h.prisma.submission.findFirst.mockResolvedValue({ id: 'sub-open', attemptNumber: 1 })
+
+    const result = await submitQuizAction(answerInput(MEDIUM))
+
+    expect(result).toMatchObject({ success: true, data: { submissionId: 'sub-open' } })
+    expect(h.committed.submission).toEqual({ id: 'sub-open', status: 'COMPLETED' })
+    expect(h.committed.session).toMatchObject({ round1SubmissionId: 'sub-open' })
+    expect(h.counts.txCreate).toBe(0)
+    expect(h.counts.txUpsert).toBe(1)
+  })
+
   it('does not leave a completed submit when the session write fails', async () => {
     h.failSession = true
 
