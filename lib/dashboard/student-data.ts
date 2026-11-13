@@ -82,50 +82,49 @@ async function getStudentDashboardDataUncached(
   fullName: string,
   classLabel: string,
 ): Promise<CachedStudentDash> {
-  const [submissionAgg, masteryAgg, weakStates, cognitiveProfile, globalMemory, assignments] =
-    await Promise.all([
-      prisma.submission.aggregate({
-        where: {
-          studentId: userId,
-          test: { classId },
-        },
-        _count: { _all: true },
-        _sum: { timeSpentSeconds: true },
-      }),
-      prisma.studentKnowledgeState.aggregate({
-        where: { studentId: userId },
-        _avg: { pMastery: true },
-        _count: { _all: true },
-      }),
-      prisma.studentKnowledgeState.findMany({
-        where: {
-          studentId: userId,
-          pMastery: { lt: MASTERY_STATUS_MASTERED },
-        },
-        orderBy: { pMastery: 'asc' },
-        take: 5,
-        select: {
-          nodeId: true,
-          pMastery: true,
-          node: { select: { title: true } },
-        },
-      }),
-      prisma.studentCognitiveProfile.findUnique({
-        where: { studentId: userId },
-        select: {
-          personaType: true,
-          avgSpeedPerQuestion: true,
-          carelessErrorRate: true,
-          strengthsSummary: true,
-          weaknessesSummary: true,
-        },
-      }),
-      prisma.globalAgentMemory.findUnique({
-        where: { studentId: userId },
-        select: { keyInsights: true, updatedAt: true },
-      }),
-      getDashboardAssignments(classId, userId),
-    ])
+  // connection_limit=1: a parallel $transaction (assignments) makes the other
+  // reads wait on the pool and throw P2024 once that wait passes 10s.
+  const submissionAgg = await prisma.submission.aggregate({
+    where: {
+      studentId: userId,
+      test: { classId },
+    },
+    _count: { _all: true },
+    _sum: { timeSpentSeconds: true },
+  })
+  const masteryAgg = await prisma.studentKnowledgeState.aggregate({
+    where: { studentId: userId },
+    _avg: { pMastery: true },
+    _count: { _all: true },
+  })
+  const weakStates = await prisma.studentKnowledgeState.findMany({
+    where: {
+      studentId: userId,
+      pMastery: { lt: MASTERY_STATUS_MASTERED },
+    },
+    orderBy: { pMastery: 'asc' },
+    take: 5,
+    select: {
+      nodeId: true,
+      pMastery: true,
+      node: { select: { title: true } },
+    },
+  })
+  const cognitiveProfile = await prisma.studentCognitiveProfile.findUnique({
+    where: { studentId: userId },
+    select: {
+      personaType: true,
+      avgSpeedPerQuestion: true,
+      carelessErrorRate: true,
+      strengthsSummary: true,
+      weaknessesSummary: true,
+    },
+  })
+  const globalMemory = await prisma.globalAgentMemory.findUnique({
+    where: { studentId: userId },
+    select: { keyInsights: true, updatedAt: true },
+  })
+  const assignments = await getDashboardAssignments(classId, userId)
 
   const masteryPercent = masteryPercentFromAvg(
     masteryAgg._avg.pMastery != null ? Number(masteryAgg._avg.pMastery) : null,
@@ -206,10 +205,8 @@ export async function getStudentDashboardData(
     ],
     revalidate: CacheTTL.studentDash,
   })
-  const [data, shellStats] = await Promise.all([
-    cached(userId, classId, fullName, classLabel),
-    getStudentShellStats(userId),
-  ])
+  const data = await cached(userId, classId, fullName, classLabel)
+  const shellStats = await getStudentShellStats(userId)
   const { zenoUpdatedAtIso, ...rest } = data
   const updated = asDate(zenoUpdatedAtIso)
   return {

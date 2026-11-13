@@ -65,41 +65,41 @@ export async function submitQuizAction(
   const test = await prisma.test.findUnique({ where: { id: input.testId } })
   if (!test) return { success: false, error: 'Không tìm thấy đề kiểm tra' }
 
-  const [inProgress, completedAttempts, membership, classTest] = await Promise.all([
-    prisma.submission.findFirst({
-      where: {
-        testId: input.testId,
-        studentId: user.id,
-        status: 'IN_PROGRESS',
-      },
-      orderBy: { attemptNumber: 'desc' },
-      select: { id: true, attemptNumber: true },
-    }),
-    prisma.submission.count({
-      where: {
-        testId: input.testId,
-        studentId: user.id,
-        status: { not: 'IN_PROGRESS' },
-      },
-    }),
-    prisma.classMember.findFirst({
-      where: { classId: test.classId, studentId: user.id },
-      select: { id: true },
-    }),
-    prisma.classTest.findFirst({
-      where: {
-        OR: [
-          { testId: input.testId },
-          { easyTestId: input.testId },
-          { mediumTestId: input.testId },
-          { hardTestId: input.testId },
-        ],
-      },
-      include: {
-        adaptiveSessions: { where: { studentId: user.id }, take: 1 },
-      },
-    }),
-  ])
+  // Same connection_limit=1 pool as the dashboard. Queue these instead of
+  // racing them, or a slow ClassTest read times out the in-progress lookup.
+  const inProgress = await prisma.submission.findFirst({
+    where: {
+      testId: input.testId,
+      studentId: user.id,
+      status: 'IN_PROGRESS',
+    },
+    orderBy: { attemptNumber: 'desc' },
+    select: { id: true, attemptNumber: true },
+  })
+  const completedAttempts = await prisma.submission.count({
+    where: {
+      testId: input.testId,
+      studentId: user.id,
+      status: { not: 'IN_PROGRESS' },
+    },
+  })
+  const membership = await prisma.classMember.findFirst({
+    where: { classId: test.classId, studentId: user.id },
+    select: { id: true },
+  })
+  const classTest = await prisma.classTest.findFirst({
+    where: {
+      OR: [
+        { testId: input.testId },
+        { easyTestId: input.testId },
+        { mediumTestId: input.testId },
+        { hardTestId: input.testId },
+      ],
+    },
+    include: {
+      adaptiveSessions: { where: { studentId: user.id }, take: 1 },
+    },
+  })
 
   const gate = authorizeQuizTake({
     hasMembership: Boolean(membership),

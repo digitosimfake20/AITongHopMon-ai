@@ -3,15 +3,28 @@
 -- Or apply this SQL manually against Postgres if prisma generate/push is unavailable.
 -- Does not auto-change grades; review fields are advisory only.
 
-CREATE TYPE core."AnticheatConsentOutcome" AS ENUM ('granted', 'refused');
-CREATE TYPE core."AnticheatTrigger" AS ENUM ('frozen', 'tab_switch', 'histogram_delta', 'hint');
-CREATE TYPE core."AnticheatReviewDecision" AS ENUM ('confirmed', 'dismissed', 'pending');
-CREATE TYPE core."AnticheatUnproctoredReason" AS ENUM (
-  'refused_monitoring',
-  'accommodation',
-  'technical_issue',
-  'paper_fallback'
-);
+-- Idempotent: a failed first run must not block the column the Prisma client selects.
+DO $$ BEGIN
+  CREATE TYPE core."AnticheatConsentOutcome" AS ENUM ('granted', 'refused');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE core."AnticheatTrigger" AS ENUM ('frozen', 'tab_switch', 'histogram_delta', 'hint');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE core."AnticheatReviewDecision" AS ENUM ('confirmed', 'dismissed', 'pending');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE core."AnticheatUnproctoredReason" AS ENUM (
+    'refused_monitoring',
+    'accommodation',
+    'technical_issue',
+    'paper_fallback'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 ALTER TABLE core.class_tests
   ADD COLUMN IF NOT EXISTS monitoring_enabled BOOLEAN NOT NULL DEFAULT FALSE;
